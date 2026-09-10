@@ -5,13 +5,13 @@ const prisma = new PrismaClient();
 const password = "serai123";
 
 const stays = [
-  ["qasr-al-dur-najaf", "Qasr Al-Dur Hotel", "قصر الدر", "Najaf", "Iraq", "/images/stay-walled-city.png", 18500, "A known hotel near the Imam Ali shrine.", 32.0258, 44.3341, "Al-Haidariya / Old City, Najaf, Iraq"],
-  ["al-kafeel-karbala", "Al Kafeel Hotel", "الكفيل", "Karbala", "Iraq", "/images/dest-lahore.png", 24000, "Between the two harams, toward Imam Hussain and Al-Abbas.", 32.6169, 44.0336, "Between the Two Holy Shrines, Karbala, Iraq"],
-  ["al-rasheed-baghdad", "Al-Rasheed Hotel Baghdad", "الرشيد", "Baghdad", "Iraq", "/images/stay-canal-breeze.png", 26500, "Central Baghdad stay after the Karbala–Baghdad road.", 33.3152, 44.3661, "International Zone / central Baghdad, Iraq"],
-  ["darvishi-mashhad", "Darvishi Hotel", "هتل درویشی", "Mashhad", "Iran", "/images/stay-apricot-court.png", 28500, "On Imam Reza Street, beside the holy shrine.", 36.28705, 59.61555, "Imam Reza St, Mashhad, Razavi Khorasan, Iran"],
-  ["astan-qom", "Astan Hotel Qom", "هتل آستان قم", "Qom", "Iran", "/images/stay-orchard.png", 19800, "Close to Hazrat Masumeh shrine.", 34.6419, 50.8778, "Near Holy Shrine of Fatima Masumeh, Qom, Iran"],
-  ["swissotel-makkah", "Swissôtel Makkah", "سويسوتيل مكة", "Makkah", "Saudi Arabia", "/images/dest-hunza.png", 62000, "Ajyad, connected toward Masjid al-Haram.", 21.4187, 39.8256, "Ajyad St, Makkah 24231, Saudi Arabia"],
-  ["movenpick-madinah", "Anwar Al Madinah Mövenpick", "موفنبيك المدينة", "Madinah", "Saudi Arabia", "/images/dest-skardu.png", 54000, "Facing the Prophet’s Mosque.", 24.46735, 39.61115, "King Fahd Rd, Al Haram, Madinah 42311, Saudi Arabia"],
+  ["qasr-al-dur-najaf", "Qasr Al-Dur Hotel", "قصر الدر", "Najaf", "Iraq", "https://images.unsplash.com/photo-1616855202318-07ea40522c6c?fm=jpg&q=80&w=1600&auto=format&fit=crop", 18500, "A known hotel near the Imam Ali shrine.", 32.0258, 44.3341, "Al-Haidariya / Old City, Najaf, Iraq"],
+  ["al-kafeel-karbala", "Al Kafeel Hotel", "الكفيل", "Karbala", "Iraq", "https://images.unsplash.com/photo-1623680904963-5580d963e18e?fm=jpg&q=80&w=1600&auto=format&fit=crop", 24000, "Between the two harams, toward Imam Hussain and Al-Abbas.", 32.6169, 44.0336, "Between the Two Holy Shrines, Karbala, Iraq"],
+  ["al-rasheed-baghdad", "Al-Rasheed Hotel Baghdad", "الرشيد", "Baghdad", "Iraq", "https://images.unsplash.com/photo-1468824357306-a439d58ccb1c?fm=jpg&q=80&w=1600&auto=format&fit=crop", 26500, "Central Baghdad stay after the Karbala–Baghdad road.", 33.3152, 44.3661, "International Zone / central Baghdad, Iraq"],
+  ["darvishi-mashhad", "Darvishi Hotel", "هتل درویشی", "Mashhad", "Iran", "https://images.unsplash.com/photo-1584027123930-c1f17b17ee1a?fm=jpg&q=80&w=1600&auto=format&fit=crop", 28500, "On Imam Reza Street, beside the holy shrine.", 36.28705, 59.61555, "Imam Reza St, Mashhad, Razavi Khorasan, Iran"],
+  ["astan-qom", "Astan Hotel Qom", "هتل آستان قم", "Qom", "Iran", "https://images.unsplash.com/photo-1621293954908-907159247fc8?fm=jpg&q=80&w=1600&auto=format&fit=crop", 19800, "Close to Hazrat Masumeh shrine.", 34.6419, 50.8778, "Near Holy Shrine of Fatima Masumeh, Qom, Iran"],
+  ["swissotel-makkah", "Ajyad Grand Hotel", "أجياد جراند", "Makkah", "Saudi Arabia", "https://images.unsplash.com/photo-1561501900-3701fa6a0864?fm=jpg&q=80&w=1600&auto=format&fit=crop", 62000, "Ajyad, connected toward Masjid al-Haram.", 21.4187, 39.8256, "Ajyad St, Makkah 24231, Saudi Arabia"],
+  ["movenpick-madinah", "Anwar Al Madinah Hotel", "أنوار المدينة", "Madinah", "Saudi Arabia", "https://images.unsplash.com/photo-1711743266323-5badf42d4797?fm=jpg&q=80&w=1600&auto=format&fit=crop", 54000, "Facing the Prophet’s Mosque.", 24.46735, 39.61115, "King Fahd Rd, Al Haram, Madinah 42311, Saudi Arabia"],
 ];
 
 const ziyarat = [

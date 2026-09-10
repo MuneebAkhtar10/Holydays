@@ -8,7 +8,7 @@ import { MoneyInput } from "@/components/MoneyInput";
 
 function Block({ title, hint, children }: { title: string; hint?: string; children: ReactNode }) {
   return (
-    <div className="rounded-xl border border-ink/[0.08] bg-white/70 p-4 sm:p-5">
+    <div className="paper-light rounded-xl border border-ink/[0.08] bg-white/70 p-4 sm:p-5">
       <p className="font-display text-xl leading-tight text-ink">{title}</p>
       {hint ? <p className="mt-1.5 max-w-2xl text-[15px] leading-relaxed text-ink/60">{hint}</p> : null}
       <div className="mt-4">{children}</div>
@@ -117,7 +117,7 @@ export function StayRoomEditor({
             <Block title="4 · Booking options" hint="Each card is one way to sell this room — meals, cancellation, and when the guest pays.">
               <div className="space-y-3">
                 {r.rates.map((rate, ri) => (
-                  <div key={`${rate.id}-${ri}`} className="rounded-xl border border-ink/10 bg-white p-4">
+                  <div key={`${rate.id}-${ri}`} className="paper-light rounded-xl border border-ink/10 bg-white p-4">
                     <div className="mb-3 flex items-center justify-between gap-3">
                       <p className="text-sm font-medium text-ink/80">Option {ri + 1}</p>
                       {r.rates.length > 1 && (

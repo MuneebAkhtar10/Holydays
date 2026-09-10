@@ -628,7 +628,7 @@ export function ListingForm({
               <div className="relative h-40 bg-ink/5">
                 <Image src={form.cover} alt="Cover preview" fill className="object-cover" />
               </div>
-              <div className="flex flex-wrap items-center gap-3 bg-white px-4 py-3">
+              <div className="paper-light flex flex-wrap items-center gap-3 bg-white px-4 py-3">
                 <button type="button" className="btn-ghost text-sm" onClick={() => fileRef.current?.click()}>
                   {uploading ? "Uploading…" : "Choose from computer"}
                 </button>

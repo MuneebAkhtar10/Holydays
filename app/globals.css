@@ -147,12 +147,62 @@ html[data-theme="light"] .brand-logo {
   overflow: visible;
 }
 
+/* Forces light-mode text colors for panels that stay white/cream regardless
+   of site theme (e.g. nested cards inside .paper), so text stays readable
+   even when .paper itself has flipped to its dark-mode palette. */
+.paper-light {
+  color-scheme: light;
+  color: #0b1c34;
+  --serai-ink: #0b1c34;
+  --serai-ink-2: #ebe3d4;
+  --serai-sand: #0b1c34;
+  --serai-mist: #3a4454;
+  --serai-sage: #1f6b38;
+  --color-ink: #0b1c34;
+  --color-ink-2: #ebe3d4;
+  --color-sand: #0b1c34;
+  --color-mist: #3a4454;
+  --color-sage: #1f6b38;
+}
+
 html[data-theme="dark"] .paper {
+  color-scheme: dark;
+  background: linear-gradient(180deg, #163456, #102948);
+  color: #f4f6fa;
+  --serai-ink: #f4f6fa;
+  --serai-ink-2: #163456;
+  --serai-sand: #f4f6fa;
+  --serai-mist: #9aa3b5;
+  --serai-sage: #4fd17a;
+  --color-ink: #f4f6fa;
+  --color-ink-2: #163456;
+  --color-sand: #f4f6fa;
+  --color-mist: #9aa3b5;
+  --color-sage: #4fd17a;
   border: 1px solid rgba(197, 164, 106, 0.32);
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.5),
     0 22px 48px rgba(0, 0, 0, 0.45),
     0 1px 0 rgba(197, 164, 106, 0.22);
+}
+
+@media (prefers-color-scheme: dark) {
+  html:not([data-theme="light"]) .paper {
+    color-scheme: dark;
+    background: linear-gradient(180deg, #163456, #102948);
+    color: #f4f6fa;
+    --serai-ink: #f4f6fa;
+    --serai-ink-2: #163456;
+    --serai-sand: #f4f6fa;
+    --serai-mist: #9aa3b5;
+    --serai-sage: #4fd17a;
+    --color-ink: #f4f6fa;
+    --color-ink-2: #163456;
+    --color-sand: #f4f6fa;
+    --color-mist: #9aa3b5;
+    --color-sage: #4fd17a;
+    border: 1px solid rgba(197, 164, 106, 0.32);
+  }
 }
 
 .pane {
@@ -362,6 +412,20 @@ select.paper-field {
   color: rgba(11, 18, 32, 0.5);
 }
 
+html[data-theme="dark"] .paper-label {
+  color: rgba(244, 246, 250, 0.55);
+}
+
+@media (prefers-color-scheme: dark) {
+  html:not([data-theme="light"]) .paper-label {
+    color: rgba(244, 246, 250, 0.55);
+  }
+}
+
+.paper-light .paper-label {
+  color: rgba(11, 18, 32, 0.5) !important;
+}
+
 .form-label {
   display: block;
   font-size: 0.8rem;
@@ -480,6 +544,48 @@ select.paper-field {
 
 .form-stepper-item[data-active="true"] .form-stepper-label {
   color: #0b1c34;
+}
+
+html[data-theme="dark"] .form-stepper-item {
+  color: rgba(244, 246, 250, 0.5);
+}
+
+html[data-theme="dark"] .form-stepper-item:hover {
+  background: rgba(244, 246, 250, 0.06);
+}
+
+html[data-theme="dark"] .form-stepper-rail::before {
+  background: rgba(244, 246, 250, 0.18);
+}
+
+html[data-theme="dark"] .form-stepper-item[data-active="true"] {
+  color: #e8c78a;
+}
+
+html[data-theme="dark"] .form-stepper-item[data-active="true"] .form-stepper-label {
+  color: #e8c78a;
+}
+
+@media (prefers-color-scheme: dark) {
+  html:not([data-theme="light"]) .form-stepper-item {
+    color: rgba(244, 246, 250, 0.5);
+  }
+
+  html:not([data-theme="light"]) .form-stepper-item:hover {
+    background: rgba(244, 246, 250, 0.06);
+  }
+
+  html:not([data-theme="light"]) .form-stepper-rail::before {
+    background: rgba(244, 246, 250, 0.18);
+  }
+
+  html:not([data-theme="light"]) .form-stepper-item[data-active="true"] {
+    color: #e8c78a;
+  }
+
+  html:not([data-theme="light"]) .form-stepper-item[data-active="true"] .form-stepper-label {
+    color: #e8c78a;
+  }
 }
 
 .btn-primary {

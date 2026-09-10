@@ -46,7 +46,7 @@ export function HotelStrip({
   ink?: boolean;
 }) {
   const { money } = useSerai();
-  const tone = ink ? "border-ink/10 bg-white text-ink" : "inset-card";
+  const tone = ink ? "paper-light border-ink/10 bg-white text-ink" : "inset-card";
   const mist = ink ? "text-ink/55" : "text-mist";
   const price = ink ? "text-ink" : "text-sand";
   return (

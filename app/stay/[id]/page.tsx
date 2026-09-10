@@ -394,7 +394,7 @@ function StayInner() {
               </p>
             )}
             <div className="mt-4 grid grid-cols-2 gap-2">
-              <label className="text-[10px] uppercase tracking-[0.14em] text-ink/45">
+              <label className="paper-light text-[10px] uppercase tracking-[0.14em] text-ink/45">
                 Arrive
                 <input
                   type="date"
@@ -403,7 +403,7 @@ function StayInner() {
                   onChange={(e) => setSearch({ checkin: e.target.value })}
                 />
               </label>
-              <label className="text-[10px] uppercase tracking-[0.14em] text-ink/45">
+              <label className="paper-light text-[10px] uppercase tracking-[0.14em] text-ink/45">
                 Depart
                 <input
                   type="date"
