@@ -1,0 +1,841 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+  <meta charset="UTF-8" />
+  <title>AURORA product shots</title>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: "Plus Jakarta Sans", system-ui, sans-serif;
+      background: #0e2a30;
+      color: #1a2f33;
+    }
+    .shot {
+      display: none;
+      width: 1440px;
+      height: 900px;
+      background: #f3f6f7;
+      overflow: hidden;
+      position: relative;
+    }
+    .shot.on, .shot:target { display: block; }
+
+    .top {
+      height: 58px;
+      background: #fff;
+      border-bottom: 1px solid #e2eaec;
+      display: flex;
+      align-items: center;
+      padding: 0 22px;
+      gap: 28px;
+    }
+    .logo {
+      font-weight: 800;
+      letter-spacing: 0.14em;
+      color: #1b5e67;
+      font-size: 15px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .logo i {
+      width: 22px; height: 22px; border-radius: 7px;
+      background: linear-gradient(135deg, #1b5e67, #6b5b8a);
+      display: inline-block;
+    }
+    .nav { display: flex; gap: 4px; flex: 1; }
+    .nav a {
+      font-size: 12.5px;
+      font-weight: 600;
+      color: #5a6e72;
+      text-decoration: none;
+      padding: 8px 10px;
+      border-radius: 8px;
+    }
+    .nav a.active { color: #1b5e67; background: #e8f3f4; }
+    .who { margin-left: auto; display: flex; align-items: center; gap: 10px; font-size: 12.5px; color: #3d555a; font-weight: 600; }
+    .avatar { width: 32px; height: 32px; border-radius: 50%; background: #1b5e67; color: #fff; display: grid; place-items: center; font-size: 11px; }
+    .lo { border: 1px solid #d5e0e3; background: #fff; padding: 6px 10px; border-radius: 8px; font-size: 12px; font-weight: 600; color: #1b5e67; }
+
+    .sub {
+      height: 48px;
+      background: #fff;
+      border-bottom: 1px solid #e2eaec;
+      display: flex;
+      align-items: center;
+      padding: 0 22px;
+      gap: 12px;
+    }
+    .chip, .sel {
+      border: 1px solid #d5e0e3;
+      background: #f7fafb;
+      border-radius: 8px;
+      padding: 6px 10px;
+      font-size: 12px;
+      color: #3d555a;
+    }
+    .bell { margin-left: auto; width: 34px; height: 34px; border-radius: 50%; background: #f3f6f7; display: grid; place-items: center; position: relative; font-size: 14px; }
+    .bell b { position: absolute; top: 6px; right: 7px; width: 8px; height: 8px; background: #c45c4a; border-radius: 50%; }
+
+    .page { padding: 22px 24px 0; }
+    h1 { font-size: 26px; font-weight: 700; letter-spacing: -0.03em; }
+    .muted { color: #5a6e72; font-size: 13.5px; margin-top: 4px; }
+
+    .kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin: 18px 0; }
+    .kpi {
+      background: #fff;
+      border-radius: 16px;
+      padding: 16px 18px;
+      box-shadow: 0 8px 24px rgba(21,40,44,.06);
+      border: 1px solid #e8eef0;
+    }
+    .kpi .l { font-size: 12px; font-weight: 600; color: #5a6e72; }
+    .kpi .v { font-size: 28px; font-weight: 700; margin-top: 6px; letter-spacing: -0.04em; }
+    .dot { width: 34px; height: 34px; border-radius: 10px; display: grid; place-items: center; font-size: 14px; float: right; }
+
+    h2 { font-size: 15px; font-weight: 700; margin: 8px 0 12px; }
+    .journey { display: grid; grid-template-columns: repeat(6, 1fr); gap: 10px; }
+    .j {
+      background: #fff;
+      border: 1px solid #e8eef0;
+      border-radius: 14px;
+      padding: 12px;
+    }
+    .j .pct { font-size: 18px; font-weight: 700; color: #1b5e67; }
+    .j .n { font-size: 12px; font-weight: 600; margin-top: 4px; }
+    .bar { height: 5px; background: #e8eef0; border-radius: 99px; margin-top: 8px; overflow: hidden; }
+    .bar span { display: block; height: 100%; background: #1b5e67; }
+    .ok { color: #2f7a58; font-size: 11px; font-weight: 700; }
+    .wait { color: #c47a1a; font-size: 11px; font-weight: 700; }
+
+    .cols { display: grid; grid-template-columns: 1.4fr .9fr .8fr; gap: 14px; margin-top: 16px; }
+    .card { background: #fff; border-radius: 16px; border: 1px solid #e8eef0; padding: 14px 16px; box-shadow: 0 8px 24px rgba(21,40,44,.05); }
+    table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+    th { text-align: left; color: #7a8c90; font-weight: 600; font-size: 11px; padding: 8px 0; border-bottom: 1px solid #eef2f3; }
+    td { padding: 9px 0; border-bottom: 1px solid #f1f5f6; }
+    .pill { display: inline-block; padding: 3px 8px; border-radius: 99px; font-size: 11px; font-weight: 700; }
+    .g { background: #e5f5ec; color: #2f7a58; }
+    .a { background: #fdf0d8; color: #a05a00; }
+    .b { background: #e4f1f3; color: #1b5e67; }
+
+    .app { display: flex; height: calc(900px - 58px); }
+    .rail {
+      width: 64px;
+      background: #1b5e67;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 16px 0;
+      gap: 14px;
+      color: #fff;
+      font-size: 18px;
+    }
+    .rail .on { background: rgba(255,255,255,.16); width: 40px; height: 40px; border-radius: 12px; display: grid; place-items: center; }
+    .side {
+      width: 250px;
+      background: #fff;
+      border-right: 1px solid #e2eaec;
+      padding: 18px 16px;
+    }
+    .qr { width: 72px; height: 72px; background: repeating-linear-gradient(90deg,#1b5e67 0 4px,#fff 4px 8px), repeating-linear-gradient(#1b5e67 0 4px,#fff 4px 8px); background-size: 72px 72px; border-radius: 8px; margin-bottom: 10px; }
+    .side h3 { font-size: 14px; }
+    .prog { margin: 12px 0 6px; font-size: 11px; font-weight: 700; color: #5a6e72; }
+    .pbar { height: 8px; background: #e8eef0; border-radius: 99px; overflow: hidden; }
+    .pbar span { display: block; height: 100%; background: #d4892a; width: 43%; }
+    .steps { margin-top: 16px; }
+    .st { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; padding: 8px 8px; border-radius: 8px; color: #3d555a; }
+    .st.cur { background: #e8f3f4; color: #1b5e67; }
+    .ck { width: 16px; height: 16px; border-radius: 50%; background: #2f7a58; color: #fff; font-size: 10px; display: grid; place-items: center; }
+
+    .main { flex: 1; padding: 18px 22px; overflow: hidden; }
+    .banner {
+      background: #1b5e67;
+      color: #fff;
+      border-radius: 14px;
+      padding: 16px 18px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .banner h1 { font-size: 20px; color: #fff; }
+    .banner p { opacity: .8; font-size: 12.5px; margin-top: 2px; }
+    .btns { display: flex; gap: 8px; }
+    .btn { background: #fff; color: #1b5e67; border: 0; border-radius: 8px; padding: 8px 12px; font-weight: 700; font-size: 12px; }
+    .btn.ghost { background: transparent; color: #fff; border: 1px solid rgba(255,255,255,.35); }
+
+    .four { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin: 14px 0; }
+    .pc {
+      background: #fff;
+      border: 1px solid #e8eef0;
+      border-radius: 14px;
+      padding: 14px;
+    }
+    .pc.on { border: 2px solid #1b5e67; }
+    .ico { width: 36px; height: 36px; border-radius: 50%; display: grid; place-items: center; font-size: 16px; margin-bottom: 8px; }
+    .pc h4 { font-size: 14px; }
+    .pc p { font-size: 12px; color: #5a6e72; margin: 4px 0 8px; }
+
+    .formgrid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 14px; }
+    .box { background: #fff; border: 1px solid #e8eef0; border-radius: 14px; padding: 16px; }
+    .box h4 { font-size: 14px; margin-bottom: 12px; }
+    .fg { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    label { font-size: 11px; font-weight: 600; color: #5a6e72; display: block; margin-bottom: 4px; }
+    .inp { background: #eef4f6; border: 0; border-radius: 8px; padding: 9px 10px; font-size: 13px; color: #1a2f33; width: 100%; }
+    .cats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin: 14px 0 4px; }
+    .cat { background: #fff; border: 1px solid #e2eaec; border-radius: 10px; padding: 10px; font-size: 12px; font-weight: 600; }
+    .cat.on { border-color: #1b5e67; box-shadow: inset 0 0 0 1px #1b5e67; }
+
+    .tl { margin-top: 12px; }
+    .ev {
+      display: grid;
+      grid-template-columns: 14px 1fr;
+      gap: 12px;
+      margin-bottom: 10px;
+    }
+    .ev i { width: 12px; height: 12px; border-radius: 50%; background: #1b5e67; margin-top: 8px; box-shadow: 0 0 0 4px #e8f3f4; }
+    .ev .body { background: #fff; border: 1px solid #e8eef0; border-radius: 12px; padding: 12px 14px; }
+    .row { display: flex; gap: 14px; font-size: 12px; color: #5a6e72; margin-top: 6px; flex-wrap: wrap; }
+
+    .steps6 { display: grid; gap: 8px; margin-top: 10px; }
+    .s6 { background: #fff; border: 1px solid #e8eef0; border-radius: 12px; padding: 10px 14px; display: flex; justify-content: space-between; align-items: center; }
+    .s6 b { font-size: 13px; }
+    .s6 span { font-size: 12px; color: #5a6e72; }
+    .go { background: #1b5e67; color: #fff; border: 0; border-radius: 8px; padding: 7px 12px; font-size: 12px; font-weight: 700; }
+    .off { background: #eef2f3; color: #8aa0a4; border: 0; border-radius: 8px; padding: 7px 12px; font-size: 12px; font-weight: 700; }
+
+    .vgrid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 12px; }
+    .vgrid .box ul { list-style: none; font-size: 13px; }
+    .vgrid li { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #f1f5f6; }
+    .add { background: #1b5e67; color: #fff; border: 0; border-radius: 8px; padding: 6px 10px; font-size: 12px; font-weight: 700; float: right; }
+
+    .items { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px 18px; margin-top: 12px; }
+    .it { display: flex; justify-content: space-between; font-size: 13px; padding: 8px 0; border-bottom: 1px solid #f1f5f6; }
+
+    .warn { background: #fff7e6; border: 1px solid #f0d9a0; color: #8a5a10; border-radius: 10px; padding: 10px 12px; font-size: 13px; font-weight: 600; margin-top: 12px; }
+
+    .igrid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin: 14px 0; }
+    .decl { background: #eaf4f6; border-radius: 12px; padding: 10px 12px; margin-top: 8px; }
+    .decl h4 { margin-bottom: 8px; }
+    .d2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .mini { background: #fff; border-radius: 10px; padding: 10px; font-size: 12px; }
+    .mini p { color: #5a6e72; margin-top: 4px; }
+
+    .rota-tools { display: flex; align-items: center; gap: 10px; padding: 12px 22px; background: #fff; border-bottom: 1px solid #e2eaec; font-size: 12.5px; }
+    .tog { display: flex; background: #f3f6f7; border-radius: 10px; padding: 3px; }
+    .tog b { padding: 6px 12px; border-radius: 8px; font-weight: 700; color: #5a6e72; }
+    .tog b.on { background: #1b5e67; color: #fff; }
+    .fil { border: 1px solid #d5e0e3; border-radius: 8px; padding: 6px 10px; background: #f7fafb; color: #3d555a; font-weight: 600; }
+    .newapt { margin-left: auto; background: #1b5e67; color: #fff; border-radius: 10px; padding: 8px 14px; font-weight: 700; }
+    .kpis3 { display: flex; gap: 28px; padding: 12px 22px; font-size: 13px; background: #fff; border-bottom: 1px solid #eef2f3; }
+    .kpis3 strong { font-size: 18px; display: block; }
+    .legend { display: flex; gap: 12px; margin-left: auto; font-size: 11px; font-weight: 700; align-items: center; }
+    .lg { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 4px; }
+    .gantt { margin: 12px 22px; background: #fff; border-radius: 12px; border: 1px solid #e8eef0; overflow: hidden; }
+    .hours { display: grid; grid-template-columns: 200px repeat(12, 1fr); background: #143f46; color: #fff; font-size: 11px; font-weight: 700; }
+    .hours span { padding: 8px 6px; border-left: 1px solid rgba(255,255,255,.12); }
+    .grow { display: grid; grid-template-columns: 200px 1fr; border-top: 1px solid #eef2f3; min-height: 72px; }
+    .carer { padding: 10px 12px; display: flex; gap: 8px; align-items: center; font-size: 12.5px; }
+    .av { width: 32px; height: 32px; border-radius: 50%; background: #1b5e67; color: #fff; display: grid; place-items: center; font-size: 11px; font-weight: 700; }
+    .track { position: relative; background: repeating-linear-gradient(90deg, #f7fafb 0 8.33%, #eef4f5 8.33% 8.4%); }
+    .blk { position: absolute; top: 16px; height: 40px; border-radius: 8px; background: #f4e6d4; border-left: 4px solid #d4892a; font-size: 11px; padding: 6px 8px; font-weight: 600; }
+    .month { display: grid; grid-template-columns: repeat(7, 1fr); gap: 0; margin: 10px 22px; background: #fff; border: 1px solid #e8eef0; border-radius: 12px; overflow: hidden; }
+    .mh { background: #1b5e67; color: #fff; text-align: center; padding: 8px; font-size: 12px; font-weight: 700; }
+    .cell { min-height: 92px; border: 1px solid #eef2f3; padding: 6px; font-size: 11px; }
+    .cell.wk { background: #fdf6f6; }
+    .cell .d { font-weight: 700; }
+    .cell .today { background: #1b5e67; color: #fff; width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; }
+    .apt { background: #e4f1f3; border-radius: 4px; padding: 2px 5px; margin-top: 4px; }
+    .weekg { display: grid; grid-template-columns: 70px repeat(7, 1fr); margin: 10px 22px; background: #fff; border: 1px solid #e8eef0; border-radius: 12px; overflow: hidden; font-size: 11px; }
+    .wd { background: #1b5e67; color: #fff; padding: 8px; text-align: center; font-weight: 700; }
+    .tm { background: #143f46; color: #d5e8eb; padding: 8px; }
+    .tm.day { background: #f7f0e6; color: #5a4a30; }
+    .slot { min-height: 36px; border: 1px solid #f1f5f6; position: relative; }
+    .wcard { position: absolute; inset: 2px 4px; background: #f4e6d4; border-left: 3px solid #d4892a; border-radius: 6px; padding: 4px 6px; font-weight: 600; }
+
+    /* Modal screen */
+    .dim { position: absolute; inset: 0; background: rgba(20, 40, 44, .45); }
+    .modal {
+      position: absolute;
+      left: 90px; right: 90px; top: 70px; bottom: 70px;
+      background: #fff;
+      border-radius: 18px;
+      box-shadow: 0 30px 80px rgba(0,0,0,.25);
+      padding: 22px 24px;
+    }
+    .mhead { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+    .mhead h1 { font-size: 22px; }
+    .x { width: 32px; height: 32px; border-radius: 8px; border: 1px solid #e2eaec; display: grid; place-items: center; font-size: 16px; }
+    .search { background: #f3f6f7; border-radius: 10px; padding: 10px 12px; font-size: 13px; color: #7a8c90; margin: 12px 0; }
+  </style>
+</head>
+<body>
+  <!-- 01 dashboard -->
+  <section class="shot" id="s01">
+    <div class="top">
+      <div class="logo"><i></i>AURORA</div>
+      <div class="nav">
+        <a class="active" href="#">Talent and Acquisition</a>
+        <a href="#">Support Workers</a>
+        <a href="#">Service Users</a>
+        <a href="#">Users</a>
+        <a href="#">My Planner</a>
+        <a href="#">Rota</a>
+        <a href="#">Data Tables</a>
+        <a href="#">Docs</a>
+      </div>
+      <div class="who"><span class="avatar">SA</span> Super Admin <span class="lo">Logout</span></div>
+    </div>
+    <div class="sub">
+      <span class="sel">Birmingham branch</span>
+      <span class="sel">01/08/2026 – 31/08/2026</span>
+      <span class="bell">🔔<b></b></span>
+    </div>
+    <div class="page">
+      <h1>Welcome back, Super Admin</h1>
+      <p class="muted">See what’s happening today at a glance.</p>
+      <div class="kpis">
+        <div class="kpi"><span class="dot" style="background:#e4eefc">👥</span><div class="l">Total applicants</div><div class="v">24</div></div>
+        <div class="kpi"><span class="dot" style="background:#e5f5ec">✓</span><div class="l">Shortlisted</div><div class="v">8</div></div>
+        <div class="kpi"><span class="dot" style="background:#eee8f8">📅</span><div class="l">Interviews</div><div class="v">5</div></div>
+        <div class="kpi"><span class="dot" style="background:#fdecdc">★</span><div class="l">Interview success rate</div><div class="v">80%</div></div>
+      </div>
+      <h2>Recruitment journey</h2>
+      <div class="journey">
+        <div class="j"><div class="pct">100%</div><div class="n">Applicant details</div><div class="ok">Complete</div><div class="bar"><span style="width:100%"></span></div></div>
+        <div class="j"><div class="pct">100%</div><div class="n">Shortlisting</div><div class="ok">Complete</div><div class="bar"><span style="width:100%"></span></div></div>
+        <div class="j"><div class="pct">50%</div><div class="n">Interview</div><div class="wait">In progress</div><div class="bar"><span style="width:50%"></span></div></div>
+        <div class="j"><div class="pct">25%</div><div class="n">Post-interview pack</div><div class="wait">Pending</div><div class="bar"><span style="width:25%"></span></div></div>
+        <div class="j"><div class="pct">0%</div><div class="n">Induction pack</div><div class="wait">Pending</div><div class="bar"><span style="width:0%"></span></div></div>
+        <div class="j"><div class="pct">0%</div><div class="n">Employment contract</div><div class="wait">Pending</div><div class="bar"><span style="width:0%"></span></div></div>
+      </div>
+      <div class="cols">
+        <div class="card">
+          <h2>Recruitment task assignments</h2>
+          <table>
+            <tr><th>Name</th><th>Branch</th><th>Shortlisting</th><th>Interview</th><th>Induction</th></tr>
+            <tr><td>Amina Khan</td><td>Birmingham</td><td><span class="pill g">Done</span></td><td><span class="pill a">Today 15:00</span></td><td><span class="pill b">Queued</span></td></tr>
+            <tr><td>James Okafor</td><td>Birmingham</td><td><span class="pill g">Done</span></td><td><span class="pill g">Offered</span></td><td><span class="pill a">Pack sent</span></td></tr>
+            <tr><td>Priya Nair</td><td>Solihull</td><td><span class="pill a">Review</span></td><td>—</td><td>—</td></tr>
+          </table>
+        </div>
+        <div class="card">
+          <h2>My tasks overview</h2>
+          <p class="muted" style="margin-bottom:10px">Backlog · To do · In progress</p>
+          <div style="display:flex;align-items:flex-end;gap:16px;height:110px;padding:8px 8px 0">
+            <div style="width:36px;height:40%;background:#cfdce0;border-radius:8px 8px 0 0"></div>
+            <div style="width:36px;height:70%;background:#2d8a96;border-radius:8px 8px 0 0"></div>
+            <div style="width:36px;height:55%;background:#1b5e67;border-radius:8px 8px 0 0"></div>
+          </div>
+        </div>
+        <div class="card">
+          <h2>Recruitment analytics</h2>
+          <p style="font-size:13px;margin:8px 0"><b>Shortlisting successful</b><br><span class="muted">8 of 24</span></p>
+          <p style="font-size:13px;margin:8px 0"><b>Interview successful</b><br><span class="muted">4 of 5</span></p>
+          <p style="font-size:13px;margin:8px 0"><b>Rejections</b><br><span class="muted">3 this month</span></p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 02 applicant details -->
+  <section class="shot" id="s02">
+    <div class="top">
+      <div class="logo"><i></i>AURORA</div>
+      <div class="nav"><a class="active" href="#">Talent and Acquisition</a><a href="#">Support Workers</a><a href="#">Service Users</a></div>
+      <div class="who"><span class="avatar">SA</span> Super Admin</div>
+    </div>
+    <div class="page" style="filter:blur(2px);opacity:.55">
+      <h1>Welcome back, Super Admin</h1>
+      <div class="kpis"><div class="kpi"><div class="l">Total applicants</div><div class="v">24</div></div><div class="kpi"><div class="l">Shortlisted</div><div class="v">8</div></div><div class="kpi"><div class="l">Interviews</div><div class="v">5</div></div><div class="kpi"><div class="l">Success</div><div class="v">80%</div></div></div>
+    </div>
+    <div class="dim"></div>
+    <div class="modal">
+      <div class="mhead"><h1>Applicant details submissions</h1><div class="x">×</div></div>
+      <div class="kpis" style="margin-top:0">
+        <div class="kpi" style="border:1.5px solid #8ec4cc"><div class="l">Total applicants</div><div class="v">24</div></div>
+        <div class="kpi"><div class="l">Completed</div><div class="v" style="color:#2f7a58">18</div></div>
+        <div class="kpi"><div class="l">Pending</div><div class="v" style="color:#c47a1a">6</div></div>
+        <div class="kpi"><div class="l">Completion rate</div><div class="v">75%</div></div>
+      </div>
+      <div class="search">Search by applicant name or email</div>
+      <table>
+        <tr><th>Applicant name</th><th>Email</th><th>Submission date</th><th>Assigned user</th><th>Status</th><th>Action</th></tr>
+        <tr><td>Amina Khan</td><td>amina.khan@email.com</td><td>18/08/2026</td><td>N. Patel</td><td><span class="pill g">Completed</span></td><td>👁</td></tr>
+        <tr><td>James Okafor</td><td>james.o@email.com</td><td>19/08/2026</td><td>N. Patel</td><td><span class="pill g">Completed</span></td><td>👁</td></tr>
+        <tr><td>Priya Nair</td><td>priya.nair@email.com</td><td>21/08/2026</td><td>—</td><td><span class="pill a">Pending</span></td><td>👁</td></tr>
+        <tr><td>Daniel Hughes</td><td>d.hughes@email.com</td><td>22/08/2026</td><td>S. Ahmed</td><td><span class="pill g">Completed</span></td><td>👁</td></tr>
+        <tr><td>Mei Chen</td><td>mei.chen@email.com</td><td>23/08/2026</td><td>—</td><td><span class="pill a">Pending</span></td><td>👁</td></tr>
+      </table>
+      <p class="muted" style="margin-top:14px">Showing 1 to 5 of 24 entries</p>
+    </div>
+  </section>
+
+  <!-- 03 pre-application -->
+  <section class="shot" id="s03">
+    <div class="top">
+      <div class="logo"><i></i>AURORA</div>
+      <div class="nav"><a class="active" href="#">Talent and Acquisition</a><a href="#">Support Workers</a><a href="#">Service Users</a><a href="#">Users</a><a href="#">My Planner</a><a href="#">Rota</a></div>
+      <div class="who"><span class="avatar">SA</span> Super Admin <span class="lo">Logout</span></div>
+    </div>
+    <div class="app">
+      <div class="rail"><div class="on">👤</div><div>📊</div><div>⚡</div></div>
+      <div class="side">
+        <div class="qr"></div>
+        <h3>Ms Amina Khan</h3>
+        <p class="muted">24/08/2026</p>
+        <div class="prog">Onboarding progress 43%</div>
+        <div class="pbar"><span></span></div>
+        <div class="steps">
+          <div class="st">Milestones</div>
+          <div class="st"><span class="ck">✓</span> Applicant details</div>
+          <div class="st"><span class="ck">✓</span> Screening</div>
+          <div class="st cur">Post interview pack</div>
+        </div>
+      </div>
+      <div class="main">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <h1>Pre-application form</h1>
+          <span class="btn" style="background:#1b5e67;color:#fff">Print</span>
+        </div>
+        <div class="cats">
+          <div class="cat on">Personal information</div>
+          <div class="cat">Employment history</div>
+          <div class="cat">Education and training</div>
+          <div class="cat">References</div>
+          <div class="cat">Supporting information</div>
+          <div class="cat">Equality &amp; diversity</div>
+          <div class="cat">Disclosure &amp; convictions</div>
+          <div class="cat">More information</div>
+        </div>
+        <div class="formgrid">
+          <div class="box">
+            <h4>Personal information</h4>
+            <div class="fg">
+              <div><label>Title</label><div class="inp">Ms</div></div>
+              <div><label>First name</label><div class="inp">Amina</div></div>
+              <div><label>Last name</label><div class="inp">Khan</div></div>
+              <div><label>Date of birth</label><div class="inp">14/03/1994</div></div>
+              <div><label>N.I. number</label><div class="inp">QQ 12 34 56 C</div></div>
+              <div><label>Gender</label><div class="inp">Female</div></div>
+              <div><label>Availability</label><div class="inp">Days &amp; evenings</div></div>
+              <div><label>How did you hear of us?</label><div class="inp">Indeed</div></div>
+            </div>
+          </div>
+          <div class="box">
+            <h4>Contact details</h4>
+            <div class="fg">
+              <div><label>Postcode</label><div class="inp">B15 2TT</div></div>
+              <div><label>Street address</label><div class="inp">18 Harborne Road</div></div>
+              <div><label>City</label><div class="inp">Birmingham</div></div>
+              <div><label>County</label><div class="inp">West Midlands</div></div>
+              <div><label>Mobile</label><div class="inp">07700 900123</div></div>
+              <div><label>Email</label><div class="inp">amina.khan@email.com</div></div>
+              <div><label>UK driving licence</label><div class="inp">Yes</div></div>
+              <div><label>Eligible to work in the UK</label><div class="inp">Yes</div></div>
+            </div>
+            <p class="muted" style="margin-top:10px">Language skills: English — fluent · Urdu — fluent</p>
+          </div>
+        </div>
+        <div style="margin-top:14px"><span class="go">Continue</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 04 interview -->
+  <section class="shot" id="s04">
+    <div class="top">
+      <div class="logo"><i></i>AURORA</div>
+      <div class="nav"><a class="active" href="#">Talent and Acquisition</a><a href="#">Support Workers</a><a href="#">Service Users</a><a href="#">My Planner</a><a href="#">Rota</a></div>
+      <div class="who"><span class="avatar">SA</span> Super Admin</div>
+    </div>
+    <div class="app">
+      <div class="rail"><div class="on">👤</div></div>
+      <div class="side">
+        <h3>Ms Amina Khan</h3>
+        <p class="muted">24/08/2026</p>
+        <div class="prog">Onboarding progress 43%</div>
+        <div class="pbar"><span></span></div>
+        <div class="steps">
+          <div class="st">Milestones</div>
+          <div class="st"><span class="ck">✓</span> Applicant details</div>
+          <div class="st cur">Screening</div>
+          <div class="st">Post interview pack</div>
+        </div>
+      </div>
+      <div class="main">
+        <div class="banner">
+          <div><h1>Amina Khan</h1><p>Manage candidate shortlisting and interview process</p></div>
+        </div>
+        <div class="formgrid" style="grid-template-columns:1fr 1fr">
+          <div class="pc"><h4>Shortlisting</h4><p>Review and evaluate applications</p><span class="pill g">Completed</span></div>
+          <div class="pc on"><h4>Interview timeline</h4><p>Track all interview activities</p><span class="pill b">5 events</span></div>
+        </div>
+        <div class="kpis" style="grid-template-columns:repeat(4,1fr)">
+          <div class="kpi"><div class="l">Total interviews</div><div class="v">5</div></div>
+          <div class="kpi"><div class="l">Completed</div><div class="v" style="color:#2f7a58">1</div></div>
+          <div class="kpi"><div class="l">Cancelled</div><div class="v" style="color:#c45c4a">3</div></div>
+          <div class="kpi"><div class="l">Emails sent</div><div class="v">5</div></div>
+        </div>
+        <div class="tl">
+          <div class="ev"><i></i><div class="body"><b>Job offered</b> · 24 Aug 2026, 19:03<div class="row"><span>📅 24 Aug 2026</span><span>🕒 15:00</span><span>📍 Birmingham</span><span>👤 M. Hassan</span></div><div style="margin-top:8px"><span class="pill g">Job offered</span> <span class="pill b">Email already sent</span></div></div></div>
+          <div class="ev"><i style="background:#9aa"></i><div class="body"><b>Interview cancelled</b> · 24 Aug 2026, 16:10<div class="row"><span>🕒 16:00</span><span>📍 Birmingham</span></div><div style="margin-top:8px"><span class="pill a">Cancelled</span> <span class="pill b">Email already sent</span></div></div></div>
+          <div class="ev"><i></i><div class="body"><b>Moved to next round</b> · 24 Aug 2026, 18:40<div class="row"><span>🕒 14:00</span><span>📍 Birmingham</span></div><div style="margin-top:8px"><span class="pill g">Moved to next round</span></div></div></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 05 DBS -->
+  <section class="shot" id="s05">
+    <div class="top">
+      <div class="logo"><i></i>AURORA</div>
+      <div class="nav"><a class="active" href="#">Talent and Acquisition</a><a href="#">Support Workers</a><a href="#">Service Users</a></div>
+      <div class="who"><span class="avatar">SA</span> Super Admin</div>
+    </div>
+    <div class="app">
+      <div class="rail"><div class="on">👤</div></div>
+      <div class="side">
+        <h3>Ms Amina Khan</h3>
+        <div class="prog">Onboarding progress 43%</div>
+        <div class="pbar"><span></span></div>
+        <div class="steps">
+          <div class="st"><span class="ck">✓</span> Applicant details</div>
+          <div class="st"><span class="ck">✓</span> Screening</div>
+          <div class="st cur">Post interview pack</div>
+        </div>
+      </div>
+      <div class="main">
+        <div class="banner">
+          <div><h1>Post-interview pack</h1><p>Manage candidate verification and documentation</p></div>
+          <div class="btns"><span class="btn">Print</span><span class="btn">Email already sent</span></div>
+        </div>
+        <div class="four">
+          <div class="pc on"><div class="ico" style="background:#e5f5ec">🛡</div><h4>DBS check</h4><p>Disclosure and Barring Service</p><span class="pill a">In progress</span></div>
+          <div class="pc"><div class="ico" style="background:#eee8f8">📄</div><h4>Verification</h4><p>Submitted documents</p><span class="pill a">Pending</span></div>
+          <div class="pc"><div class="ico" style="background:#fde8e4">🎓</div><h4>Training</h4><p>Induction &amp; mandatory</p><span class="pill a">In progress</span></div>
+          <div class="pc"><div class="ico" style="background:#fdecdc">🚪</div><h4>Sign off</h4><p>Final verification</p><span class="pill a">Pending</span></div>
+        </div>
+        <h2>DBS check</h2>
+        <div class="steps6">
+          <div class="s6"><div><b>1. DBS authorisation</b><br><span>Confirm only if the candidate already has a DBS.</span></div><button class="go">Complete authorisation</button></div>
+          <div class="s6"><div><b>2. Consent to DBS check</b><br><span>Candidate consent recorded on the pack.</span></div><button class="go">Provide consent</button></div>
+          <div class="s6"><div><b>3. Payment &amp; manager sign-off</b><br><span>Record payment before the application is sent.</span></div><button class="off">Record payment</button></div>
+          <div class="s6"><div><b>4. Application</b><br><span>Send the DBS application.</span></div><button class="off">Send application</button></div>
+          <div class="s6"><div><b>5. Returned DBS forms</b><br><span>No DBS forms added yet.</span></div><button class="off">Upload</button></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 06 verification -->
+  <section class="shot" id="s06">
+    <div class="top">
+      <div class="logo"><i></i>AURORA</div>
+      <div class="nav"><a class="active" href="#">Talent and Acquisition</a><a href="#">Support Workers</a><a href="#">Service Users</a></div>
+      <div class="who"><span class="avatar">SA</span> Super Admin</div>
+    </div>
+    <div class="app">
+      <div class="rail"><div class="on">👤</div></div>
+      <div class="side">
+        <h3>Ms Amina Khan</h3>
+        <div class="prog">Onboarding progress 43%</div>
+        <div class="pbar"><span></span></div>
+        <div class="st cur">Post interview pack</div>
+      </div>
+      <div class="main">
+        <div class="banner"><div><h1>Post-interview pack</h1><p>Manage candidate verification and documentation</p></div><div class="btns"><span class="btn">Print</span><span class="btn">Email already sent</span></div></div>
+        <div class="four">
+          <div class="pc"><div class="ico" style="background:#e5f5ec">🛡</div><h4>DBS check</h4><span class="pill a">In progress</span></div>
+          <div class="pc on"><div class="ico" style="background:#eee8f8">📄</div><h4>Verification</h4><span class="pill a">Pending</span></div>
+          <div class="pc"><div class="ico" style="background:#fde8e4">🎓</div><h4>Training</h4><span class="pill a">In progress</span></div>
+          <div class="pc"><div class="ico" style="background:#fdecdc">🚪</div><h4>Sign off</h4><span class="pill a">Pending</span></div>
+        </div>
+        <h2>Verification details <span class="add">Reset all verification</span></h2>
+        <div class="vgrid">
+          <div class="box"><h4>Employment history <span class="add">+ Add</span></h4><p>06/2024 – 08/2026 · Heartlands Homecare</p></div>
+          <div class="box"><h4>References <span class="add">+ Add</span></h4><p>Rizwan Akram · <span class="pill a">Pending</span></p></div>
+          <div class="box"><h4>Education history</h4><p>NVQ Level 3 Health &amp; Social Care</p></div>
+          <div class="box"><h4>Legal documents</h4>
+            <ul>
+              <li>Passport <span class="pill b">View</span></li>
+              <li>Visa <span class="pill b">View</span></li>
+              <li>Driving licence <span class="pill b">View</span></li>
+              <li>Right to work <span class="pill b">View</span></li>
+            </ul>
+            <div style="margin-top:10px"><span class="go">Verify all documents</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 07 sign-off pending -->
+  <section class="shot" id="s07">
+    <div class="top">
+      <div class="logo"><i></i>AURORA</div>
+      <div class="nav"><a class="active" href="#">Talent and Acquisition</a><a href="#">Support Workers</a></div>
+      <div class="who"><span class="avatar">SA</span> Super Admin</div>
+    </div>
+    <div class="app">
+      <div class="rail"><div class="on">👤</div></div>
+      <div class="side">
+        <h3>Ms Amina Khan</h3>
+        <div class="prog">Onboarding progress 43%</div>
+        <div class="pbar"><span></span></div>
+        <div class="st cur">Post interview pack</div>
+      </div>
+      <div class="main">
+        <div class="banner"><div><h1>Post-interview pack</h1><p>Manage candidate verification and documentation</p></div></div>
+        <div class="four">
+          <div class="pc"><h4>DBS check</h4><span class="pill a">In progress</span></div>
+          <div class="pc"><h4>Verification</h4><span class="pill a">Pending</span></div>
+          <div class="pc"><h4>Training</h4><span class="pill a">In progress</span></div>
+          <div class="pc on"><h4>Sign off</h4><span class="pill a">Pending</span></div>
+        </div>
+        <h2>Final sign-off</h2>
+        <p class="muted">Review and verify all completed sections before final approval.</p>
+        <div class="card" style="margin-top:12px">
+          <h4>Verified items</h4>
+          <div class="items">
+            <div class="it">DBS authorisation <span class="pill a">Pending</span></div>
+            <div class="it">DBS consent <span class="pill a">Pending</span></div>
+            <div class="it">DBS payment <span class="pill a">Pending</span></div>
+            <div class="it">DBS application <span class="pill a">Pending</span></div>
+            <div class="it">Returned DBS forms <span class="pill a">Pending</span></div>
+            <div class="it">Employment history <span class="pill a">Pending</span></div>
+            <div class="it">Education history <span class="pill a">Pending</span></div>
+            <div class="it">References <span class="pill a">Pending</span></div>
+            <div class="it">Legal documents <span class="pill a">Pending</span></div>
+            <div class="it">Induction training <span class="pill a">Pending</span></div>
+            <div class="it">Oliver McGowan training <span class="pill a">Pending</span></div>
+          </div>
+        </div>
+        <div class="warn">Please complete all sections before proceeding with final sign-off.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 08 sign-off complete -->
+  <section class="shot" id="s08">
+    <div class="top">
+      <div class="logo"><i></i>AURORA</div>
+      <div class="nav"><a class="active" href="#">Talent and Acquisition</a><a href="#">Support Workers</a></div>
+      <div class="who"><span class="avatar">SA</span> Super Admin</div>
+    </div>
+    <div class="app">
+      <div class="rail"><div class="on">👤</div></div>
+      <div class="side">
+        <h3>Ms Amina Khan</h3>
+        <div class="prog">Onboarding progress 90%</div>
+        <div class="pbar"><span style="width:90%;background:#2f7a58"></span></div>
+        <div class="st"><span class="ck">✓</span> Applicant details</div>
+        <div class="st"><span class="ck">✓</span> Screening</div>
+        <div class="st cur">Post interview pack</div>
+      </div>
+      <div class="main">
+        <div class="banner"><div><h1>Post-interview pack</h1><p>Manage candidate verification and documentation</p></div></div>
+        <div class="four">
+          <div class="pc"><h4>DBS check</h4><span class="pill g">Complete</span></div>
+          <div class="pc"><h4>Verification</h4><span class="pill g">Complete</span></div>
+          <div class="pc"><h4>Training</h4><span class="pill g">Complete</span></div>
+          <div class="pc on"><h4>Sign off</h4><span class="pill a">Pending</span></div>
+        </div>
+        <h2>Final sign-off</h2>
+        <p class="muted">Review and verify all completed sections before final approval.</p>
+        <div class="card" style="margin-top:12px">
+          <h4>Verified items</h4>
+          <div class="items">
+            <div class="it">DBS authorisation <span class="pill g">Verified</span></div>
+            <div class="it">DBS consent <span class="pill g">Verified</span></div>
+            <div class="it">DBS payment <span class="pill g">Verified</span></div>
+            <div class="it">DBS application <span class="pill g">Verified</span></div>
+            <div class="it">Returned DBS forms <span class="pill g">Verified</span></div>
+            <div class="it">Employment history <span class="pill g">Verified</span></div>
+            <div class="it">Education history <span class="pill g">Verified</span></div>
+            <div class="it">References <span class="pill g">Verified</span></div>
+            <div class="it">Legal documents <span class="pill g">Verified</span></div>
+            <div class="it">Induction training <span class="pill g">Verified</span></div>
+            <div class="it">Oliver McGowan training <span class="pill g">Verified</span></div>
+          </div>
+        </div>
+        <p style="margin-top:14px;font-size:13px"><input type="checkbox" checked disabled /> I confirm that I have verified all the above forms and documents.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 09 induction -->
+  <section class="shot" id="s09">
+    <div class="top">
+      <div class="logo"><i></i>AURORA</div>
+      <div class="nav"><a class="active" href="#">Talent and Acquisition</a><a href="#">Support Workers</a><a href="#">Service Users</a><a href="#">My Planner</a><a href="#">Rota</a></div>
+      <div class="who"><span class="avatar">SA</span> Super Admin</div>
+    </div>
+    <div class="app">
+      <div class="rail"><div class="on">👤</div></div>
+      <div class="side">
+        <h3>Ms Amina Khan</h3>
+        <div class="prog">Onboarding progress 57%</div>
+        <div class="pbar"><span style="width:57%"></span></div>
+        <div class="st"><span class="ck">✓</span> Applicant details</div>
+        <div class="st"><span class="ck">✓</span> Screening</div>
+        <div class="st"><span class="ck">✓</span> Post interview pack</div>
+        <div class="st cur">Induction pack</div>
+      </div>
+      <div class="main">
+        <div class="banner">
+          <div><h1>Induction pack</h1><p>Manage candidate declarations and forms</p></div>
+          <div class="btns"><span class="btn">Schedule induction meeting</span><span class="btn">Email induction pack</span></div>
+        </div>
+        <div class="igrid">
+          <div class="pc"><h4>Declarations</h4><p>Worker agreements</p><span class="pill a">Pending</span></div>
+          <div class="pc on"><h4>Health questionnaire</h4><p>Occupational health</p><span class="pill a">In progress</span></div>
+          <div class="pc"><h4>Emergency contact</h4><p>Next of kin</p><span class="pill a">In progress</span></div>
+          <div class="pc"><h4>Uniform</h4><p>Sizes &amp; issue</p><span class="pill a">Pending</span></div>
+          <div class="pc"><h4>Finance</h4><p>Bank details</p><span class="pill a">Pending</span></div>
+          <div class="pc"><h4>Contract</h4><p>Employment contract</p><span class="pill a">Pending</span></div>
+          <div class="pc"><h4>Checklist sign-off</h4><p>Induction checklist</p><span class="pill a">In progress</span></div>
+          <div class="pc"><h4>Sign off</h4><p>Final pack approval</p><span class="pill a">Pending</span></div>
+        </div>
+        <div class="decl">
+          <h4>Declarations &amp; agreements</h4>
+          <div class="d2">
+            <div class="mini"><b>48-hour working week</b><p>Not signed yet</p></div>
+            <div class="mini"><b>Eligibility to work in the UK</b><p>Lawfully resident: Yes</p></div>
+            <div class="mini"><b>Declaration</b><p>Position: Support Worker</p></div>
+            <div class="mini"><b>Confidentiality statement</b><p>Not signed yet</p></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 10 rota today -->
+  <section class="shot" id="s10">
+    <div class="top">
+      <div class="logo"><i></i>AURORA</div>
+      <div class="nav">
+        <a href="#">Talent and Acquisition</a>
+        <a href="#">Support Workers</a>
+        <a href="#">Service Users</a>
+        <a href="#">My Planner</a>
+        <a class="active" href="#">Rota</a>
+        <a href="#">Data Tables</a>
+      </div>
+      <div class="who"><span class="avatar">SA</span> Super Admin</div>
+    </div>
+    <div class="rota-tools">
+      <div class="tog"><b class="on">Today</b><b>Week</b><b>Month</b></div>
+      <span class="fil">Birmingham</span>
+      <span class="fil">Filter by client</span>
+      <span class="fil">Filter by carer</span>
+      <span class="newapt">+ New appointment</span>
+    </div>
+    <div class="kpis3">
+      <div>Total appointments<strong>6</strong></div>
+      <div>Available slots<strong>42</strong></div>
+      <div>Utilization<strong>68%</strong></div>
+      <div class="legend">
+        <span><i class="lg" style="background:#1b5e67"></i>Scheduled</span>
+        <span><i class="lg" style="background:#d4892a"></i>In progress</span>
+        <span><i class="lg" style="background:#2f7a58"></i>Completed</span>
+        <span><i class="lg" style="background:#c45c4a"></i>Cancelled</span>
+      </div>
+    </div>
+    <div class="gantt">
+      <div class="hours"><span style="border:0">Carer</span><span>6 AM</span><span>7</span><span>8</span><span>9</span><span>10</span><span>11</span><span>12</span><span>1</span><span>2</span><span>3</span><span>4</span><span>5</span></div>
+      <div class="grow">
+        <div class="carer"><span class="av">AK</span><div><b>Amina Khan</b><br><span class="muted">2 visits · 4.5 hrs</span></div></div>
+        <div class="track"><div class="blk" style="left:16.6%;width:25%">08:00 Harborne · Mrs Ellis</div><div class="blk" style="left:50%;width:20%;background:#e5f5ec;border-color:#2f7a58">12:00 Edgbaston · Mr Shaw</div></div>
+      </div>
+      <div class="grow">
+        <div class="carer"><span class="av" style="background:#6b5b8a">JO</span><div><b>James Okafor</b><br><span class="muted">2 visits · 3 hrs</span></div></div>
+        <div class="track"><div class="blk" style="left:25%;width:16%">09:00 Solihull · Ms Patel</div><div class="blk" style="left:58%;width:18%">13:30 Kings Heath · Mr Cole</div></div>
+      </div>
+      <div class="grow">
+        <div class="carer"><span class="av" style="background:#2d8a96">PN</span><div><b>Priya Nair</b><br><span class="muted">1 visit · 2 hrs</span></div></div>
+        <div class="track"><div class="blk" style="left:33%;width:16%;background:#dceef8;border-color:#1b5e67">10:00 Stirchley · Mrs Adeyemi</div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 11 rota week -->
+  <section class="shot" id="s11">
+    <div class="top">
+      <div class="logo"><i></i>AURORA</div>
+      <div class="nav"><a href="#">Talent and Acquisition</a><a href="#">Support Workers</a><a class="active" href="#">Rota</a><a href="#">My Planner</a></div>
+      <div class="who"><span class="avatar">SA</span> Super Admin</div>
+    </div>
+    <div class="rota-tools">
+      <div class="tog"><b>Today</b><b class="on">Week</b><b>Month</b></div>
+      <span class="fil">Birmingham</span>
+      <span style="font-weight:700">24 – 30 Aug · Week 35</span>
+      <span class="newapt">+ New appointment</span>
+    </div>
+    <div class="weekg">
+      <div></div>
+      <div class="wd">Mon 24<br>1 visit</div>
+      <div class="wd">Tue 25<br>3 visits</div>
+      <div class="wd">Wed 26<br>2 visits</div>
+      <div class="wd">Thu 27<br>2 visits</div>
+      <div class="wd">Fri 28<br>2 visits</div>
+      <div class="wd">Sat 29<br>1 visit</div>
+      <div class="wd">Sun 30<br>0</div>
+      <div class="tm">8 AM</div>
+      <div class="slot"><div class="wcard">08:00 · 90m<br>Mrs Ellis<br>Amina Khan</div></div>
+      <div class="slot"></div><div class="slot"></div><div class="slot"></div><div class="slot"></div><div class="slot"></div><div class="slot"></div>
+      <div class="tm day">10 AM</div>
+      <div class="slot"></div>
+      <div class="slot"><div class="wcard">10:00 · 120m<br>Ms Patel<br>James Okafor</div></div>
+      <div class="slot"><div class="wcard">10:00 · 90m<br>Mrs Adeyemi<br>Priya Nair</div></div>
+      <div class="slot"></div><div class="slot"></div><div class="slot"></div><div class="slot"></div>
+      <div class="tm day">1 PM</div>
+      <div class="slot"></div>
+      <div class="slot"><div class="wcard">13:00 · 90m<br>Mr Shaw<br>Amina Khan</div></div>
+      <div class="slot"></div>
+      <div class="slot"><div class="wcard">13:30 · 90m<br>Mr Cole<br>James Okafor</div></div>
+      <div class="slot"></div><div class="slot"></div><div class="slot"></div>
+    </div>
+    <div class="kpis3"><div>Total this week<strong>11</strong></div><div>Daily average<strong>1.6</strong></div><div>Busiest day<strong>Tue (3)</strong></div><div>Quietest day<strong>Sun (0)</strong></div></div>
+  </section>
+
+  <!-- 12 rota month -->
+  <section class="shot" id="s12">
+    <div class="top">
+      <div class="logo"><i></i>AURORA</div>
+      <div class="nav"><a href="#">Talent and Acquisition</a><a class="active" href="#">Rota</a><a href="#">My Planner</a></div>
+      <div class="who"><span class="avatar">SA</span> Super Admin</div>
+    </div>
+    <div class="rota-tools">
+      <div class="tog"><b>Today</b><b>Week</b><b class="on">Month</b></div>
+      <span class="fil">Birmingham</span>
+      <span style="font-weight:700">August 2026</span>
+      <span class="newapt">+ New appointment</span>
+    </div>
+    <div class="month">
+      <div class="mh">Mon</div><div class="mh">Tue</div><div class="mh">Wed</div><div class="mh">Thu</div><div class="mh">Fri</div><div class="mh">Sat</div><div class="mh">Sun</div>
+      <div class="cell"><div class="d">24</div><div class="apt">09:00 Mrs Ellis</div></div>
+      <div class="cell"><div class="d today">25</div><div class="apt">08:00 Mrs Ellis</div><div class="apt">10:00 Ms Patel</div></div>
+      <div class="cell"><div class="d">26</div><div class="apt">10:00 Mrs Adeyemi</div></div>
+      <div class="cell"><div class="d">27</div><div class="apt">13:30 Mr Cole</div></div>
+      <div class="cell"><div class="d">28</div><div class="apt">08:00 Mrs Ellis</div></div>
+      <div class="cell wk"><div class="d">29</div><div class="apt">11:00 Mr Shaw</div></div>
+      <div class="cell wk"><div class="d">30</div></div>
+      <div class="cell"><div class="d">31</div></div>
+      <div class="cell"><div class="d">1</div></div>
+      <div class="cell"><div class="d">2</div></div>
+      <div class="cell"><div class="d">3</div></div>
+      <div class="cell"><div class="d">4</div></div>
+      <div class="cell wk"><div class="d">5</div></div>
+      <div class="cell wk"><div class="d">6</div></div>
+    </div>
+  </section>
+
+  <script>
+    var id = (location.hash || "#s01").slice(1);
+    document.querySelectorAll(".shot").forEach(function (el) {
+      el.classList.toggle("on", el.id === id);
+    });
+  </script>
+</body>
+</html>

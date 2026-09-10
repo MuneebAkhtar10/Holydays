@@ -1,0 +1,801 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>AURORA — Compliance-led HR &amp; Care</title>
+  <meta name="description" content="AURORA is compliance-led HR &amp; Care for UK home-care agencies. Recruitment, DBS, verification, induction and rota — one connected record." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,650;1,9..144,500&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --teal: #1b5e67;
+      --teal-deep: #123940;
+      --cyan: #2d8a96;
+      --mist: #eef4f5;
+      --paper: #f6fafb;
+      --white: #fff;
+      --ink: #13272b;
+      --muted: #4a6368;
+      --line: #d5e2e5;
+      --sage: #2f7a58;
+      --shadow: 0 24px 60px rgba(18, 57, 64, 0.14);
+      --serif: "Fraunces", Georgia, serif;
+      --sans: "Plus Jakarta Sans", system-ui, sans-serif;
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      font-family: var(--sans);
+      color: var(--ink);
+      background: var(--paper);
+      line-height: 1.5;
+    }
+    img { max-width: 100%; display: block; }
+    a { color: inherit; }
+    button, input, textarea { font-family: inherit; }
+    :focus-visible { outline: 2px solid var(--cyan); outline-offset: 2px; }
+
+    .wrap { width: min(1160px, calc(100% - 36px)); margin-inline: auto; }
+
+    header {
+      position: sticky; top: 0; z-index: 20;
+      background: #062032;
+      border-bottom: 1px solid rgba(255,255,255,.08);
+    }
+    nav a { text-decoration: none; color: #d5e2e5; }
+    .header-inner {
+      height: 72px;
+      display: flex; align-items: center; justify-content: space-between; gap: 16px;
+    }
+    .brand { display: flex; align-items: center; text-decoration: none; flex-shrink: 0; }
+    .brand img {
+      height: 52px;
+      width: auto;
+      display: block;
+      border-radius: 8px;
+    }
+    nav { display: flex; align-items: center; gap: 22px; font-size: .9rem; font-weight: 600; }
+    nav a { text-decoration: none; color: #d5e2e5; }
+    .menu { display: none; border: 0; background: 0; width: 42px; height: 42px; }
+    .menu span { display: block; height: 2px; background: #9fd0d6; margin: 6px 8px; }
+
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center;
+      padding: 11px 18px; border-radius: 999px; font-weight: 700; font-size: .9rem;
+      text-decoration: none; border: 1.5px solid transparent; cursor: pointer;
+      transition: background .18s ease, color .18s ease, box-shadow .18s ease, transform .18s ease, border-color .18s ease;
+    }
+    .btn-primary { background: var(--teal); color: #fff !important; box-shadow: 0 8px 18px rgba(27,94,103,.22); }
+    .btn-primary:hover, .btn-primary:focus-visible {
+      background: #2d8a96;
+      color: #fff !important;
+      transform: translateY(-1px);
+      box-shadow: 0 12px 24px rgba(45,138,150,.35);
+    }
+    .btn-primary:active { transform: none; background: var(--teal-deep); }
+    .btn-ghost { background: #fff; color: var(--teal); border-color: var(--teal); }
+    .btn-ghost:hover { background: var(--mist); color: var(--teal-deep); border-color: var(--teal-deep); }
+    nav a:hover { color: #9fd0d6; }
+    nav a.btn-primary:hover { color: #fff !important; }
+
+    .banner {
+      background: #062032;
+      color: #fff;
+      padding: 40px 0 64px;
+      overflow: hidden;
+    }
+    .banner-grid {
+      display: grid;
+      grid-template-columns: minmax(0, .95fr) minmax(0, 1.15fr);
+      gap: 36px;
+      align-items: center;
+    }
+    .banner h1 {
+      font-family: var(--sans);
+      font-weight: 800;
+      letter-spacing: -.03em;
+      font-size: clamp(2.05rem, 4.2vw, 3.35rem);
+      line-height: 1.12;
+      color: #fff;
+      margin: 0 0 16px;
+      max-width: 16ch;
+    }
+    .banner h1 em { font-style: normal; color: #7ec8d4; }
+    .banner .lede { color: #d4e6ea; margin: 0 0 22px; max-width: 34rem; font-size: 1.05rem; }
+    header .btn-primary,
+    .banner .btn-primary {
+      background: #3aa0b5;
+      box-shadow: 0 10px 24px rgba(58,160,181,.28);
+    }
+    header .btn-primary:hover,
+    .banner .btn-primary:hover {
+      background: #4bb3c7;
+      color: #fff !important;
+    }
+    .collage {
+      display: grid;
+      grid-template-columns: 1.05fr .95fr 1.15fr;
+      grid-template-rows: 148px 118px 148px;
+      gap: 12px;
+      min-height: 426px;
+    }
+    .collage figure {
+      margin: 0;
+      border-radius: 22px;
+      overflow: hidden;
+      position: relative;
+      min-width: 0;
+    }
+    .collage img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+      filter: saturate(.75) contrast(1.06);
+      transform: scale(1.04);
+      transition: transform .6s ease;
+    }
+    .collage figure:hover img { transform: scale(1.1); }
+    .collage figure::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(165deg, rgba(6,50,78,.42), rgba(27,94,103,.55));
+      mix-blend-mode: multiply;
+      pointer-events: none;
+    }
+    .collage .a { grid-column: 1; grid-row: 1 / 3; }
+    .collage .b { grid-column: 2; grid-row: 1; }
+    .collage .c { grid-column: 3; grid-row: 1 / 3; }
+    .collage .d { grid-column: 2; grid-row: 2 / 4; }
+    .collage .e { grid-column: 1; grid-row: 3; }
+    .collage .f { grid-column: 3; grid-row: 3; }
+    .collage figure { animation: rise .8s cubic-bezier(.22,1,.36,1) both; }
+    .collage .a { animation-delay: .08s; }
+    .collage .b { animation-delay: .16s; }
+    .collage .c { animation-delay: .12s; }
+    .collage .d { animation-delay: .22s; }
+    .collage .e { animation-delay: .28s; }
+    .collage .f { animation-delay: .2s; }
+    .fold {
+      padding: 32px 0 40px;
+      background:
+        radial-gradient(800px 320px at 88% 8%, rgba(107,91,138,.18), transparent 52%),
+        radial-gradient(700px 280px at 85% 0%, rgba(45,138,150,.16), transparent 55%),
+        var(--paper);
+    }
+    .fold-grid {
+      display: grid;
+      grid-template-columns: minmax(280px, .88fr) minmax(0, 1.22fr);
+      gap: 32px;
+      align-items: center;
+    }
+    .hero-copy > * { animation: rise .7s cubic-bezier(.22,1,.36,1) both; }
+    .hero-copy .eyebrow { animation-delay: .05s; }
+    .hero-copy h1 { animation-delay: .12s; }
+    .hero-copy .lede { animation-delay: .2s; }
+    .hero-copy .cta-row { animation-delay: .28s; }
+    .hero-copy .trust { animation-delay: .34s; }
+    .hero-copy .pills { animation-delay: .4s; }
+    .hero-copy .stage-meta { animation-delay: .48s; }
+    @keyframes rise {
+      from { opacity: 0; transform: translateY(16px); }
+      to { opacity: 1; transform: none; }
+    }
+    .eyebrow {
+      display: inline-block; font-size: .7rem; font-weight: 700; letter-spacing: .14em;
+      text-transform: uppercase; color: var(--teal); background: #fff;
+      border: 1px solid var(--line); border-radius: 999px; padding: 5px 11px;
+    }
+    h1 {
+      font-family: var(--serif); font-weight: 650; letter-spacing: -.03em;
+      font-size: clamp(2rem, 3.6vw, 3.15rem); line-height: 1.12; margin: 14px 0 12px;
+    }
+    h1 em { font-style: italic; color: var(--teal); font-weight: 500; }
+    .lede { color: var(--muted); margin: 0 0 18px; max-width: 40rem; }
+    .cta-row { display: flex; flex-wrap: wrap; gap: 10px; }
+    .trust { margin: 14px 0 0; font-size: .78rem; color: var(--muted); }
+
+    .pills { display: flex; flex-direction: column; gap: 8px; margin-top: 16px; }
+    .pill-row { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+    .pill-lab { font-size: .65rem; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--teal); min-width: 3.2rem; }
+    .pill {
+      border: 1px solid var(--line); background: #fff; color: var(--muted);
+      border-radius: 999px; padding: 6px 11px; font-size: .72rem; font-weight: 700;
+      cursor: pointer; transition: background .18s, color .18s, border-color .18s, transform .18s;
+    }
+    .pill:hover { border-color: var(--teal); color: var(--teal); transform: translateY(-1px); }
+    .pill[aria-selected="true"] { background: var(--teal); border-color: var(--teal); color: #fff; }
+
+    .stage-meta { margin-top: 10px; min-height: 3.2rem; }
+    .stage-meta h2 { font-size: 1.05rem; margin: 0 0 4px; }
+    .stage-meta p { margin: 0; color: var(--muted); font-size: .88rem; }
+
+    .hero-visual {
+      perspective: 1400px;
+      animation: rise .85s cubic-bezier(.22,1,.36,1) .2s both;
+    }
+    .browser {
+      background: #fff; border-radius: 16px; overflow: hidden;
+      box-shadow: var(--shadow); border: 1px solid var(--line);
+      transform: rotateY(-8deg) rotateX(4deg);
+      transform-origin: left center;
+      animation: screen-float 6.5s ease-in-out 1s infinite;
+      transition: transform .45s cubic-bezier(.22,1,.36,1), box-shadow .45s ease;
+    }
+    .hero-visual:hover .browser {
+      transform: rotateY(-2deg) rotateX(1deg) translateY(-6px);
+      box-shadow: 0 32px 70px rgba(18,57,64,.2);
+      animation-play-state: paused;
+    }
+    @keyframes screen-float {
+      0%, 100% { transform: rotateY(-8deg) rotateX(4deg) translateY(0); }
+      50% { transform: rotateY(-8deg) rotateX(4deg) translateY(-10px); }
+    }
+    .browser-bar {
+      display: flex; align-items: center; gap: 8px;
+      background: var(--teal-deep); color: #d7ecee; font-size: .72rem; padding: 8px 12px;
+    }
+    .dots { display: flex; gap: 5px; }
+    .dots i { width: 7px; height: 7px; border-radius: 50%; background: #7aa3a8; display: block; }
+    .url { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; opacity: .85; }
+    .shot { background: #e8eef0; aspect-ratio: 16 / 10; position: relative; overflow: hidden; }
+    .shot img {
+      width: 100%; height: 100%; object-fit: cover; object-position: top center;
+      transition: opacity .35s ease, transform .5s ease;
+    }
+    .shot img.is-swap { opacity: 0; transform: scale(1.02); }
+    .stage-nav { display: flex; gap: 8px; margin-top: 10px; justify-content: flex-end; }
+    .icon-btn {
+      width: 36px; height: 36px; border-radius: 50%; border: 1.5px solid var(--teal);
+      background: #fff; color: var(--teal); cursor: pointer; display: grid; place-items: center;
+      transition: background .18s, color .18s, transform .18s;
+    }
+    .icon-btn:hover { background: var(--teal); color: #fff; transform: scale(1.06); }
+
+    .ticks { margin: 0; padding: 0 0 0 18px; color: var(--muted); font-size: .9rem; }
+    .ticks li { margin: 0 0 6px; }
+    .rota { padding: 40px 0; background: linear-gradient(180deg, #e8f2f3 0%, var(--paper) 100%); overflow: hidden; }
+    .rota h2 { font-family: var(--serif); font-size: clamp(1.5rem, 3vw, 2rem); margin: 0 0 10px; }
+    .rota-grid { display: grid; grid-template-columns: .9fr 1.1fr; gap: 28px; align-items: center; }
+    .stack3d {
+      position: relative;
+      height: 360px;
+      perspective: 1600px;
+      transform-style: preserve-3d;
+    }
+    .card3d {
+      position: absolute;
+      margin: 0;
+      width: 78%;
+      transform-style: preserve-3d;
+      cursor: pointer;
+      transition: transform .5s cubic-bezier(.22, 1, .36, 1), z-index 0s .15s;
+    }
+    .card3d-inner {
+      border-radius: 14px;
+      overflow: hidden;
+      background: #fff;
+      border: 1px solid rgba(255,255,255,.75);
+      box-shadow: 0 22px 50px rgba(18,57,64,.22);
+      transform-origin: center bottom;
+    }
+    .stack3d.is-waiting .card3d-inner { animation: none; opacity: 0; transform: translateY(28px); }
+    .stack3d.is-in .card3d-inner { animation: card-in .9s cubic-bezier(.22, 1, .36, 1) both, card-float 6.4s ease-in-out 1s infinite; }
+    .card3d img { width: 100%; height: auto; display: block; }
+    .card3d.c1 {
+      left: 0; top: 32px; z-index: 1;
+      transform: rotateY(18deg) rotateX(7deg) translateZ(-90px);
+    }
+    .card3d.c1 .card3d-inner { animation-delay: 0s, 1s; opacity: .88; }
+    .card3d.c2 {
+      left: 10%; top: 12px; z-index: 2;
+      transform: rotateY(9deg) rotateX(4deg) translateZ(-28px);
+    }
+    .card3d.c2 .card3d-inner { animation-delay: .12s, 1.15s; animation-duration: .9s, 7.2s; }
+    .card3d.c3 {
+      left: 22%; top: 0; z-index: 3;
+      transform: rotateY(-8deg) rotateX(2deg) translateZ(48px);
+    }
+    .card3d.c3 .card3d-inner { animation-delay: .24s, 1.35s; animation-duration: .9s, 5.8s; }
+    .stack3d:hover .card3d-inner { animation-play-state: running, paused; }
+    .card3d:hover {
+      z-index: 6;
+      transform: rotateY(-2deg) rotateX(0deg) translateZ(72px) scale(1.04);
+      transition: transform .45s cubic-bezier(.22, 1, .36, 1);
+    }
+    .card3d:hover .card3d-inner {
+      box-shadow: 0 28px 70px rgba(18,57,64,.32);
+      opacity: 1;
+    }
+    @keyframes card-in {
+      from { opacity: 0; transform: translateY(36px) scale(.94); }
+      to { opacity: 1; transform: translateY(0) scale(1); }
+    }
+    @keyframes card-float {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-11px); }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .collage figure, .card3d-inner, .stack3d, .browser, .hero-copy > *, .hero-visual, .how.is-in .step, .mid.is-in .mod { animation: none !important; }
+      .card3d:hover, .hero-visual:hover .browser, .step:hover, .mod:hover, .why:hover { transform: none; }
+    }
+
+    .packages { padding: 8px 0 40px; }
+    .packages h2 { font-family: var(--serif); font-size: clamp(1.5rem, 3vw, 2rem); margin: 0 0 8px; }
+    .pkg-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-top: 20px; }
+    .pkg {
+      background: #fff; border: 1px solid var(--line); border-radius: 16px; padding: 20px 18px 18px;
+      display: flex; flex-direction: column;
+      transition: transform .25s ease, box-shadow .25s ease;
+    }
+    .pkg:hover { transform: translateY(-4px); box-shadow: var(--shadow); }
+    .pkg.featured { border: 2px solid var(--teal); box-shadow: var(--shadow); transform: translateY(-4px); }
+    .pkg .badge { font-size: .68rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--cyan); margin: 0 0 8px; }
+    .pkg h3 { font-family: var(--serif); font-size: 1.45rem; margin: 0; }
+    .pkg .price { color: var(--muted); margin: 4px 0 12px; font-weight: 600; }
+    .pkg ul { margin: 0 0 16px; padding: 0 0 0 18px; color: var(--muted); font-size: .85rem; flex: 1; }
+    .pkg li { margin: 0 0 6px; }
+    .pkg .btn { width: 100%; }
+
+    /* Pipeline + modules */
+    .how {
+      background: linear-gradient(165deg, #123940 0%, #1b5e67 48%, #245860 100%);
+      color: #fff;
+      padding: 40px 0 44px;
+    }
+    .how h2 { font-family: var(--serif); font-size: clamp(1.45rem, 2.6vw, 1.85rem); margin: 0 0 8px; }
+    .how .lead { margin: 0 0 22px; color: #d5e8eb; font-size: .92rem; max-width: 40rem; }
+    .steps {
+      display: grid;
+      grid-template-columns: repeat(6, minmax(0, 1fr));
+      gap: 12px;
+      perspective: 1100px;
+    }
+    .step {
+      position: relative;
+      background: rgba(255,255,255,.08);
+      border: 1px solid rgba(255,255,255,.16);
+      border-radius: 14px;
+      padding: 16px 14px 14px;
+      min-height: 148px;
+      transform-style: preserve-3d;
+      transition: transform .4s cubic-bezier(.22, 1, .36, 1), box-shadow .4s, background .3s, border-color .3s;
+    }
+    .how.is-in .step { animation: tile-in .7s cubic-bezier(.22, 1, .36, 1) both; }
+    .how.is-in .step:nth-child(1) { animation-delay: .04s; }
+    .how.is-in .step:nth-child(2) { animation-delay: .1s; }
+    .how.is-in .step:nth-child(3) { animation-delay: .16s; }
+    .how.is-in .step:nth-child(4) { animation-delay: .22s; }
+    .how.is-in .step:nth-child(5) { animation-delay: .28s; }
+    .how.is-in .step:nth-child(6) { animation-delay: .34s; }
+    .step:hover {
+      transform: rotateY(-10deg) rotateX(8deg) translateZ(16px) translateY(-8px);
+      background: rgba(255,255,255,.14);
+      border-color: rgba(255,255,255,.32);
+      box-shadow: 0 22px 40px rgba(0,0,0,.28);
+    }
+    .step span {
+      display: block;
+      font-family: var(--serif);
+      font-style: italic;
+      font-size: 1.05rem;
+      color: #9fd0d6;
+    }
+    .step h3 { margin: 8px 0 6px; font-size: 1rem; }
+    .step p { margin: 0; font-size: .78rem; color: #d5e8eb; line-height: 1.4; }
+
+    .mid { padding: 40px 0 44px; }
+    .mid h2 { font-family: var(--serif); font-size: 1.55rem; margin: 0 0 6px; }
+    .kicker { font-size: .7rem; letter-spacing: .14em; text-transform: uppercase; font-weight: 700; color: var(--teal); margin: 0 0 6px; }
+    .mods {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 14px;
+      margin-top: 20px;
+      perspective: 1200px;
+    }
+    .mod {
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 18px 16px 16px;
+      transform-style: preserve-3d;
+      transition: transform .4s cubic-bezier(.22, 1, .36, 1), box-shadow .4s, border-color .3s;
+    }
+    .mid.is-in .mod { animation: tile-in .7s cubic-bezier(.22, 1, .36, 1) both; }
+    .mid.is-in .mod:nth-child(1) { animation-delay: .05s; }
+    .mid.is-in .mod:nth-child(2) { animation-delay: .12s; }
+    .mid.is-in .mod:nth-child(3) { animation-delay: .18s; }
+    .mid.is-in .mod:nth-child(4) { animation-delay: .24s; }
+    .mid.is-in .mod:nth-child(5) { animation-delay: .3s; }
+    .mid.is-in .mod:nth-child(6) { animation-delay: .36s; }
+    .mod:hover {
+      transform: rotateY(-8deg) rotateX(6deg) translateY(-10px) scale(1.02);
+      box-shadow: 0 24px 50px rgba(18, 57, 64, .16);
+      border-color: #b7ced2;
+    }
+    .mod h3 { margin: 0 0 8px; font-size: 1.02rem; color: var(--teal); }
+    .mod p { margin: 0; font-size: .84rem; color: var(--muted); }
+
+    @keyframes tile-in {
+      from { opacity: 0; transform: rotateX(12deg) translateY(22px); }
+      to { opacity: 1; transform: none; }
+    }
+
+    .why-row {
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-top: 16px;
+    }
+    .why {
+      background: var(--mist); border-radius: 14px; padding: 16px;
+      transition: transform .35s cubic-bezier(.22, 1, .36, 1), box-shadow .35s;
+    }
+    .why:hover { transform: rotateX(6deg) translateY(-6px); box-shadow: var(--shadow); }
+    .why b { display: block; font-family: var(--serif); font-style: italic; color: var(--teal); margin-bottom: 4px; }
+    .why h3 { margin: 0 0 4px; font-size: .95rem; }
+    .why p { margin: 0; font-size: .82rem; color: var(--muted); }
+
+    .cta {
+      background: var(--teal-deep); color: #fff; padding: 36px 0;
+    }
+    .cta-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 32px; align-items: start; }
+    .cta h2 { font-family: var(--serif); font-size: 1.7rem; margin: 6px 0 10px; }
+    .cta > .cta-grid > div > p { color: #c9dfe3; margin: 0; }
+    form { background: #fff; color: var(--ink); border-radius: 16px; padding: 20px; }
+    .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    label { display: block; font-size: .72rem; font-weight: 700; margin: 0 0 4px; }
+    .field { margin-bottom: 10px; }
+    input, textarea {
+      width: 100%; border: 1px solid var(--line); background: var(--paper);
+      border-radius: 10px; padding: 10px 12px; font-size: .92rem;
+    }
+    textarea { min-height: 64px; resize: vertical; }
+    .form-note { font-size: .75rem; color: var(--muted); margin: 8px 0 0; }
+    .thanks { display: none; }
+    form.is-sent .fields { display: none; }
+    form.is-sent .thanks { display: block; color: var(--ink); }
+    .thanks h3 { font-family: var(--serif); margin: 0 0 6px; }
+
+    footer { padding: 18px 0; background: #062032; border-top: 0; font-size: .8rem; color: #8aa3a8; }
+    .foot { display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap; align-items: center; }
+    footer a { text-decoration: none; color: #c9dfe3; }
+    .foot img { height: 40px; width: auto; border-radius: 6px; }
+
+    @media (max-width: 900px) {
+      .menu { display: block; }
+      nav {
+        display: none; position: absolute; left: 0; right: 0; top: 72px;
+        background: #0c1014; flex-direction: column; align-items: flex-start;
+        padding: 14px 20px 18px; border-bottom: 1px solid #1c2428; gap: 12px;
+      }
+      nav.open { display: flex; }
+      .fold-grid, .cta-grid, .steps, .mods, .why-row, .row2, .rota-grid, .pkg-grid, .banner-grid { grid-template-columns: 1fr; }
+      .collage { grid-template-rows: 100px 90px 100px; min-height: 300px; }
+      .pkg.featured { transform: none; }
+      .stack3d { height: 280px; }
+      .steps { grid-template-columns: 1fr 1fr; }
+      header { position: relative; }
+    }
+    @media (max-width: 560px) {
+      .steps { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="wrap header-inner">
+      <a class="brand" href="#top">
+        <img src="assets/aurora-logo.png" alt="AURORA — Compliance-led HR &amp; Care" />
+      </a>
+      <button class="menu" type="button" aria-expanded="false" aria-controls="nav" aria-label="Open menu"><span></span><span></span><span></span></button>
+      <nav id="nav">
+        <a href="#product">Product</a>
+        <a href="#rota">Rota</a>
+        <a href="#packages">Packages</a>
+        <a href="#contact">Contact</a>
+        <a class="btn btn-primary" href="#contact">Book a Demo</a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="top">
+    <section class="banner" id="home">
+      <div class="wrap banner-grid">
+        <div>
+          <h1>Domiciliary care powered by <em>technology</em></h1>
+          <p class="lede">Boost efficiency and compliance. Simplify recruitment, rota scheduling, DBS and induction with one connected system.</p>
+          <a class="btn btn-primary" href="#contact">Book a Demo</a>
+        </div>
+        <div class="collage" aria-hidden="true">
+          <figure class="a"><img src="assets/banner-walk-support.png" alt=""></figure>
+          <figure class="b"><img src="assets/10-rota-today.png" alt=""></figure>
+          <figure class="c"><img src="assets/banner-care-phone.png" alt=""></figure>
+          <figure class="d"><img src="assets/banner-laptop-rota.png" alt=""></figure>
+          <figure class="e"><img src="assets/banner-tablet.png" alt=""></figure>
+          <figure class="f"><img src="assets/01-recruitment-dashboard.png" alt=""></figure>
+        </div>
+      </div>
+    </section>
+
+    <section class="fold" id="product">
+      <div class="wrap fold-grid">
+        <div class="hero-copy">
+          <p class="eyebrow">Built for UK home-care agencies</p>
+          <h1>From applicant to <em>care-ready</em></h1>
+          <p class="lede">Recruitment, DBS, verification and induction on one record — so managers see what is pending and what is already signed off.</p>
+          <div class="cta-row">
+            <a class="btn btn-primary" href="#contact">Book a Demo</a>
+            <a class="btn btn-ghost" href="#how">See the flow</a>
+          </div>
+          <p class="trust">Onboarding · manager sign-off · audit-ready records</p>
+          <div class="pills" role="tablist" aria-label="Product screens">
+            <div class="pill-row"><span class="pill-lab">Hire</span>
+              <button class="pill" type="button" role="tab" aria-selected="true">Dashboard</button>
+              <button class="pill" type="button" role="tab" aria-selected="false">Applicants</button>
+              <button class="pill" type="button" role="tab" aria-selected="false">Application</button>
+              <button class="pill" type="button" role="tab" aria-selected="false">Interviews</button>
+            </div>
+            <div class="pill-row"><span class="pill-lab">Pack</span>
+              <button class="pill" type="button" role="tab" aria-selected="false">DBS pack</button>
+              <button class="pill" type="button" role="tab" aria-selected="false">Verification</button>
+              <button class="pill" type="button" role="tab" aria-selected="false">Sign-off</button>
+              <button class="pill" type="button" role="tab" aria-selected="false">Induction</button>
+            </div>
+            <div class="pill-row"><span class="pill-lab">Rota</span>
+              <button class="pill" type="button" role="tab" aria-selected="false">Today</button>
+              <button class="pill" type="button" role="tab" aria-selected="false">Week</button>
+              <button class="pill" type="button" role="tab" aria-selected="false">Month</button>
+            </div>
+          </div>
+          <div class="stage-meta">
+            <h2 id="stage-title">Recruitment dashboard</h2>
+            <p id="stage-copy">Applicants, shortlisting, interviews and task assignments in one glance.</p>
+          </div>
+        </div>
+        <div class="hero-visual">
+          <div class="browser" id="panel" role="tabpanel">
+            <div class="browser-bar">
+              <span class="dots" aria-hidden="true"><i></i><i></i><i></i></span>
+              <span class="url" id="stage-url">aurora.cohrtex.co.uk</span>
+            </div>
+            <div class="shot">
+              <img id="stage-img" src="assets/01-recruitment-dashboard.png" alt="AURORA recruitment dashboard" />
+            </div>
+          </div>
+          <div class="stage-nav">
+            <button class="icon-btn" type="button" id="prev" aria-label="Previous">‹</button>
+            <button class="icon-btn" type="button" id="next" aria-label="Next">›</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="rota" id="rota">
+      <div class="wrap rota-grid">
+        <div>
+          <p class="kicker">Scheduling</p>
+          <h2>Rota: today, week and month</h2>
+          <p class="lede" style="margin:0 0 12px">This is the scheduling rota. Assign visits to carers and move them across the day, week or month — without rebuilding the week from a spreadsheet.</p>
+          <ul class="ticks">
+            <li>Assign a visit to a carer from the timeline or calendar</li>
+            <li>Move visits between carers, times and days</li>
+            <li>Switch today, week and month without leaving the rota</li>
+          </ul>
+        </div>
+        <div class="stack3d" aria-hidden="true">
+          <figure class="card3d c1"><div class="card3d-inner"><img src="assets/12-rota-month.png" alt=""></div></figure>
+          <figure class="card3d c2"><div class="card3d-inner"><img src="assets/11-rota-week.png" alt=""></div></figure>
+          <figure class="card3d c3"><div class="card3d-inner"><img src="assets/10-rota-today.png" alt="Rota today timeline"></div></figure>
+        </div>
+      </div>
+    </section>
+
+    <section class="packages" id="packages">
+      <div class="wrap">
+        <p class="kicker">Packages</p>
+        <h2>Choose a plan that fits today and scales tomorrow</h2>
+        <p class="lede">Pricing is confirmed on a walkthrough. Each package is a named slice of AURORA — not hidden add-ons.</p>
+        <div class="pkg-grid">
+          <article class="pkg">
+            <h3>Talent</h3>
+            <p class="price">Recruitment</p>
+            <ul>
+              <li>Applicant details and pre-application form</li>
+              <li>Shortlisting and interview timeline</li>
+              <li>Branch filters and assigned reviewers</li>
+              <li>Email already sent on the record</li>
+            </ul>
+            <a class="btn btn-ghost" href="#contact">Book a Demo</a>
+          </article>
+          <article class="pkg featured">
+            <p class="badge">Most agencies start here</p>
+            <h3>Operations</h3>
+            <p class="price">Rota &amp; care</p>
+            <ul>
+              <li>Everything in Talent</li>
+              <li>Today / week / month rota</li>
+              <li>Support workers and service users</li>
+              <li>Planner once a carer is care-ready</li>
+            </ul>
+            <a class="btn btn-primary" href="#contact">Book a Demo</a>
+          </article>
+          <article class="pkg">
+            <h3>Compliance</h3>
+            <p class="price">DBS to induction</p>
+            <ul>
+              <li>Post-interview pack and DBS steps</li>
+              <li>Verification of documents and references</li>
+              <li>Manager sign-off gate</li>
+              <li>Induction pack and training records</li>
+            </ul>
+            <a class="btn btn-ghost" href="#contact">Book a Demo</a>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="how" id="how">
+      <div class="wrap">
+        <h2>Applicant to live on rota</h2>
+        <p class="lead">Six named stages on one record — from the first form through to visits on the scheduling rota.</p>
+        <div class="steps">
+          <article class="step"><span>01</span><h3>Applicant</h3><p>Personal details, eligibility and languages on one form.</p></article>
+          <article class="step"><span>02</span><h3>Screen</h3><p>Search submissions and assign a reviewer.</p></article>
+          <article class="step"><span>03</span><h3>Interview</h3><p>Rounds, offers and emails on a single timeline.</p></article>
+          <article class="step"><span>04</span><h3>Pack</h3><p>DBS, verification, training and sign-off, gated.</p></article>
+          <article class="step"><span>05</span><h3>Induction</h3><p>Declarations, health, contract and checklist.</p></article>
+          <article class="step"><span>06</span><h3>Live</h3><p>On the rota: assign visits to carers and move them as the week changes.</p></article>
+        </div>
+      </div>
+    </section>
+
+    <section class="mid" id="modules">
+      <div class="wrap">
+        <p class="kicker">The rest of the agency</p>
+        <h2>Modules beyond recruitment</h2>
+        <div class="mods">
+          <article class="mod"><h3>Talent &amp; Acquisition</h3><p>Dashboard, applicants, interviews and the post-interview pack.</p></article>
+          <article class="mod"><h3>Support Workers</h3><p>The live carer record after sign-off: profile, activity, performance.</p></article>
+          <article class="mod"><h3>Service Users</h3><p>People receiving care, in the same system as the workers who visit.</p></article>
+          <article class="mod"><h3>Rota &amp; planner</h3><p>Scheduling rota: assign visits to carers and move them across today, week and month.</p></article>
+          <article class="mod"><h3>Training &amp; compliance</h3><p>Mandatory courses as a named gate, with pending versus complete.</p></article>
+          <article class="mod"><h3>Vehicle &amp; licensing</h3><p>Licence and related checks sit with legal documents on the record.</p></article>
+        </div>
+        <p class="kicker" style="margin-top:28px">Why agencies choose AURORA</p>
+        <div class="why-row">
+          <article class="why"><b>01</b><h3>Audit trail</h3><p>Dates, assigned users and status stay on the applicant list.</p></article>
+          <article class="why"><b>02</b><h3>Manager sign-off</h3><p>Blocked until DBS, verification and training are complete.</p></article>
+          <article class="why"><b>03</b><h3>Branch-aware</h3><p>Filter by site. Multi-branch agencies keep lists separate.</p></article>
+        </div>
+      </div>
+    </section>
+
+    <section class="cta" id="contact">
+      <div class="wrap cta-grid">
+        <div>
+          <p class="kicker" style="color:#9fd0d6">Book a walkthrough</p>
+          <h2>See your hire mapped onto AURORA</h2>
+          <p>Bring a real case — DBS stuck, induction half-done, rota waiting. Not a generic product tour.</p>
+        </div>
+        <form id="demo-form" action="#" method="post">
+          <div class="fields">
+            <div class="row2">
+              <div class="field"><label for="name">Name</label><input id="name" name="name" required /></div>
+              <div class="field"><label for="agency">Agency</label><input id="agency" name="agency" required /></div>
+            </div>
+            <div class="field"><label for="email">Email</label><input id="email" name="email" type="email" required /></div>
+            <div class="field"><label for="message">What to cover</label><textarea id="message" name="message" placeholder="e.g. DBS for a new support worker in Birmingham"></textarea></div>
+            <button class="btn btn-primary" type="submit">Book a Demo</button>
+            <p class="form-note">This page does not create an account.</p>
+          </div>
+          <div class="thanks" role="status">
+            <h3>Request noted</h3>
+            <p>This mockup does not send mail.</p>
+          </div>
+        </form>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="wrap foot">
+      <a href="#top"><img src="assets/aurora-logo.png" alt="AURORA" /></a>
+      <span>© AURORA · Compliance-led HR &amp; Care · <a href="#product">Product</a> · <a href="#contact">Book a Demo</a></span>
+    </div>
+  </footer>
+
+  <script>
+    (function () {
+      var slides = [
+        { title: "Recruitment dashboard", copy: "Applicants, shortlisting, interviews and task assignments in one glance.", src: "assets/01-recruitment-dashboard.png", alt: "Recruitment dashboard", url: "aurora.cohrtex.co.uk/app/recruitment/dashboard" },
+        { title: "Applicant details", copy: "Search, filter and open every submission in one place.", src: "assets/02-applicant-details.png", alt: "Applicant details", url: "aurora.cohrtex.co.uk — applicants" },
+        { title: "Pre-application form", copy: "Personal information, eligibility and languages on one candidate record.", src: "assets/03-pre-application.png", alt: "Pre-application form", url: "aurora.cohrtex.co.uk — application" },
+        { title: "Shortlisting & interviews", copy: "Rounds, cancellations, job offers and emails on one timeline.", src: "assets/04-interview-timeline.png", alt: "Interview timeline", url: "aurora.cohrtex.co.uk — interview" },
+        { title: "DBS & post-interview pack", copy: "Authorisation, consent, payment, application and returned forms.", src: "assets/05-post-interview-dbs.png", alt: "DBS pack", url: "aurora.cohrtex.co.uk — DBS" },
+        { title: "Verification", copy: "Employment, references, education and legal documents as discrete items.", src: "assets/06-verification.png", alt: "Verification", url: "aurora.cohrtex.co.uk — verification" },
+        { title: "Final sign-off", copy: "Nothing goes live until the manager confirms the verified grid.", src: "assets/08-signoff-complete.png", alt: "Final sign-off", url: "aurora.cohrtex.co.uk — sign-off" },
+        { title: "Induction pack", copy: "Declarations, health questionnaire, uniform, finance and contract.", src: "assets/09-induction-pack.png", alt: "Induction pack", url: "aurora.cohrtex.co.uk — induction" },
+        { title: "Rota — today", copy: "Assign and move visits on the day timeline — by carer, time and hours.", src: "assets/10-rota-today.png", alt: "Rota today", url: "aurora.cohrtex.co.uk/app/schedular — today" },
+        { title: "Rota — week", copy: "See the week at a glance, then assign or move visits between days and carers.", src: "assets/11-rota-week.png", alt: "Rota week", url: "aurora.cohrtex.co.uk/app/schedular — week" },
+        { title: "Rota — month", copy: "Plan the month from the calendar, then move visits as demand changes.", src: "assets/12-rota-month.png", alt: "Rota month", url: "aurora.cohrtex.co.uk/app/schedular — month" }
+      ];
+      var i = 0;
+      var pills = Array.prototype.slice.call(document.querySelectorAll(".pill"));
+      var titleEl = document.getElementById("stage-title");
+      var copyEl = document.getElementById("stage-copy");
+      var imgEl = document.getElementById("stage-img");
+      var urlEl = document.getElementById("stage-url");
+
+      function show(n) {
+        i = (n + slides.length) % slides.length;
+        var s = slides[i];
+        imgEl.classList.add("is-swap");
+        window.setTimeout(function () {
+          titleEl.textContent = s.title;
+          copyEl.textContent = s.copy;
+          imgEl.src = s.src;
+          imgEl.alt = s.alt;
+          urlEl.textContent = s.url;
+          imgEl.classList.remove("is-swap");
+        }, 160);
+        pills.forEach(function (p, idx) { p.setAttribute("aria-selected", idx === i ? "true" : "false"); });
+      }
+      pills.forEach(function (p, idx) { p.addEventListener("click", function () { show(idx); }); });
+      document.getElementById("prev").addEventListener("click", function () { show(i - 1); });
+      document.getElementById("next").addEventListener("click", function () { show(i + 1); });
+
+      var nav = document.getElementById("nav");
+      var menu = document.querySelector(".menu");
+      menu.addEventListener("click", function () {
+        var open = nav.classList.toggle("open");
+        menu.setAttribute("aria-expanded", open ? "true" : "false");
+      });
+      nav.querySelectorAll("a").forEach(function (a) {
+        a.addEventListener("click", function () { nav.classList.remove("open"); menu.setAttribute("aria-expanded", "false"); });
+      });
+      document.getElementById("demo-form").addEventListener("submit", function (e) {
+        e.preventDefault();
+        this.classList.add("is-sent");
+      });
+
+      function reveal(el) {
+        if (!el) return;
+        if (!("IntersectionObserver" in window)) { el.classList.add("is-in"); return; }
+        var io = new IntersectionObserver(function (entries) {
+          entries.forEach(function (entry) {
+            if (entry.isIntersecting) {
+              el.classList.add("is-in");
+              io.disconnect();
+            }
+          });
+        }, { threshold: 0.22 });
+        io.observe(el);
+      }
+      reveal(document.querySelector(".how"));
+      reveal(document.querySelector(".mid"));
+      var stack = document.querySelector(".stack3d");
+      if (stack) {
+        stack.classList.add("is-waiting");
+        if ("IntersectionObserver" in window) {
+          var io = new IntersectionObserver(function (entries) {
+            entries.forEach(function (entry) {
+              if (entry.isIntersecting) {
+                stack.classList.add("is-in");
+                stack.classList.remove("is-waiting");
+                io.disconnect();
+              }
+            });
+          }, { threshold: 0.28 });
+          io.observe(stack);
+        } else {
+          stack.classList.add("is-in");
+          stack.classList.remove("is-waiting");
+        }
+      }
+    })();
+  </script>
+</body>
+</html>

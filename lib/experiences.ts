@@ -1,0 +1,78 @@
+import type { Experience } from "./types";
+
+export const experiences: Experience[] = [
+  {
+    id: "passu",
+    title: "Jeep to the Passu cones",
+    place: "Hunza",
+    price: 18500,
+    hours: "7 hours",
+    cover: "/images/exp-passu.png",
+    blurb: "A high, rattling road and a geometry of stone that does not care you came.",
+  },
+  {
+    id: "harvest",
+    title: "Apricot harvest morning",
+    place: "Karimabad",
+    price: 6200,
+    hours: "3 hours",
+    cover: "/images/exp-harvest.png",
+    blurb: "Climb a ladder, fill a wooden crate, eat what will not travel.",
+  },
+  {
+    id: "truckwalk",
+    title: "Truck-art walk",
+    place: "Karachi",
+    price: 4500,
+    hours: "4 hours",
+    cover: "/images/exp-truckwalk.png",
+    blurb: "Workshops where lorries become travelling shrines of enamel and prayer.",
+  },
+  {
+    id: "walled",
+    title: "Night in the Walled City",
+    place: "Lahore",
+    price: 7800,
+    hours: "5 hours",
+    cover: "/images/dest-lahore.png",
+    blurb: "A historian, a lantern, and lanes that still keep their old names.",
+  },
+  {
+    id: "skardu-lake",
+    title: "Still water at first light",
+    place: "Skardu",
+    price: 9200,
+    hours: "4 hours",
+    cover: "/images/dest-skardu.png",
+    blurb: "A silent boat hour before the valley remembers how to be loud.",
+  },
+  {
+    id: "gwadar-wind",
+    title: "Sea-wind walk at Gwadar",
+    place: "Gwadar",
+    price: 5400,
+    hours: "2 hours",
+    cover: "/images/dest-gwadar.png",
+    blurb: "Limestone, salt, and a horizon that refuses to finish.",
+  },
+  {
+    id: "cholistan",
+    title: "Kiln fire in Cholistan",
+    place: "Bahawalpur",
+    price: 11000,
+    hours: "6 hours",
+    cover: "/images/stay-desert-kiln.png",
+    blurb: "Dune quiet, terracotta heat, tea poured like a ceremony.",
+  },
+  {
+    id: "swat-river",
+    title: "Lantern supper on the Swat",
+    place: "Swat",
+    price: 8900,
+    hours: "3 hours",
+    cover: "/images/stay-river-lantern.png",
+    blurb: "River trout, pine smoke, and a table that is almost in the water.",
+  },
+];
+
+export const experienceById = (id: string) => experiences.find((e) => e.id === id);

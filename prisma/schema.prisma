@@ -1,0 +1,96 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String     @id @default(cuid())
+  name          String
+  email         String     @unique
+  passwordHash  String?
+  image         String?
+  role          String     @default("TRAVELER")
+  ownerKind     String?
+  googleId      String?    @unique
+  emailVerified DateTime?
+  phone         String     @default("")
+  phoneVerified DateTime?
+  nationality   String     @default("")
+  residency     String     @default("")
+  preferences   String     @default("{}")
+  createdAt     DateTime   @default(now())
+  listings      Listing[]
+  bookings      Booking[]
+  reviews       Review[]
+  tokens        AuthToken[]
+}
+
+model AuthToken {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      String
+  token     String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([type, token])
+}
+
+model Listing {
+  id            String    @id @default(cuid())
+  slug          String    @unique
+  kind          String
+  ownerId       String
+  owner         User      @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  name          String
+  nastaliq      String    @default("")
+  city          String
+  region        String
+  cover         String
+  description   String
+  price         Int
+  priceUnit     String    @default("night")
+  meta          String    @default("{}")
+  published     Boolean   @default(false)
+  status        String    @default("pending")
+  rejectReason  String    @default("")
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  bookings      Booking[]
+  reviews       Review[]
+}
+
+model Review {
+  id        String   @id @default(cuid())
+  listingId String
+  listing   Listing  @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  rating    Int
+  body      String
+  createdAt DateTime @default(now())
+
+  @@unique([listingId, userId])
+}
+
+model Booking {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  listingId String
+  listing   Listing  @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  startDate String
+  endDate   String
+  guests    Int      @default(1)
+  extras    String   @default("")
+  payment   String
+  phone     String   @default("")
+  total     Int
+  status    String   @default("confirmed")
+  createdAt DateTime @default(now())
+}
