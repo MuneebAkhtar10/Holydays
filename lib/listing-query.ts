@@ -32,32 +32,32 @@ async function listingSelect(whereSql: "owner" | "public" | "publicKind" | "one"
   const withMeta = async () => {
     if (whereSql === "one") {
       return prisma.$queryRaw<ListingRecord[]>`
-        SELECT id, slug, kind, ownerId, name, nastaliq, city, region, cover, description,
-          price, priceUnit, published, COALESCE(status, 'pending') AS status,
-          COALESCE(rejectReason, '') AS rejectReason, COALESCE(meta, '{}') AS meta
+        SELECT id, slug, kind, ownerId AS "ownerId", name, nastaliq, city, region, cover, description,
+          price, priceUnit AS "priceUnit", published, COALESCE(status, 'pending') AS status,
+          COALESCE(rejectReason, '') AS "rejectReason", COALESCE(meta, '{}') AS meta
         FROM Listing WHERE id = ${arg} OR slug = ${arg} LIMIT 1
       `;
     }
     if (whereSql === "owner") {
       return prisma.$queryRaw<ListingRecord[]>`
-        SELECT id, slug, kind, ownerId, name, nastaliq, city, region, cover, description,
-          price, priceUnit, published, COALESCE(status, 'pending') AS status,
-          COALESCE(rejectReason, '') AS rejectReason, COALESCE(meta, '{}') AS meta
+        SELECT id, slug, kind, ownerId AS "ownerId", name, nastaliq, city, region, cover, description,
+          price, priceUnit AS "priceUnit", published, COALESCE(status, 'pending') AS status,
+          COALESCE(rejectReason, '') AS "rejectReason", COALESCE(meta, '{}') AS meta
         FROM Listing WHERE ownerId = ${arg} ORDER BY updatedAt DESC
       `;
     }
     if (whereSql === "publicKind") {
       return prisma.$queryRaw<ListingRecord[]>`
-        SELECT id, slug, kind, ownerId, name, nastaliq, city, region, cover, description,
-          price, priceUnit, published, COALESCE(status, 'pending') AS status,
-          COALESCE(rejectReason, '') AS rejectReason, COALESCE(meta, '{}') AS meta
+        SELECT id, slug, kind, ownerId AS "ownerId", name, nastaliq, city, region, cover, description,
+          price, priceUnit AS "priceUnit", published, COALESCE(status, 'pending') AS status,
+          COALESCE(rejectReason, '') AS "rejectReason", COALESCE(meta, '{}') AS meta
         FROM Listing WHERE COALESCE(status, 'pending') = 'approved' AND kind = ${arg} ORDER BY name ASC
       `;
     }
     return prisma.$queryRaw<ListingRecord[]>`
-      SELECT id, slug, kind, ownerId, name, nastaliq, city, region, cover, description,
-        price, priceUnit, published, COALESCE(status, 'pending') AS status,
-        COALESCE(rejectReason, '') AS rejectReason, COALESCE(meta, '{}') AS meta
+      SELECT id, slug, kind, ownerId AS "ownerId", name, nastaliq, city, region, cover, description,
+        price, priceUnit AS "priceUnit", published, COALESCE(status, 'pending') AS status,
+        COALESCE(rejectReason, '') AS "rejectReason", COALESCE(meta, '{}') AS meta
       FROM Listing WHERE COALESCE(status, 'pending') = 'approved' ORDER BY name ASC
     `;
   };
@@ -66,35 +66,35 @@ async function listingSelect(whereSql: "owner" | "public" | "publicKind" | "one"
   } catch {
     if (whereSql === "one") {
       const rows = await prisma.$queryRaw<ListingRecord[]>`
-        SELECT id, slug, kind, ownerId, name, nastaliq, city, region, cover, description,
-          price, priceUnit, published, COALESCE(status, 'pending') AS status,
-          COALESCE(rejectReason, '') AS rejectReason
+        SELECT id, slug, kind, ownerId AS "ownerId", name, nastaliq, city, region, cover, description,
+          price, priceUnit AS "priceUnit", published, COALESCE(status, 'pending') AS status,
+          COALESCE(rejectReason, '') AS "rejectReason"
         FROM Listing WHERE id = ${arg} OR slug = ${arg} LIMIT 1
       `;
       return rows.map((r) => ({ ...r, meta: "{}" }));
     }
     if (whereSql === "owner") {
       const rows = await prisma.$queryRaw<ListingRecord[]>`
-        SELECT id, slug, kind, ownerId, name, nastaliq, city, region, cover, description,
-          price, priceUnit, published, COALESCE(status, 'pending') AS status,
-          COALESCE(rejectReason, '') AS rejectReason
+        SELECT id, slug, kind, ownerId AS "ownerId", name, nastaliq, city, region, cover, description,
+          price, priceUnit AS "priceUnit", published, COALESCE(status, 'pending') AS status,
+          COALESCE(rejectReason, '') AS "rejectReason"
         FROM Listing WHERE ownerId = ${arg} ORDER BY updatedAt DESC
       `;
       return rows.map((r) => ({ ...r, meta: "{}" }));
     }
     if (whereSql === "publicKind") {
       const rows = await prisma.$queryRaw<ListingRecord[]>`
-        SELECT id, slug, kind, ownerId, name, nastaliq, city, region, cover, description,
-          price, priceUnit, published, COALESCE(status, 'pending') AS status,
-          COALESCE(rejectReason, '') AS rejectReason
+        SELECT id, slug, kind, ownerId AS "ownerId", name, nastaliq, city, region, cover, description,
+          price, priceUnit AS "priceUnit", published, COALESCE(status, 'pending') AS status,
+          COALESCE(rejectReason, '') AS "rejectReason"
         FROM Listing WHERE COALESCE(status, 'pending') = 'approved' AND kind = ${arg} ORDER BY name ASC
       `;
       return rows.map((r) => ({ ...r, meta: "{}" }));
     }
     const rows = await prisma.$queryRaw<ListingRecord[]>`
-      SELECT id, slug, kind, ownerId, name, nastaliq, city, region, cover, description,
-        price, priceUnit, published, COALESCE(status, 'pending') AS status,
-        COALESCE(rejectReason, '') AS rejectReason
+      SELECT id, slug, kind, ownerId AS "ownerId", name, nastaliq, city, region, cover, description,
+        price, priceUnit AS "priceUnit", published, COALESCE(status, 'pending') AS status,
+        COALESCE(rejectReason, '') AS "rejectReason"
       FROM Listing WHERE COALESCE(status, 'pending') = 'approved' ORDER BY name ASC
     `;
     return rows.map((r) => ({ ...r, meta: "{}" }));
@@ -109,7 +109,7 @@ export async function fetchListingByKey(idOrSlug: string): Promise<ListingRecord
 export async function fetchListingReviews(listingId: string): Promise<ReviewRecord[]> {
   try {
     return await prisma.$queryRaw<ReviewRecord[]>`
-      SELECT r.id AS id, r.rating AS rating, r.body AS body, r.createdAt AS createdAt, u.name AS name
+      SELECT r.id AS id, r.rating AS rating, r.body AS body, r.createdAt AS "createdAt", u.name AS name
       FROM Review r
       INNER JOIN "user" u ON u.id = r.userId
       WHERE r.listingId = ${listingId}
@@ -124,7 +124,7 @@ export async function fetchListingReviews(listingId: string): Promise<ReviewReco
 export async function fetchReviewStatsMap() {
   try {
     const rows = await prisma.$queryRaw<{ listingId: string; count: bigint | number; avg: number }[]>`
-      SELECT listingId AS listingId, COUNT(*) AS count, AVG(rating) AS avg
+      SELECT listingId AS "listingId", COUNT(*) AS count, AVG(rating) AS avg
       FROM Review
       GROUP BY listingId
     `;

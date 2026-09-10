@@ -108,7 +108,7 @@ export async function PATCH(req: Request, { params }: Ctx) {
     } catch {
       await prisma.$executeRaw`
         UPDATE Listing
-        SET status = 'pending', rejectReason = '', published = 0, meta = ${meta}, updatedAt = CURRENT_TIMESTAMP
+        SET status = 'pending', rejectReason = '', published = false, meta = ${meta}, updatedAt = CURRENT_TIMESTAMP
         WHERE id = ${listing.id}
       `;
     }

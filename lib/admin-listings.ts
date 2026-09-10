@@ -28,11 +28,11 @@ export async function fetchAdminListings(status: string): Promise<AdminListingRo
       l.cover AS cover,
       l.description AS description,
       l.price AS price,
-      l.priceUnit AS priceUnit,
+      l.priceUnit AS "priceUnit",
       COALESCE(l.status, 'pending') AS status,
-      COALESCE(l.rejectReason, '') AS rejectReason,
-      u.name AS ownerName,
-      u.email AS ownerEmail
+      COALESCE(l.rejectReason, '') AS "rejectReason",
+      u.name AS "ownerName",
+      u.email AS "ownerEmail"
     FROM Listing l
     INNER JOIN "user" u ON u.id = l.ownerId
     WHERE (${filter} = '%' OR COALESCE(l.status, 'pending') = ${filter})
@@ -41,7 +41,7 @@ export async function fetchAdminListings(status: string): Promise<AdminListingRo
 }
 
 export async function setListingModeration(id: string, status: "approved" | "rejected" | "pending", rejectReason: string) {
-  const published = status === "approved" ? 1 : 0;
+  const published = status === "approved";
   const reason = status === "rejected" ? rejectReason : "";
   await prisma.$executeRaw`
     UPDATE Listing

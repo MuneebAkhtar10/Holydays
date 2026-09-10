@@ -129,7 +129,7 @@ export async function POST(req: Request) {
       });
     } catch {
       await prisma.$executeRaw`
-        UPDATE Listing SET status = 'pending', rejectReason = '', published = 0, meta = ${meta}, updatedAt = CURRENT_TIMESTAMP WHERE id = ${listing.id}
+        UPDATE Listing SET status = 'pending', rejectReason = '', published = false, meta = ${meta}, updatedAt = CURRENT_TIMESTAMP WHERE id = ${listing.id}
       `;
     }
     return NextResponse.json({

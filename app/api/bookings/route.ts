@@ -23,7 +23,7 @@ export async function GET() {
   let mine: { listingId: string; id: string; rating: number; body: string }[] = [];
   try {
     mine = await prisma.$queryRaw`
-      SELECT listingId, id, rating, body FROM Review WHERE userId = ${session.user.id}
+      SELECT listingId AS "listingId", id, rating, body FROM Review WHERE userId = ${session.user.id}
     `;
   } catch {
     mine = [];

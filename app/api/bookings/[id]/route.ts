@@ -26,7 +26,7 @@ export async function GET(_req: Request, { params }: Ctx) {
   let mine: { listingId: string; id: string; rating: number; body: string } | null = null;
   try {
     const rows = await prisma.$queryRaw<{ listingId: string; id: string; rating: number; body: string }[]>`
-      SELECT listingId, id, rating, body FROM Review WHERE userId = ${session.user.id} AND listingId = ${booking.listingId} LIMIT 1
+      SELECT listingId AS "listingId", id, rating, body FROM Review WHERE userId = ${session.user.id} AND listingId = ${booking.listingId} LIMIT 1
     `;
     mine = rows[0] ?? null;
   } catch {

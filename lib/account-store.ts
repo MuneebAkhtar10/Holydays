@@ -20,8 +20,8 @@ export type AccountRow = {
 export async function fetchAccount(id: string): Promise<AccountRow | null> {
   const rows = await prisma.$queryRaw<AccountRow[]>`
     SELECT
-      id, name, email, image, role, passwordHash, googleId,
-      emailVerified, phone, phoneVerified, nationality, residency, preferences
+      id, name, email, image, role, passwordHash AS "passwordHash", googleId AS "googleId",
+      emailVerified AS "emailVerified", phone, phoneVerified AS "phoneVerified", nationality, residency, preferences
     FROM "user"
     WHERE id = ${id}
     LIMIT 1
@@ -32,8 +32,8 @@ export async function fetchAccount(id: string): Promise<AccountRow | null> {
 export async function fetchAccountByEmail(email: string): Promise<AccountRow | null> {
   const rows = await prisma.$queryRaw<AccountRow[]>`
     SELECT
-      id, name, email, image, role, passwordHash, googleId,
-      emailVerified, phone, phoneVerified, nationality, residency, preferences
+      id, name, email, image, role, passwordHash AS "passwordHash", googleId AS "googleId",
+      emailVerified AS "emailVerified", phone, phoneVerified AS "phoneVerified", nationality, residency, preferences
     FROM "user"
     WHERE email = ${email}
     LIMIT 1
@@ -102,7 +102,7 @@ export async function issueToken(userId: string, type: string, ttlMs: number, to
 
 export async function consumeToken(type: string, token: string) {
   const rows = await prisma.$queryRaw<{ userId: string; expiresAt: Date | string }[]>`
-    SELECT userId, expiresAt FROM AuthToken WHERE type = ${type} AND token = ${token} LIMIT 1
+    SELECT userId AS "userId", expiresAt AS "expiresAt" FROM AuthToken WHERE type = ${type} AND token = ${token} LIMIT 1
   `;
   const row = rows[0];
   if (!row) return null;
