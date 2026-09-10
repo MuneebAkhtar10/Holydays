@@ -8,7 +8,7 @@ import { useEffect, useMemo, useState } from "react";
 import { datesOverlap, formatDay, isPastBooking } from "@/lib/format";
 import { useSerai } from "@/lib/store";
 import { defaultDates } from "@/lib/format";
-import { kindLabel, unitLabel } from "@/lib/marketplace";
+import { kindLabel, unitLabel, type ListingKind } from "@/lib/marketplace";
 import { listingToTaxi, tripTitle } from "@/lib/package-plan";
 import { LoaderOverlay, PageLoader } from "@/components/PageLoader";
 import { ListingReviews, type ReviewItem } from "@/components/ListingReviews";
@@ -225,7 +225,7 @@ export function ListingBook({ fallbackSlug }: { fallbackSlug?: string }) {
         <div className="absolute inset-0 bg-gradient-to-t from-ink via-ink/35 to-ink/25" />
         <div className="absolute inset-x-0 bottom-0 mx-auto max-w-6xl px-5 pb-10">
           <p className="inline-flex rounded-full border border-brass/40 bg-ink/50 px-3 py-1 text-[11px] uppercase tracking-[0.18em] text-brass backdrop-blur">
-            {kindLabel[listing.kind] ?? listing.kind}
+            {kindLabel[listing.kind as ListingKind] ?? listing.kind}
           </p>
           {urdu && <p className="font-urdu mt-3 text-xl text-brass">{listing.nastaliq}</p>}
           <h1 className="font-display mt-2 max-w-3xl text-4xl leading-tight md:text-6xl">{listing.name}</h1>
