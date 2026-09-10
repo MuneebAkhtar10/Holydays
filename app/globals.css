@@ -310,26 +310,30 @@ html[data-theme="dark"] .inset-card {
   display: block;
   width: 100%;
   max-width: 100%;
-  margin-top: 0.4rem;
-  padding: 0.9rem 1.05rem;
+  margin-top: 0.3rem;
+  padding: 0.55rem 0.75rem;
   border: 1px solid rgba(11, 18, 32, 0.16);
-  border-radius: 0.85rem;
+  border-radius: 0.65rem;
   background: #fff;
   color: #0b1220;
-  font-size: 1rem;
+  font-size: 0.9rem;
   font-weight: 400;
   outline: none;
-  line-height: 1.4;
+  line-height: 1.35;
   box-sizing: border-box;
 }
 
+textarea.paper-field {
+  min-height: 3.5rem !important;
+}
+
 select.paper-field {
-  padding-right: 2.25rem;
+  padding-right: 2rem;
   appearance: none;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%230b1220' fill-opacity='0.45' d='M1 1l5 5 5-5'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
-  background-position: right 0.9rem center;
-  background-size: 12px 8px;
+  background-position: right 0.75rem center;
+  background-size: 11px 7px;
 }
 
 .paper-field {

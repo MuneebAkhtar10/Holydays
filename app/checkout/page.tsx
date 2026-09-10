@@ -64,6 +64,7 @@ function CheckoutInner() {
 
   const [step, setStep] = useState(0);
   const [phone, setPhone] = useState("");
+  const [phoneError, setPhoneError] = useState(false);
   const [specialRequests, setSpecialRequests] = useState(params.get("requests") ?? "");
   const [promo, setPromo] = useState(params.get("promo") ?? "");
   const [airport, setAirport] = useState(params.get("airport") === "1");
@@ -153,6 +154,22 @@ function CheckoutInner() {
           { id: "property", label: "Pay at the door" },
         ];
   const [method, setMethod] = useState(quote?.rate.payment === "property" ? "property" : "jazz");
+
+  useEffect(() => {
+    if (!buildPackage) return;
+    const nextEnd = extraStays.reduce((end, s) => (s.checkout > end ? s.checkout : end), input.checkout);
+    setTaxiPicks((picks) => {
+      let changed = false;
+      const next = picks.map((p) => {
+        if (p.leg === "out" && p.date !== nextEnd) {
+          changed = true;
+          return { ...p, date: nextEnd };
+        }
+        return p;
+      });
+      return changed ? next : picks;
+    });
+  }, [buildPackage, extraStays, input.checkout]);
 
   if (status === "loading" || !liveReady) return <PageLoader label="Preparing checkout" />;
   if (status === "unauthenticated") return <PageLoader label="Redirecting to sign in" />;
@@ -316,12 +333,18 @@ function CheckoutInner() {
               {input.children ? ` · ${input.children} children` : ""}
             </p>
             <input
-              className="w-full rounded-xl bg-sand/[0.04] px-3.5 py-2.5 outline-none ring-1 ring-sand/[0.08] focus:ring-brass/35"
+              className={`w-full rounded-xl bg-sand/[0.04] px-3.5 py-2.5 outline-none ring-1 focus:ring-brass/35 ${
+                phoneError ? "ring-rose/60" : "ring-sand/[0.08]"
+              }`}
               placeholder="Phone"
               required
               value={phone}
-              onChange={(e) => setPhone(e.target.value)}
+              onChange={(e) => {
+                setPhone(e.target.value);
+                if (e.target.value) setPhoneError(false);
+              }}
             />
+            {phoneError && <p className="text-sm text-rose">Phone number is required to continue.</p>}
             <textarea
               className="w-full rounded-xl bg-sand/[0.04] px-3.5 py-2.5 outline-none ring-1 ring-sand/[0.08] focus:ring-brass/35"
               rows={2}
@@ -546,8 +569,16 @@ function CheckoutInner() {
               <button
                 type="button"
                 className="btn-primary w-full py-3.5"
-                disabled={!terms || !phone}
                 onClick={async () => {
+                  if (!phone.trim()) {
+                    setPhoneError(true);
+                    setStep(0);
+                    return;
+                  }
+                  if (!terms) {
+                    setError("Please accept the policies to continue.");
+                    return;
+                  }
                   setError("");
                   setOverlay("Confirming booking");
                   const res = await fetch("/api/bookings", {
@@ -606,7 +637,17 @@ function CheckoutInner() {
             </button>
           )}
           {step < lastStep && (
-            <button type="button" className="btn-primary" disabled={step === 0 && !phone} onClick={() => setStep((s) => s + 1)}>
+            <button
+              type="button"
+              className="btn-primary"
+              onClick={() => {
+                if (step === 0 && !phone.trim()) {
+                  setPhoneError(true);
+                  return;
+                }
+                setStep((s) => s + 1);
+              }}
+            >
               Continue
             </button>
           )}

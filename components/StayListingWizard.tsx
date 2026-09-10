@@ -84,11 +84,11 @@ export function StayListingWizard({
   setMealRates: Dispatch<SetStateAction<{ breakfast: string; lunch: string; dinner: string }>>;
 }) {
   const pane = (i: number, node: ReactNode) => (
-    <div className={step === i ? "space-y-4 pb-4" : "hidden"}>{node}</div>
+    <div className={step === i ? "space-y-2.5 pb-3" : "hidden"}>{node}</div>
   );
 
   return (
-    <div className="mt-3 flex min-h-0 flex-1 flex-col gap-4 lg:flex-row">
+    <div className="mt-2 flex min-h-0 flex-1 flex-col gap-3 lg:flex-row">
       <nav className="form-stepper shrink-0 overflow-x-auto lg:w-48 lg:overflow-visible">
         {STAY_STEPS.map((s, i) => {
           const done = i < step;
@@ -118,7 +118,7 @@ export function StayListingWizard({
             <p className="mb-1 max-w-2xl text-[15px] leading-relaxed text-ink/65">
               Name, place, and how this hotel is listed for guests.
             </p>
-            <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
+            <div className="grid gap-2.5 md:grid-cols-2 lg:grid-cols-3">
               <label className="form-label mt-0">
                 Property name
                 <input className="paper-field" placeholder="Canal Breeze Studio" value={String(form.name)} onChange={(e) => set("name", e.target.value)} />
@@ -191,7 +191,7 @@ export function StayListingWizard({
               Description
               <textarea className="paper-field min-h-28 resize-y" rows={4} placeholder="What guests should know" value={String(form.description)} onChange={(e) => set("description", e.target.value)} />
             </label>
-            <div className="grid gap-3 sm:grid-cols-[1fr_auto]">
+            <div className="grid gap-2.5 sm:grid-cols-[1fr_auto]">
               <MoneyInput compact label="Guide price per night" pkr={String(form.price)} onPkr={(v) => set("price", v)} />
               <label className="form-label">
                 Charged
@@ -341,7 +341,7 @@ export function StayListingWizard({
               ))}
             </div>
             <p className="text-sm font-medium text-ink">Meals guests can add</p>
-            <div className="grid gap-3 sm:grid-cols-3">
+            <div className="grid gap-2.5 sm:grid-cols-3">
               {(["breakfast", "lunch", "dinner"] as const).map((key) => (
                 <MoneyInput
                   key={key}
@@ -365,7 +365,7 @@ export function StayListingWizard({
             <p className="mb-1 max-w-2xl text-[15px] leading-relaxed text-ink/65">
               Check-in times, house rules, and how to reach the property.
             </p>
-            <div className="grid gap-3 sm:grid-cols-2">
+            <div className="grid gap-2.5 sm:grid-cols-2">
               <label className="form-label">
                 Check-in
                 <input className="paper-field" value={String(form.checkIn)} onChange={(e) => set("checkIn", e.target.value)} />
@@ -379,7 +379,7 @@ export function StayListingWizard({
               Reception information
               <input className="paper-field" value={String(form.reception)} onChange={(e) => set("reception", e.target.value)} />
             </label>
-            <div className="grid gap-3 sm:grid-cols-2">
+            <div className="grid gap-2.5 sm:grid-cols-2">
               <label className="form-label">
                 Contact phone
                 <input className="paper-field" value={String(form.phone)} onChange={(e) => set("phone", e.target.value)} />
@@ -393,7 +393,7 @@ export function StayListingWizard({
               House policies (one per line)
               <textarea className="paper-field min-h-24" value={String(form.policies)} onChange={(e) => set("policies", e.target.value)} />
             </label>
-            <div className="grid gap-3 sm:grid-cols-2">
+            <div className="grid gap-2.5 sm:grid-cols-2">
               <label className="form-label">
                 Cancellation
                 <select className="paper-field" value={String(form.cancellation)} onChange={(e) => set("cancellation", e.target.value)}>
@@ -407,7 +407,7 @@ export function StayListingWizard({
                 Pay at property
               </label>
             </div>
-            <div className="grid gap-3 sm:grid-cols-2">
+            <div className="grid gap-2.5 sm:grid-cols-2">
               <label className="form-label">
                 Landmark nearby
                 <input className="paper-field" value={String(form.landmark)} onChange={(e) => set("landmark", e.target.value)} />
@@ -446,7 +446,7 @@ export function StayListingWizard({
             <p className="mb-1 max-w-2xl text-[15px] leading-relaxed text-ink/65">
               Who runs the house. Guests see this on the listing.
             </p>
-            <div className="grid gap-3 sm:grid-cols-2">
+            <div className="grid gap-2.5 sm:grid-cols-2">
               <label className="form-label">
                 Host name
                 <input className="paper-field" value={String(form.hostName)} onChange={(e) => set("hostName", e.target.value)} />

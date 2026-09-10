@@ -232,19 +232,7 @@ export function ListingForm({
   const toggleFac = (key: FacilityKey) =>
     setFacilities((list) => (list.includes(key) ? list.filter((x) => x !== key) : [...list, key]));
 
-  const shell = (
-    <div className={`fixed inset-0 z-[80] overscroll-contain bg-black/55 ${stay ? "overflow-hidden" : "overflow-y-auto"}`} onClick={onClose}>
-      <div className={`mx-auto flex w-full max-w-[92rem] items-start justify-center p-3 sm:p-6 ${stay ? "h-full max-h-full py-4" : "min-h-full py-6"}`}>
-      <form
-        className={`paper relative w-full max-w-6xl rounded-2xl shadow-2xl ${stay ? "flex h-[min(92vh,54rem)] flex-col overflow-hidden p-5 sm:p-6" : "paper-scroll p-6 sm:p-8"}`}
-        onClick={(e) => e.stopPropagation()}
-        onKeyDown={(e) => {
-          if (e.key === "Enter" && (e.target as HTMLElement).tagName !== "TEXTAREA") {
-            e.preventDefault();
-          }
-        }}
-        onSubmit={async (e) => {
-          e.preventDefault();
+  const saveListing = async () => {
           setError("");
           const url = initial?.id ? `/api/listings/${initial.id}` : "/api/listings";
           const payload = {
@@ -312,11 +300,23 @@ export function ListingForm({
           }
           onSaved();
           onClose?.();
+  };
+
+  const shell = (
+    <div className={`fixed inset-0 z-[80] overscroll-contain bg-black/55 ${stay ? "overflow-hidden" : "overflow-y-auto"}`} onClick={onClose}>
+      <div className={`mx-auto flex w-full max-w-[92rem] items-start justify-center p-3 sm:p-6 ${stay ? "h-full max-h-full py-4" : "min-h-full py-6"}`}>
+      <div
+        className={`paper relative w-full max-w-6xl rounded-2xl shadow-2xl ${stay ? "flex h-[min(92vh,54rem)] flex-col overflow-hidden p-4 sm:p-5" : "paper-scroll p-6 sm:p-8"}`}
+        onClick={(e) => e.stopPropagation()}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" && (e.target as HTMLElement).tagName !== "TEXTAREA") {
+            e.preventDefault();
+          }
         }}
       >
         <div className="shrink-0">
-        <p className="text-[11px] uppercase tracking-[0.2em] text-ink/40">{stay ? "Hotel" : taxi ? "Taxi" : ziyarat ? "Ziyarat" : "Listing"}</p>
-        <h2 className="font-display mt-1 text-3xl">{initial?.id ? "Edit listing" : stay ? "New hotel" : taxi ? "New taxi" : ziyarat ? "New ziyarat" : "New listing"}</h2>
+        <p className="text-[10px] uppercase tracking-[0.2em] text-ink/40">{stay ? "Hotel" : taxi ? "Taxi" : ziyarat ? "Ziyarat" : "Listing"}</p>
+        <h2 className={`font-display text-ink ${stay ? "mt-0.5 text-xl" : "mt-1 text-3xl"}`}>{initial?.id ? "Edit listing" : stay ? "New hotel" : taxi ? "New taxi" : ziyarat ? "New ziyarat" : "New listing"}</h2>
         {!stay && (
           <p className="mt-2 text-sm text-ink/60">
             {taxi
@@ -327,7 +327,7 @@ export function ListingForm({
           </p>
         )}
         {stay && (
-          <p className="mt-1 text-[15px] text-ink/60">
+          <p className="mt-0.5 text-[13px] text-ink/60">
             Step {stayStep + 1} of {STAY_STEPS.length} · {STAY_STEPS[stayStep].label}
           </p>
         )}
@@ -680,7 +680,7 @@ export function ListingForm({
         )}
 
         {stay ? (
-          <div className="mt-3 flex shrink-0 flex-wrap items-center justify-between gap-3 border-t border-ink/10 pt-4">
+          <div className="mt-2 flex shrink-0 flex-wrap items-center justify-between gap-2 border-t border-ink/10 pt-2.5">
             <p className="max-w-md text-sm leading-relaxed text-ink/60">
               {initial?.id
                 ? "Saving sends this listing back to admin until they approve it again."
@@ -695,7 +695,7 @@ export function ListingForm({
               <button type="button" className="btn-ghost" disabled={stayStep === 0} onClick={() => setStayStep((n) => Math.max(0, n - 1))}>
                 Back
               </button>
-              <button type="submit" className="btn-outline">
+              <button type="button" className="btn-outline" onClick={saveListing}>
                 Save draft
               </button>
               {stayStep < STAY_STEPS.length - 1 ? (
@@ -703,7 +703,7 @@ export function ListingForm({
                   Next
                 </button>
               ) : (
-                <button type="submit" className="btn-primary">
+                <button type="button" className="btn-primary" onClick={saveListing}>
                   Save hotel
                 </button>
               )}
@@ -718,7 +718,7 @@ export function ListingForm({
         </p>
         {error && <p className="mt-3 text-sm text-rose">{error}</p>}
         <div className="mt-6 flex flex-wrap items-center gap-2">
-          <button type="submit" className="btn-primary">
+          <button type="button" className="btn-primary" onClick={saveListing}>
             Save
           </button>
           {onClose && (
@@ -730,7 +730,7 @@ export function ListingForm({
           </>
         )}
         {stay && error && <p className="mt-2 text-sm text-rose">{error}</p>}
-      </form>
+      </div>
       </div>
     </div>
   );
