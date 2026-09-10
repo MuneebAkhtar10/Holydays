@@ -238,6 +238,11 @@ export function ListingForm({
       <form
         className={`paper relative w-full max-w-6xl rounded-2xl shadow-2xl ${stay ? "flex h-[min(92vh,54rem)] flex-col overflow-hidden p-5 sm:p-6" : "paper-scroll p-6 sm:p-8"}`}
         onClick={(e) => e.stopPropagation()}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" && (e.target as HTMLElement).tagName !== "TEXTAREA") {
+            e.preventDefault();
+          }
+        }}
         onSubmit={async (e) => {
           e.preventDefault();
           setError("");
@@ -681,17 +686,17 @@ export function ListingForm({
                 ? "Saving sends this listing back to admin until they approve it again."
                 : "New listings wait in the admin queue."}
             </p>
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               {onClose && (
-                <button type="button" className="btn-ghost" onClick={onClose}>
+                <button type="button" className="btn-subtle" onClick={onClose}>
                   Cancel
                 </button>
               )}
               <button type="button" className="btn-ghost" disabled={stayStep === 0} onClick={() => setStayStep((n) => Math.max(0, n - 1))}>
                 Back
               </button>
-              <button type="submit" className="btn-ghost">
-                Save
+              <button type="submit" className="btn-outline">
+                Save draft
               </button>
               {stayStep < STAY_STEPS.length - 1 ? (
                 <button type="button" className="btn-primary" onClick={() => setStayStep((n) => Math.min(STAY_STEPS.length - 1, n + 1))}>
@@ -712,12 +717,12 @@ export function ListingForm({
             : "New listings wait in the admin queue. They appear on HolyDays only after approval."}
         </p>
         {error && <p className="mt-3 text-sm text-rose">{error}</p>}
-        <div className="mt-6 flex flex-wrap gap-3">
+        <div className="mt-6 flex flex-wrap items-center gap-2">
           <button type="submit" className="btn-primary">
             Save
           </button>
           {onClose && (
-            <button type="button" className="btn-ghost" onClick={onClose}>
+            <button type="button" className="btn-subtle" onClick={onClose}>
               Cancel
             </button>
           )}

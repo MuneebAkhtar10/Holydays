@@ -332,9 +332,21 @@ select.paper-field {
   background-size: 12px 8px;
 }
 
+.paper-field {
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.paper-field:hover:not(:focus) {
+  border-color: rgba(11, 18, 32, 0.26);
+}
+
 .paper-field:focus {
   border-color: #c5a46a;
   box-shadow: 0 0 0 4px rgba(234, 179, 8, 0.22);
+}
+
+.paper-field::placeholder {
+  color: rgba(11, 18, 32, 0.32);
 }
 
 .paper-label {
@@ -348,11 +360,122 @@ select.paper-field {
 
 .form-label {
   display: block;
-  font-size: 0.875rem;
-  font-weight: 500;
-  letter-spacing: 0;
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
   text-transform: none;
   color: color-mix(in srgb, var(--serai-ink) 78%, #000);
+}
+
+.form-label .paper-field {
+  margin-top: 0.45rem;
+}
+
+/* Stepper navigation for multi-step forms */
+.form-stepper {
+  display: flex;
+  flex-direction: row;
+  gap: 0.25rem;
+}
+
+@media (min-width: 1024px) {
+  .form-stepper {
+    flex-direction: column;
+    gap: 0;
+  }
+}
+
+.form-stepper .form-stepper-rail::before {
+  display: none;
+}
+
+@media (min-width: 1024px) {
+  .form-stepper .form-stepper-rail::before {
+    display: block;
+  }
+}
+
+.form-stepper-item {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  padding: 0.55rem 0.6rem;
+  border-radius: 0.7rem;
+  text-align: left;
+  color: rgba(11, 18, 32, 0.45);
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.form-stepper-item:hover {
+  background: rgba(11, 18, 32, 0.04);
+}
+
+.form-stepper-item[data-active="true"] {
+  background: rgba(197, 164, 106, 0.16);
+  color: #0b1c34;
+}
+
+.form-stepper-rail {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 1.6rem;
+  flex-shrink: 0;
+}
+
+.form-stepper-rail::before {
+  content: "";
+  position: absolute;
+  top: 1.6rem;
+  bottom: -0.55rem;
+  width: 1px;
+  background: rgba(11, 18, 32, 0.14);
+}
+
+.form-stepper-item:last-child .form-stepper-rail::before {
+  display: none;
+}
+
+.form-stepper-dot {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.6rem;
+  height: 1.6rem;
+  border-radius: 999px;
+  border: 1.5px solid rgba(11, 18, 32, 0.2);
+  background: #f4ede3;
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: rgba(11, 18, 32, 0.45);
+  flex-shrink: 0;
+  transition: border-color 0.15s ease, background 0.15s ease, color 0.15s ease;
+}
+
+.form-stepper-item[data-active="true"] .form-stepper-dot {
+  border-color: #9a7a3a;
+  background: linear-gradient(180deg, #d4b57a, #c5a46a 55%, #b08d52);
+  color: #0b1c34;
+  box-shadow: 0 3px 8px rgba(154, 122, 58, 0.35);
+}
+
+.form-stepper-item[data-done="true"] .form-stepper-dot {
+  border-color: #1f6b38;
+  background: #1f6b38;
+  color: #fff;
+}
+
+.form-stepper-label {
+  font-size: 0.86rem;
+  font-weight: 600;
+}
+
+.form-stepper-item[data-active="true"] .form-stepper-label {
+  color: #0b1c34;
 }
 
 .btn-primary {
@@ -396,6 +519,47 @@ select.paper-field {
 .btn-ghost:hover {
   border-color: var(--serai-brass);
   filter: brightness(1.06);
+}
+
+.btn-subtle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid transparent;
+  border-radius: 0.9rem;
+  background: transparent;
+  color: color-mix(in srgb, var(--serai-sand) 70%, transparent);
+  padding: 0.7rem 1rem;
+  font-size: 0.9rem;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.btn-subtle:hover {
+  background: color-mix(in srgb, var(--serai-ink-2) 60%, transparent);
+  color: var(--serai-sand);
+}
+
+.btn-outline {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1.5px solid var(--serai-sage);
+  border-radius: 0.9rem;
+  background: transparent;
+  color: var(--serai-sage);
+  padding: 0.68rem 1.1rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+html[data-theme="dark"] .btn-outline {
+  color: #4fd17a;
+  border-color: #4fd17a;
+}
+
+.btn-outline:hover {
+  background: color-mix(in srgb, var(--serai-sage) 12%, transparent);
 }
 
 .lift-card {

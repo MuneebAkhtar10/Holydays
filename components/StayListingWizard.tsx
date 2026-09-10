@@ -89,20 +89,26 @@ export function StayListingWizard({
 
   return (
     <div className="mt-3 flex min-h-0 flex-1 flex-col gap-4 lg:flex-row">
-      <nav className="flex shrink-0 gap-1 overflow-x-auto lg:w-44 lg:flex-col lg:overflow-visible">
-        {STAY_STEPS.map((s, i) => (
-          <button
-            key={s.id}
-            type="button"
-            onClick={() => setStep(i)}
-            className={`whitespace-nowrap rounded-xl px-3 py-2 text-left text-sm ${
-              step === i ? "bg-flame/15 font-medium text-ink" : "text-ink/45 hover:bg-ink/5"
-            }`}
-          >
-            <span className="mr-1.5 tabular-nums text-[10px] text-ink/35">{i + 1}</span>
-            {s.label}
-          </button>
-        ))}
+      <nav className="form-stepper shrink-0 overflow-x-auto lg:w-48 lg:overflow-visible">
+        {STAY_STEPS.map((s, i) => {
+          const done = i < step;
+          const active = i === step;
+          return (
+            <button
+              key={s.id}
+              type="button"
+              onClick={() => setStep(i)}
+              className="form-stepper-item"
+              data-active={active}
+              data-done={done}
+            >
+              <span className="form-stepper-rail">
+                <span className="form-stepper-dot">{done ? "✓" : i + 1}</span>
+              </span>
+              <span className="form-stepper-label">{s.label}</span>
+            </button>
+          );
+        })}
       </nav>
 
       <div className="min-h-0 flex-1 overflow-y-auto pr-1">
