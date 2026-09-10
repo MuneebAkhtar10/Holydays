@@ -3,94 +3,103 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 model User {
-  id            String     @id @default(cuid())
+  id            String      @id @default(cuid())
   name          String
-  email         String     @unique
-  passwordHash  String?
+  email         String      @unique
+  passwordHash  String?     @map("passwordhash")
   image         String?
-  role          String     @default("TRAVELER")
-  ownerKind     String?
-  googleId      String?    @unique
-  emailVerified DateTime?
-  phone         String     @default("")
-  phoneVerified DateTime?
-  nationality   String     @default("")
-  residency     String     @default("")
-  preferences   String     @default("{}")
-  createdAt     DateTime   @default(now())
+  role          String      @default("TRAVELER")
+  ownerKind     String?     @map("ownerkind")
+  googleId      String?     @unique @map("googleid")
+  emailVerified DateTime?   @map("emailverified")
+  phone         String      @default("")
+  phoneVerified DateTime?   @map("phoneverified")
+  nationality   String      @default("")
+  residency     String      @default("")
+  preferences   String      @default("{}")
+  createdAt     DateTime    @default(now()) @map("createdat")
   listings      Listing[]
   bookings      Booking[]
   reviews       Review[]
   tokens        AuthToken[]
+
+  @@map("user")
 }
 
 model AuthToken {
   id        String   @id @default(cuid())
-  userId    String
+  userId    String   @map("userid")
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   type      String
   token     String
-  expiresAt DateTime
-  createdAt DateTime @default(now())
+  expiresAt DateTime @map("expiresat")
+  createdAt DateTime @default(now()) @map("createdat")
 
   @@index([type, token])
+  @@map("authtoken")
 }
 
 model Listing {
-  id            String    @id @default(cuid())
-  slug          String    @unique
-  kind          String
-  ownerId       String
-  owner         User      @relation(fields: [ownerId], references: [id], onDelete: Cascade)
-  name          String
-  nastaliq      String    @default("")
-  city          String
-  region        String
-  cover         String
-  description   String
-  price         Int
-  priceUnit     String    @default("night")
-  meta          String    @default("{}")
-  published     Boolean   @default(false)
-  status        String    @default("pending")
-  rejectReason  String    @default("")
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-  bookings      Booking[]
-  reviews       Review[]
+  id           String    @id @default(cuid())
+  slug         String    @unique
+  kind         String
+  ownerId      String    @map("ownerid")
+  owner        User      @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  name         String
+  nastaliq     String    @default("")
+  city         String
+  region       String
+  cover        String
+  description  String
+  price        Int
+  priceUnit    String    @default("night") @map("priceunit")
+  meta         String    @default("{}")
+  published    Boolean   @default(false)
+  status       String    @default("pending")
+  rejectReason String    @default("") @map("rejectreason")
+  createdAt    DateTime  @default(now()) @map("createdat")
+  updatedAt    DateTime  @updatedAt @map("updatedat")
+  bookings     Booking[]
+  reviews      Review[]
+
+  @@map("listing")
 }
 
 model Review {
   id        String   @id @default(cuid())
-  listingId String
+  listingId String   @map("listingid")
   listing   Listing  @relation(fields: [listingId], references: [id], onDelete: Cascade)
-  userId    String
+  userId    String   @map("userid")
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   rating    Int
   body      String
-  createdAt DateTime @default(now())
+  createdAt DateTime @default(now()) @map("createdat")
 
   @@unique([listingId, userId])
+  @@map("review")
 }
 
 model Booking {
   id        String   @id @default(cuid())
-  userId    String
+  userId    String   @map("userid")
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  listingId String
+  listingId String   @map("listingid")
   listing   Listing  @relation(fields: [listingId], references: [id], onDelete: Cascade)
-  startDate String
-  endDate   String
+  startDate String   @map("startdate")
+  endDate   String   @map("enddate")
   guests    Int      @default(1)
   extras    String   @default("")
   payment   String
   phone     String   @default("")
   total     Int
   status    String   @default("confirmed")
-  createdAt DateTime @default(now())
+  createdAt DateTime @default(now()) @map("createdat")
+
+  @@map("booking")
 }

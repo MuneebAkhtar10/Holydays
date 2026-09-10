@@ -110,8 +110,8 @@ export async function fetchListingReviews(listingId: string): Promise<ReviewReco
   try {
     return await prisma.$queryRaw<ReviewRecord[]>`
       SELECT r.id AS id, r.rating AS rating, r.body AS body, r.createdAt AS createdAt, u.name AS name
-      FROM "Review" r
-      INNER JOIN "User" u ON u.id = r.userId
+      FROM Review r
+      INNER JOIN "user" u ON u.id = r.userId
       WHERE r.listingId = ${listingId}
       ORDER BY r.createdAt DESC
     `;
@@ -125,7 +125,7 @@ export async function fetchReviewStatsMap() {
   try {
     const rows = await prisma.$queryRaw<{ listingId: string; count: bigint | number; avg: number }[]>`
       SELECT listingId AS listingId, COUNT(*) AS count, AVG(rating) AS avg
-      FROM "Review"
+      FROM Review
       GROUP BY listingId
     `;
     return Object.fromEntries(
@@ -143,7 +143,7 @@ export async function fetchReviewStatsMap() {
 export async function userHasReview(listingId: string, userId: string) {
   try {
     const rows = await prisma.$queryRaw<{ id: string }[]>`
-      SELECT id FROM "Review" WHERE listingId = ${listingId} AND userId = ${userId} LIMIT 1
+      SELECT id FROM Review WHERE listingId = ${listingId} AND userId = ${userId} LIMIT 1
     `;
     return Boolean(rows[0]);
   } catch {
@@ -154,7 +154,7 @@ export async function userHasReview(listingId: string, userId: string) {
 export async function upsertGuestReview(listingId: string, userId: string, rating: number, body: string) {
   const id = crypto.randomUUID().replace(/-/g, "").slice(0, 24);
   await prisma.$executeRaw`
-    INSERT INTO "Review" (id, listingId, userId, rating, body, createdAt)
+    INSERT INTO Review (id, listingId, userId, rating, body, createdAt)
     VALUES (${id}, ${listingId}, ${userId}, ${rating}, ${body}, CURRENT_TIMESTAMP)
     ON CONFLICT(listingId, userId) DO UPDATE SET
       rating = ${rating},

@@ -34,7 +34,7 @@ export async function fetchAdminListings(status: string): Promise<AdminListingRo
       u.name AS ownerName,
       u.email AS ownerEmail
     FROM Listing l
-    INNER JOIN User u ON u.id = l.ownerId
+    INNER JOIN "user" u ON u.id = l.ownerId
     WHERE (${filter} = '%' OR COALESCE(l.status, 'pending') = ${filter})
     ORDER BY l.updatedAt DESC
   `;

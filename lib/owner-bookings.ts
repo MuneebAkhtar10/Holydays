@@ -46,10 +46,10 @@ export async function fetchOwnerBookings(ownerId: string): Promise<OwnerBookingR
       b.extras AS extras,
       r.rating AS reviewRating,
       r.body AS reviewBody
-    FROM "Booking" b
-    INNER JOIN "Listing" l ON l.id = b.listingId
-    INNER JOIN "User" u ON u.id = b.userId
-    LEFT JOIN "Review" r ON r.listingId = l.id AND r.userId = b.userId
+    FROM Booking b
+    INNER JOIN Listing l ON l.id = b.listingId
+    INNER JOIN "user" u ON u.id = b.userId
+    LEFT JOIN Review r ON r.listingId = l.id AND r.userId = b.userId
     WHERE l.ownerId = ${ownerId}
     ORDER BY b.startDate DESC, b.createdAt DESC
   `;

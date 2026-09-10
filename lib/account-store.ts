@@ -22,7 +22,7 @@ export async function fetchAccount(id: string): Promise<AccountRow | null> {
     SELECT
       id, name, email, image, role, passwordHash, googleId,
       emailVerified, phone, phoneVerified, nationality, residency, preferences
-    FROM "User"
+    FROM "user"
     WHERE id = ${id}
     LIMIT 1
   `;
@@ -34,7 +34,7 @@ export async function fetchAccountByEmail(email: string): Promise<AccountRow | n
     SELECT
       id, name, email, image, role, passwordHash, googleId,
       emailVerified, phone, phoneVerified, nationality, residency, preferences
-    FROM "User"
+    FROM "user"
     WHERE email = ${email}
     LIMIT 1
   `;
@@ -54,7 +54,7 @@ export async function updateAccount(
   },
 ) {
   await prisma.$executeRaw`
-    UPDATE "User"
+    UPDATE "user"
     SET name = ${data.name},
         email = ${data.email},
         image = ${data.image},
@@ -68,33 +68,33 @@ export async function updateAccount(
 
 export async function setUserPhone(id: string, phone: string) {
   await prisma.$executeRaw`
-    UPDATE "User" SET phone = ${phone}, phoneVerified = NULL WHERE id = ${id}
+    UPDATE "user" SET phone = ${phone}, phoneVerified = NULL WHERE id = ${id}
   `;
 }
 
 export async function markEmailVerified(id: string) {
-  await prisma.$executeRaw`UPDATE "User" SET emailVerified = CURRENT_TIMESTAMP WHERE id = ${id}`;
+  await prisma.$executeRaw`UPDATE "user" SET emailVerified = CURRENT_TIMESTAMP WHERE id = ${id}`;
 }
 
 export async function markPhoneVerified(id: string) {
-  await prisma.$executeRaw`UPDATE "User" SET phoneVerified = CURRENT_TIMESTAMP WHERE id = ${id}`;
+  await prisma.$executeRaw`UPDATE "user" SET phoneVerified = CURRENT_TIMESTAMP WHERE id = ${id}`;
 }
 
 export async function setPasswordHash(id: string, hash: string) {
-  await prisma.$executeRaw`UPDATE "User" SET passwordHash = ${hash} WHERE id = ${id}`;
+  await prisma.$executeRaw`UPDATE "user" SET passwordHash = ${hash} WHERE id = ${id}`;
 }
 
 export async function deleteAccount(id: string) {
-  await prisma.$executeRaw`DELETE FROM "User" WHERE id = ${id}`;
+  await prisma.$executeRaw`DELETE FROM "user" WHERE id = ${id}`;
 }
 
 export async function issueToken(userId: string, type: string, ttlMs: number, token?: string) {
   const value = token ?? randomBytes(24).toString("hex");
   const id = randomBytes(12).toString("hex");
   const expires = new Date(Date.now() + ttlMs).toISOString();
-  await prisma.$executeRaw`DELETE FROM "AuthToken" WHERE userId = ${userId} AND type = ${type}`;
+  await prisma.$executeRaw`DELETE FROM AuthToken WHERE userId = ${userId} AND type = ${type}`;
   await prisma.$executeRaw`
-    INSERT INTO "AuthToken" (id, userId, type, token, expiresAt, createdAt)
+    INSERT INTO AuthToken (id, userId, type, token, expiresAt, createdAt)
     VALUES (${id}, ${userId}, ${type}, ${value}, ${expires}, CURRENT_TIMESTAMP)
   `;
   return value;
@@ -102,13 +102,13 @@ export async function issueToken(userId: string, type: string, ttlMs: number, to
 
 export async function consumeToken(type: string, token: string) {
   const rows = await prisma.$queryRaw<{ userId: string; expiresAt: Date | string }[]>`
-    SELECT userId, expiresAt FROM "AuthToken" WHERE type = ${type} AND token = ${token} LIMIT 1
+    SELECT userId, expiresAt FROM AuthToken WHERE type = ${type} AND token = ${token} LIMIT 1
   `;
   const row = rows[0];
   if (!row) return null;
   const exp = new Date(row.expiresAt).getTime();
   if (Number.isNaN(exp) || exp < Date.now()) return null;
-  await prisma.$executeRaw`DELETE FROM "AuthToken" WHERE type = ${type} AND token = ${token}`;
+  await prisma.$executeRaw`DELETE FROM AuthToken WHERE type = ${type} AND token = ${token}`;
   return fetchAccount(row.userId);
 }
 
