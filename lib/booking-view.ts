@@ -9,7 +9,7 @@ export function bookingNumber(id: string) {
 }
 
 export function bookingBucket(row: { status: string; startDate: string; endDate: string }): BookingBucket {
-  if (row.status === "cancelled") return "cancelled";
+  if (row.status === "cancelled" || row.status === "declined") return "cancelled";
   const today = todayIso();
   if (row.startDate <= today && row.endDate >= today) return "current";
   if (row.endDate < today) return "completed";
@@ -130,6 +130,10 @@ export function listingContact(meta: unknown) {
     address: parsed.address,
     checkIn: parsed.checkIn,
     checkOut: parsed.checkOut,
+    hostName: parsed.hostName,
+    hostPhone: parsed.hostPhone,
+    hostEmail: parsed.hostEmail,
+    hostContactHours: parsed.hostContactHours,
   };
 }
 

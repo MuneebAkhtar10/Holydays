@@ -18,7 +18,7 @@ const ownerHome: Record<string, { desk: string; add: string; market: string; mar
 };
 
 export function Header() {
-  const { t, lang, setLang, theme, setTheme, currency, setCurrency, wishlist } = useSerai();
+  const { t, theme, setTheme, currency, setCurrency, wishlist } = useSerai();
   const path = usePathname();
   const { data: session, status } = useSession();
   const isOwner = session?.user?.role === "OWNER";
@@ -148,13 +148,6 @@ export function Header() {
               </option>
             ))}
           </select>
-          <button
-            type="button"
-            onClick={() => setLang(lang === "en" ? "ur" : "en")}
-            className="rounded-xl px-2 py-2 text-xs tracking-wide text-sand/90 hover:bg-brass/10"
-          >
-            {lang === "en" ? "اردو" : "EN"}
-          </button>
           {!isOwner && !isAdmin && status === "authenticated" && (
             <Link
               href={inbox.unread && inbox.href ? inbox.href : "/trips"}

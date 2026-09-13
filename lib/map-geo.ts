@@ -68,7 +68,7 @@ export function clusterItems<T extends { id: string; pin: MapPt; start?: number;
   return out;
 }
 
-export function pinPrice(n: number, currency: DisplayCurrency = "PKR") {
+export function pinPrice(n: number, currency: DisplayCurrency = "USD") {
   if (currency === "PKR") {
     if (n >= 100000) return `Rs ${Math.round(n / 1000)}k`;
     if (n >= 1000) return `Rs ${(n / 1000).toFixed(n % 1000 < 50 ? 0 : 1)}k`.replace(".0k", "k");

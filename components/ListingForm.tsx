@@ -11,6 +11,16 @@ import type { BookableRoom } from "@/lib/rooms";
 import { StayListingWizard, STAY_STEPS } from "@/components/StayListingWizard";
 import { MoneyInput } from "@/components/MoneyInput";
 import { airportForCity, citiesForCountry, pilgrimAirports, pilgrimCountries, pilgrimCountryForPlace, pilgrimCountryName, type PilgrimCountry } from "@/lib/pilgrim";
+import { isValidEmail, isValidPhone } from "@/lib/validate";
+
+function SavingSpinner({ label }: { label: string }) {
+  return (
+    <span className="inline-flex items-center gap-2">
+      <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-current border-t-transparent" aria-hidden="true" />
+      {label}
+    </span>
+  );
+}
 
 const library: Record<string, { src: string; label: string }[]> = {
   TAXI: [
@@ -86,8 +96,14 @@ export function ListingForm({
   onSaved: () => void;
 }) {
   const fileRef = useRef<HTMLInputElement>(null);
+  const driverPhotoRef = useRef<HTMLInputElement>(null);
+  const vehiclePhotoRef = useRef<HTMLInputElement>(null);
   const uploadBucket = useRef<PhotoBucket>("property");
   const [uploading, setUploading] = useState(false);
+  const [hostPhotoUploading, setHostPhotoUploading] = useState(false);
+  const [driverPhotoUploading, setDriverPhotoUploading] = useState(false);
+  const [vehiclePhotoUploading, setVehiclePhotoUploading] = useState(false);
+  const [saving, setSaving] = useState(false);
   const seed = parseListingMeta(initial?.meta);
   const seedCountry = ((seed.country as PilgrimCountry) || pilgrimCountryForPlace(initial?.city ?? "", initial?.region) || "IQ") as PilgrimCountry;
   const seedAir =
@@ -127,10 +143,16 @@ export function ListingForm({
     hostName: seed.hostName,
     hostYears: String(seed.hostYears),
     hostLetter: seed.hostLetter,
+    hostPhone: seed.hostPhone,
+    hostEmail: seed.hostEmail,
+    hostPortrait: seed.hostPortrait,
+    hostContactHours: seed.hostContactHours,
     climate: seed.climate,
     country: seedCountry,
     driver: seed.driver,
+    driverPhoto: seed.driverPhoto,
     vehicle: seed.vehicle,
+    vehiclePhoto: seed.vehiclePhoto,
     model: seed.model,
     seats: String(seed.seats || (kind === "TAXI" ? 7 : 0)),
     vacant: String(seed.vacant || (kind === "TAXI" ? 7 : 0)),
@@ -229,11 +251,135 @@ export function ListingForm({
     }
   };
 
+  const pickHostPhoto = async (file: File) => {
+    setHostPhotoUploading(true);
+    setError("");
+    const body = new FormData();
+    body.append("file", file);
+    const res = await fetch("/api/uploads", { method: "POST", body });
+    const data = await readJson<{ error?: string; url?: string }>(res);
+    setHostPhotoUploading(false);
+    if (!res.ok) {
+      setError(data?.error || "Could not upload photo");
+      return;
+    }
+    if (data?.url) set("hostPortrait", data.url);
+  };
+
+  const pickDriverPhoto = async (file: File) => {
+    setDriverPhotoUploading(true);
+    setError("");
+    const body = new FormData();
+    body.append("file", file);
+    const res = await fetch("/api/uploads", { method: "POST", body });
+    const data = await readJson<{ error?: string; url?: string }>(res);
+    setDriverPhotoUploading(false);
+    if (!res.ok) {
+      setError(data?.error || "Could not upload photo");
+      return;
+    }
+    if (data?.url) set("driverPhoto", data.url);
+  };
+
+  const pickVehiclePhoto = async (file: File) => {
+    setVehiclePhotoUploading(true);
+    setError("");
+    const body = new FormData();
+    body.append("file", file);
+    const res = await fetch("/api/uploads", { method: "POST", body });
+    const data = await readJson<{ error?: string; url?: string }>(res);
+    setVehiclePhotoUploading(false);
+    if (!res.ok) {
+      setError(data?.error || "Could not upload photo");
+      return;
+    }
+    if (data?.url) set("vehiclePhoto", data.url);
+  };
+
   const toggleFac = (key: FacilityKey) =>
     setFacilities((list) => (list.includes(key) ? list.filter((x) => x !== key) : [...list, key]));
 
+  const validateStayStep = (n: number): string => {
+    if (!stay) return "";
+    if (n === 0) {
+      if (!form.name.trim()) return "Property name is required";
+      if (!form.address.trim()) return "Google Maps address is required";
+    }
+    if (n === STAY_STEPS.findIndex((s) => s.id === "policies")) {
+      if (form.phone.trim() && !isValidPhone(form.phone)) return "Contact phone is not a valid phone number";
+      if (form.email.trim() && !isValidEmail(form.email)) return "Contact email is not a valid email address";
+    }
+    if (n === STAY_STEPS.length - 1) {
+      if (!form.hostName.trim()) return "Host name is required";
+      if (!form.hostPhone.trim()) return "Host phone number is required";
+      if (!isValidPhone(form.hostPhone)) return "Host phone number is not a valid phone number";
+      if (!form.hostEmail.trim()) return "Host email address is required";
+      if (!isValidEmail(form.hostEmail)) return "Host email address is not a valid email address";
+      if (!form.hostPortrait.trim()) return "Host picture is required";
+      if (!form.hostContactHours.trim()) return "Time to contact the host is required";
+    }
+    return "";
+  };
+
+  const validateTaxi = (): string => {
+    if (!taxi) return "";
+    if (!form.name.trim()) return "Trip name is required";
+    if (!form.driver.trim()) return "Driver name is required";
+    if (!form.driverPhoto.trim()) return "Driver photo is required";
+    if (!form.vehicle.trim()) return "Vehicle is required";
+    if (!form.vehiclePhoto.trim()) return "Vehicle photo is required";
+    if (!form.model.trim()) return "Model is required";
+    if (!String(form.seats).trim()) return "Total seats is required";
+    if (!String(form.vacant).trim()) return "Vacant seats is required";
+    if (!form.price || Number(form.price) <= 0) return "Rate per person is required";
+    if (!form.privateRate || Number(form.privateRate) <= 0) return "Private / full vehicle rate is required";
+    if (!form.hours.trim()) return "Duration is required";
+    if (form.service === "airport") {
+      if (!form.origin.trim()) return "Airport is required";
+    } else {
+      if (!form.origin.trim()) return "\"From\" city is required";
+      if (!form.destination.trim()) return "\"To\" city is required";
+    }
+    if (!itinerary[0]?.place?.trim()) return "At least one stop is required";
+    if (!form.description.trim()) return "Description is required";
+    return "";
+  };
+
+  const goToStayStep = (n: number) => {
+    if (n > stayStep) {
+      for (let i = stayStep; i < n; i++) {
+        const err = validateStayStep(i);
+        if (err) {
+          setError(err);
+          return;
+        }
+      }
+    }
+    setError("");
+    setStayStep(n);
+  };
+
   const saveListing = async () => {
+          if (saving) return;
           setError("");
+          if (stay) {
+            const stepErr =
+              validateStayStep(0) ||
+              validateStayStep(STAY_STEPS.findIndex((s) => s.id === "policies")) ||
+              validateStayStep(STAY_STEPS.length - 1);
+            if (stepErr) {
+              setError(stepErr);
+              return;
+            }
+          }
+          if (taxi) {
+            const err = validateTaxi();
+            if (err) {
+              setError(err);
+              return;
+            }
+          }
+          setSaving(true);
           const url = initial?.id ? `/api/listings/${initial.id}` : "/api/listings";
           const payload = {
             ...form,
@@ -288,18 +434,24 @@ export function ListingForm({
               .filter((s, i, all) => all.indexOf(s) === i),
             priceUnit: taxi ? "person" : form.priceUnit,
           };
-          const res = await fetch(url, {
-            method: initial?.id ? "PATCH" : "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(payload),
-          });
-          const data = await readJson<{ error?: string }>(res);
-          if (!res.ok) {
-            setError(data?.error || "Could not save");
-            return;
+          try {
+            const res = await fetch(url, {
+              method: initial?.id ? "PATCH" : "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(payload),
+            });
+            const data = await readJson<{ error?: string }>(res);
+            if (!res.ok) {
+              setError(data?.error || "Could not save");
+              return;
+            }
+            onSaved();
+            onClose?.();
+          } catch {
+            setError("Could not reach the server. Check your connection and try again.");
+          } finally {
+            setSaving(false);
           }
-          onSaved();
-          onClose?.();
   };
 
   const shell = (
@@ -320,10 +472,10 @@ export function ListingForm({
         {!stay && (
           <p className="mt-2 text-sm text-ink/60">
             {taxi
-              ? "Iraq, Iran, or Saudi only. Airport transfer is one taxi per airport: checkout fills the guest’s hotel. Day trips still pick from → to cities. Admin must approve before guests see it."
+              ? "Saudi, Iraq, or Iran only. Airport transfer is one taxi per airport: checkout fills the guest’s hotel. Day trips still pick from → to cities. Admin must approve before guests see it."
               : ziyarat
-                ? "Iraq, Iran, or Saudi only. This ziyarat shows on hotel checkout for that country."
-                : "Iraq, Iran, and Saudi Arabia only."}
+                ? "Saudi, Iraq, or Iran only. This ziyarat shows on hotel checkout for that country."
+                : "Saudi Arabia, Iraq, and Iran only."}
           </p>
         )}
         {stay && (
@@ -337,7 +489,7 @@ export function ListingForm({
         <>
         <div className="mt-4 grid gap-3 md:grid-cols-2 lg:grid-cols-3">
         <label className="paper-label mt-0">
-          Property name
+          {taxi ? "Trip name" : ziyarat ? "Ziyarat name" : "Property name"} <span className="text-red-500">*</span>
           <input className="paper-field" placeholder={taxi ? "Karbala → Kufa" : "Canal Breeze Studio"} value={form.name} onChange={(e) => set("name", e.target.value)} required />
         </label>
         <label className="paper-label mt-0">
@@ -395,24 +547,44 @@ export function ListingForm({
         </div>
         {taxi && (
           <div className="mt-5 space-y-4 rounded-2xl border border-ink/10 p-4 sm:p-5">
-            <p className="text-[11px] uppercase tracking-[0.14em] text-ink/40">Trip itinerary</p>
+            <p className="text-[11px] uppercase tracking-[0.14em] text-ink/40">Trip type</p>
             <div className="grid grid-cols-2 gap-2 lg:max-w-xl">
               <button
                 type="button"
-                className={`rounded-xl border px-3 py-3 text-left text-sm ${form.service === "ziyarat" ? "border-flame bg-flame/10" : "border-ink/15"}`}
+                aria-pressed={form.service === "ziyarat"}
+                className={`rounded-xl border-2 px-4 py-3 text-left transition-colors ${
+                  form.service === "ziyarat" ? "border-flame bg-flame/10" : "border-ink/10 hover:border-ink/25"
+                }`}
                 onClick={() => {
-                  set("service", "ziyarat");
-                  set("hours", "Full day");
+                  if (form.service === "ziyarat") return;
+                  const fallbackCity = cityOptions[0] || "Najaf";
+                  setForm((f) => ({
+                    ...f,
+                    service: "ziyarat",
+                    hours: "Full day",
+                    origin: cityOptions.includes(String(f.origin)) ? f.origin : fallbackCity,
+                    destination: cityOptions.includes(String(f.destination)) ? f.destination : "",
+                    city: cityOptions.includes(String(f.origin)) ? f.origin : fallbackCity,
+                  }));
+                  setItinerary([{ time: "07:30", place: "", note: "Hotel pickup" }]);
                 }}
               >
-                Ziyarat day
+                <span className="text-sm font-medium">City-to-city day</span>
+                <span className="mt-0.5 block text-xs text-ink/50">A named from → to route, e.g. Karbala → Kufa</span>
               </button>
               <button
                 type="button"
-                className={`rounded-xl border px-3 py-3 text-left text-sm ${form.service === "airport" ? "border-flame bg-flame/10" : "border-ink/15"}`}
-                onClick={() => applyAirport(airportForCity(country, form.city || cityOptions[0] || "Najaf").label)}
+                aria-pressed={form.service === "airport"}
+                className={`rounded-xl border-2 px-4 py-3 text-left transition-colors ${
+                  form.service === "airport" ? "border-flame bg-flame/10" : "border-ink/10 hover:border-ink/25"
+                }`}
+                onClick={() => {
+                  if (form.service === "airport") return;
+                  applyAirport(airportForCity(country, form.city || cityOptions[0] || "Najaf").label);
+                }}
               >
-                Airport transfer
+                <span className="text-sm font-medium">Airport transfer</span>
+                <span className="mt-0.5 block text-xs text-ink/50">One taxi per airport; checkout fills the guest's hotel</span>
               </button>
             </div>
             {form.service === "airport" ? (
@@ -422,7 +594,7 @@ export function ListingForm({
                 </p>
                 <div className="grid gap-3 sm:grid-cols-2">
                 <label className="paper-label mt-0">
-                  Airport
+                  Airport <span className="text-red-500">*</span>
                   <select
                     className="paper-field"
                     value={form.origin}
@@ -437,15 +609,15 @@ export function ListingForm({
                   </select>
                 </label>
                 <label className="paper-label mt-0">
-                  Duration
-                  <input className="paper-field" placeholder="Airport pickup / drop-off" value={form.hours} onChange={(e) => set("hours", e.target.value)} />
+                  Duration <span className="text-red-500">*</span>
+                  <input className="paper-field" placeholder="Airport pickup / drop-off" value={form.hours} onChange={(e) => set("hours", e.target.value)} required />
                 </label>
                 </div>
               </>
             ) : (
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
               <label className="paper-label mt-0">
-                From
+                From <span className="text-red-500">*</span>
                 <select
                   className="paper-field"
                   value={form.origin}
@@ -466,7 +638,7 @@ export function ListingForm({
                 </select>
               </label>
               <label className="paper-label">
-                To
+                To <span className="text-red-500">*</span>
                 <select
                   className="paper-field"
                   value={form.destination}
@@ -482,32 +654,86 @@ export function ListingForm({
                 </select>
               </label>
               <label className="paper-label mt-0">
-                Duration
-                <input className="paper-field" placeholder="Half day · Full day" value={form.hours} onChange={(e) => set("hours", e.target.value)} />
+                Duration <span className="text-red-500">*</span>
+                <input className="paper-field" placeholder="Half day · Full day" value={form.hours} onChange={(e) => set("hours", e.target.value)} required />
               </label>
             </div>
             )}
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             <label className="paper-label mt-0">
-              Driver name
+              Driver name <span className="text-red-500">*</span>
               <input className="paper-field" value={form.driver} onChange={(e) => set("driver", e.target.value)} required />
             </label>
             <label className="paper-label mt-0">
-                Vehicle
+                Vehicle <span className="text-red-500">*</span>
                 <input className="paper-field" placeholder="Toyota Coaster" value={form.vehicle} onChange={(e) => set("vehicle", e.target.value)} required />
               </label>
               <label className="paper-label mt-0">
-                Model
-                <input className="paper-field" placeholder="2019 · 23-seater" value={form.model} onChange={(e) => set("model", e.target.value)} />
+                Model <span className="text-red-500">*</span>
+                <input className="paper-field" placeholder="2019 · 23-seater" value={form.model} onChange={(e) => set("model", e.target.value)} required />
               </label>
+            </div>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div>
+                <p className="paper-label mt-0">
+                  Driver photo <span className="text-red-500">*</span>
+                </p>
+                <div className="mt-2 flex items-center gap-3">
+                  <div className="relative h-16 w-16 overflow-hidden rounded-full border border-ink/10 bg-ink/5">
+                    {form.driverPhoto ? (
+                      <Image src={String(form.driverPhoto)} alt="Driver preview" fill className="object-cover" />
+                    ) : null}
+                  </div>
+                  <button type="button" className="btn-ghost text-sm" onClick={() => driverPhotoRef.current?.click()}>
+                    {driverPhotoUploading ? "Uploading…" : "Upload photo"}
+                  </button>
+                  <input
+                    ref={driverPhotoRef}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) void pickDriverPhoto(file);
+                      e.target.value = "";
+                    }}
+                  />
+                </div>
+              </div>
+              <div>
+                <p className="paper-label mt-0">
+                  Vehicle photo <span className="text-red-500">*</span>
+                </p>
+                <div className="mt-2 flex items-center gap-3">
+                  <div className="relative h-16 w-24 overflow-hidden rounded-xl border border-ink/10 bg-ink/5">
+                    {form.vehiclePhoto ? (
+                      <Image src={String(form.vehiclePhoto)} alt="Vehicle preview" fill className="object-cover" />
+                    ) : null}
+                  </div>
+                  <button type="button" className="btn-ghost text-sm" onClick={() => vehiclePhotoRef.current?.click()}>
+                    {vehiclePhotoUploading ? "Uploading…" : "Upload photo"}
+                  </button>
+                  <input
+                    ref={vehiclePhotoRef}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) void pickVehiclePhoto(file);
+                      e.target.value = "";
+                    }}
+                  />
+                </div>
+              </div>
             </div>
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
               <label className="paper-label mt-0">
-                Total seats
+                Total seats <span className="text-red-500">*</span>
                 <input className="paper-field" type="number" min={1} value={form.seats} onChange={(e) => set("seats", e.target.value)} required />
               </label>
               <label className="paper-label mt-0">
-                Vacant seats
+                Vacant seats <span className="text-red-500">*</span>
                 <input className="paper-field" type="number" min={0} value={form.vacant} onChange={(e) => set("vacant", e.target.value)} required />
               </label>
               <MoneyInput
@@ -526,7 +752,9 @@ export function ListingForm({
             </div>
             <p className="text-xs text-ink/45">Rates follow the header currency (PKR, USD, or GBP) and are stored in PKR.</p>
             <div>
-              <p className="paper-label mt-0">Stops (what the guest actually does)</p>
+              <p className="paper-label mt-0">
+                Stops (what the guest actually does) <span className="text-red-500">*</span>
+              </p>
               <div className="mt-2 space-y-2">
                 {itinerary.map((stop, i) => (
                   <div key={i} className="grid gap-2 sm:grid-cols-[7rem_minmax(0,1fr)_minmax(0,1.3fr)_auto]">
@@ -594,7 +822,7 @@ export function ListingForm({
         {stay ? (
           <StayListingWizard
             step={stayStep}
-            setStep={setStayStep}
+            setStep={goToStayStep}
             form={form as never}
             set={set}
             setForm={setForm as never}
@@ -618,6 +846,8 @@ export function ListingForm({
             setMeals={setMeals}
             mealRates={mealRates}
             setMealRates={setMealRates}
+            hostPhotoUploading={hostPhotoUploading}
+            onHostPhoto={pickHostPhoto}
           />
         ) : (
           <>
@@ -654,8 +884,15 @@ export function ListingForm({
             </div>
             </div>
             <label className="paper-label mt-0">
-              Description
-              <textarea className="paper-field min-h-40 resize-y" rows={6} placeholder="What guests should know" value={form.description} onChange={(e) => set("description", e.target.value)} />
+              Description {taxi && <span className="text-red-500">*</span>}
+              <textarea
+                className="paper-field min-h-40 resize-y"
+                rows={6}
+                placeholder="What guests should know"
+                value={form.description}
+                onChange={(e) => set("description", e.target.value)}
+                required={taxi}
+              />
             </label>
           </div>
         {!taxi && (
@@ -688,23 +925,23 @@ export function ListingForm({
             </p>
             <div className="flex flex-wrap items-center gap-2">
               {onClose && (
-                <button type="button" className="btn-subtle" onClick={onClose}>
+                <button type="button" className="btn-subtle" disabled={saving} onClick={onClose}>
                   Cancel
                 </button>
               )}
-              <button type="button" className="btn-ghost" disabled={stayStep === 0} onClick={() => setStayStep((n) => Math.max(0, n - 1))}>
+              <button type="button" className="btn-ghost" disabled={saving || stayStep === 0} onClick={() => setStayStep((n) => Math.max(0, n - 1))}>
                 Back
               </button>
-              <button type="button" className="btn-outline" onClick={saveListing}>
-                Save draft
+              <button type="button" className="btn-outline" disabled={saving} onClick={saveListing}>
+                {saving ? <SavingSpinner label="Saving…" /> : "Save draft"}
               </button>
               {stayStep < STAY_STEPS.length - 1 ? (
-                <button type="button" className="btn-primary" onClick={() => setStayStep((n) => Math.min(STAY_STEPS.length - 1, n + 1))}>
+                <button type="button" className="btn-primary" disabled={saving} onClick={() => goToStayStep(Math.min(STAY_STEPS.length - 1, stayStep + 1))}>
                   Next
                 </button>
               ) : (
-                <button type="button" className="btn-primary" onClick={saveListing}>
-                  Save hotel
+                <button type="button" className="btn-primary" disabled={saving} onClick={saveListing}>
+                  {saving ? <SavingSpinner label="Saving…" /> : "Save hotel"}
                 </button>
               )}
             </div>
@@ -718,11 +955,11 @@ export function ListingForm({
         </p>
         {error && <p className="mt-3 text-sm text-rose">{error}</p>}
         <div className="mt-6 flex flex-wrap items-center gap-2">
-          <button type="button" className="btn-primary" onClick={saveListing}>
-            Save
+          <button type="button" className="btn-primary" disabled={saving} onClick={saveListing}>
+            {saving ? <SavingSpinner label="Saving…" /> : "Save"}
           </button>
           {onClose && (
-            <button type="button" className="btn-subtle" onClick={onClose}>
+            <button type="button" className="btn-subtle" disabled={saving} onClick={onClose}>
               Cancel
             </button>
           )}

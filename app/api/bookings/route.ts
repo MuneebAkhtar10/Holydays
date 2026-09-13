@@ -11,6 +11,8 @@ import { notifyBookingCreated } from "@/lib/booking-notify";
 import { parseBookingExtras } from "@/lib/booking-view";
 import { listingToTaxi, listingToZiyarat, parseMealRates, sanitizePackage, type PackageStaySlice } from "@/lib/package-plan";
 import { pilgrimCountryForPlace } from "@/lib/pilgrim";
+import { parseListingMeta } from "@/lib/listing-meta";
+import { roomsLeftFor } from "@/lib/availability";
 
 export async function GET() {
   const session = await getServerSession(authOptions);
@@ -72,6 +74,11 @@ async function createBooking(req: Request) {
     return NextResponse.json({ error: "End date must be on or after the start date." }, { status: 400 });
   }
 
+  const listingMeta = parseListingMeta(listing.meta);
+  if (listingMeta.closedFrom && startDate >= listingMeta.closedFrom) {
+    return NextResponse.json({ error: "This listing is no longer taking bookings from that date onward." }, { status: 403 });
+  }
+
   const existing = await prisma.booking.findMany({
     where: { userId: session.user.id, listingId: listing.id, status: "confirmed" },
   });
@@ -83,7 +90,9 @@ async function createBooking(req: Request) {
     );
   }
 
-  let total = Number(body.total) || Number(listing.price);
+  // A custom taxi hire legitimately totals 0 (rate is agreed directly with the driver) — only fall back
+  // to the listing price when the client didn't send a total at all, not when it explicitly sent 0.
+  let total = body.total === undefined || body.total === null || body.total === "" ? Number(listing.price) : Number(body.total) || 0;
   let extras = String(body.extras ?? "");
   let extraSlices: PackageStaySlice[] = [];
   let stayQuoteInput: QuoteInput | null = null;
@@ -106,6 +115,13 @@ async function createBooking(req: Request) {
         promo: String(body.promo ?? ""),
         member: Boolean(body.member),
       };
+      const roomsLeft = await roomsLeftFor(listing.id, stay, startDate, endDate);
+      if (roomsLeft < input.rooms) {
+        return NextResponse.json(
+          { error: `Only ${roomsLeft} room${roomsLeft === 1 ? "" : "s"} left at ${listing.name} for these dates.` },
+          { status: 409 },
+        );
+      }
       const quote = quoteStay(stay, input);
       stayQuoteInput = input;
       const packageStay = Boolean(pilgrimCountryForPlace(stay.city, stay.region));
@@ -129,6 +145,20 @@ async function createBooking(req: Request) {
           ziyarat: ziyarat.filter((z) => saved.ziyaratIds.includes(z.id)),
           taxiList: taxiList.filter((t) => saved.taxis.some((p) => p.id === t.id)),
         };
+        for (const slice of saved.stays) {
+          const extraListing = await fetchListingByKey(slice.listingId);
+          const extraStay = extraListing ? await loadBookableStay(extraListing.slug) : null;
+          if (!extraListing || extraListing.kind !== "STAY" || !isPublishedLive(extraListing) || !extraStay) {
+            return NextResponse.json({ error: `${slice.name} is no longer available.` }, { status: 409 });
+          }
+          const extraRoomsLeft = await roomsLeftFor(extraListing.id, extraStay, slice.checkin, slice.checkout);
+          if (extraRoomsLeft < slice.rooms) {
+            return NextResponse.json(
+              { error: `Only ${extraRoomsLeft} room${extraRoomsLeft === 1 ? "" : "s"} left at ${slice.name} for ${slice.checkin} — ${slice.checkout}.` },
+              { status: 409 },
+            );
+          }
+        }
         const extraStaySum = saved.stays.reduce((s, row) => s + (Number(row.amount) || 0), 0);
         total = quote.grand + saved.total - extraStaySum;
         extraSlices = saved.stays;
@@ -152,6 +182,7 @@ async function createBooking(req: Request) {
     }
   }
 
+  const customTaxi = listing.kind === "TAXI" && Boolean(body.customTaxi);
   const booking = await prisma.booking.create({
     data: {
       userId: session.user.id,
@@ -163,6 +194,7 @@ async function createBooking(req: Request) {
       payment: String(body.payment ?? "property"),
       phone: String(body.phone ?? ""),
       total,
+      status: customTaxi ? "pending_driver" : "confirmed",
     },
     include: { listing: { include: { owner: true } }, user: true },
   });
@@ -180,6 +212,7 @@ async function createBooking(req: Request) {
     total: booking.total,
     origin,
     ownerEmail: booking.listing.owner?.email,
+    pending: customTaxi,
   });
   const extraObj = parseBookingExtras(booking.extras);
   extraObj.packageId = booking.id;
@@ -198,6 +231,7 @@ async function createBooking(req: Request) {
       ...stayQuoteInput,
       checkin: slice.checkin,
       checkout: slice.checkout,
+      rooms: slice.rooms,
       roomId: slice.roomId,
       ratePlanId: slice.ratePlanId,
       airportTransfer: false,

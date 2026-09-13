@@ -23,6 +23,7 @@ export function RoomPicker({
   onExtraBeds,
   onCribs,
   roomShots,
+  roomsLeft,
 }: {
   stay: Stay;
   input: QuoteInput;
@@ -36,6 +37,8 @@ export function RoomPicker({
   onExtraBeds: (n: number) => void;
   onCribs: (n: number) => void;
   roomShots: string[];
+  /** Live rooms remaining for the selected dates, across all room types. null while still checking. */
+  roomsLeft?: number | null;
 }) {
   const { money } = useSerai();
   const rooms = stayRooms(stay);
@@ -45,6 +48,7 @@ export function RoomPicker({
       {rooms.map((room) => {
         const selected = room.id === roomId;
         const quote = quoteStay(stay, { ...input, roomId: room.id, ratePlanId: selected ? ratePlanId : room.rates[0]?.id, extraBeds: selected ? extraBeds : 0, cribs: selected ? cribs : 0 });
+        const cap = roomsLeft == null ? room.available : Math.max(0, Math.min(room.available, roomsLeft));
         return (
           <article key={room.id} className={`pane overflow-hidden ${selected ? "ring-1 ring-brass/50" : ""}`}>
             <div className="grid gap-0 md:grid-cols-[220px_minmax(0,1fr)]">
@@ -64,7 +68,7 @@ export function RoomPicker({
                   <li>{bedCopy(room)} · {bedCount(room)} bed{bedCount(room) === 1 ? "" : "s"}</li>
                   <li>Max {room.sleeps} guests</li>
                   <li>{room.smoking ? "Smoking" : "Non-smoking"}</li>
-                  <li>{room.available} rooms available</li>
+                  <li className={cap === 0 ? "text-red-500" : ""}>{cap === 0 ? "Not available for these dates" : `${cap} room${cap === 1 ? "" : "s"} available`}</li>
                   <li>Breakfast depends on rate</li>
                 </ul>
                 <div className="mt-3 flex flex-wrap gap-1">
@@ -79,13 +83,14 @@ export function RoomPicker({
                     Rooms
                     <select
                       className="ml-2 rounded-lg bg-ink-2 px-2 py-1 text-sand ring-1 ring-sand/10"
-                      value={selected ? input.rooms : 1}
+                      value={selected ? Math.min(input.rooms, Math.max(1, cap)) : 1}
+                      disabled={cap === 0}
                       onChange={(e) => {
                         onRoom(room.id);
                         onRooms(Number(e.target.value));
                       }}
                     >
-                      {Array.from({ length: room.available }, (_, i) => i + 1).map((n) => (
+                      {Array.from({ length: Math.max(1, cap) }, (_, i) => i + 1).map((n) => (
                         <option key={n} value={n}>
                           {n}
                         </option>

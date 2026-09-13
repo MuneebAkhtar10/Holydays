@@ -217,3 +217,21 @@ export function WalletIcon(p: IconProps) {
     </Svg>
   );
 }
+
+export function ShieldIcon(p: IconProps) {
+  return (
+    <Svg {...p}>
+      <path d="M12 3.5l7 3v5.2c0 4.6-3 7.9-7 9.3-4-1.4-7-4.7-7-9.3V6.5l7-3z" />
+      <path d="M9 12l2.2 2.2L15.5 9.5" />
+    </Svg>
+  );
+}
+
+export function SimIcon(p: IconProps) {
+  return (
+    <Svg {...p}>
+      <path d="M8 3.5h6l4 4V19a1.5 1.5 0 0 1-1.5 1.5h-9A1.5 1.5 0 0 1 6 19V5a1.5 1.5 0 0 1 1.5-1.5z" />
+      <path d="M9 12.5h6M9 15.5h4" />
+    </Svg>
+  );
+}

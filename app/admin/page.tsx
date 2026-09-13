@@ -8,6 +8,8 @@ import { useSerai } from "@/lib/store";
 import { kindLabel, kindPath, unitLabel, type ListingKind } from "@/lib/marketplace";
 import { LoaderOverlay, PageLoader } from "@/components/PageLoader";
 import { readJson } from "@/lib/readJson";
+import { formatDay } from "@/lib/format";
+import type { BookingDTO } from "@/lib/booking-dto";
 
 type QueueItem = {
   id: string;
@@ -27,8 +29,10 @@ type QueueItem = {
 export default function AdminPage() {
   const { money } = useSerai();
   const { data, status } = useSession();
+  const [section, setSection] = useState<"listings" | "cancellations">("listings");
   const [tab, setTab] = useState<"pending" | "approved" | "rejected">("pending");
   const [items, setItems] = useState<QueueItem[]>([]);
+  const [cancellations, setCancellations] = useState<BookingDTO[]>([]);
   const [ready, setReady] = useState(false);
   const [loadError, setLoadError] = useState("");
   const [overlay, setOverlay] = useState<string | null>(null);
@@ -52,11 +56,30 @@ export default function AdminPage() {
     setReady(true);
   };
 
+  const loadCancellations = async () => {
+    setLoadError("");
+    try {
+      const res = await fetch("/api/admin/bookings/cancellations");
+      const d = await readJson<BookingDTO[] | { error?: string }>(res);
+      if (Array.isArray(d)) {
+        setCancellations(d);
+      } else {
+        setCancellations([]);
+        setLoadError(d?.error || "Could not load cancellation requests.");
+      }
+    } catch {
+      setCancellations([]);
+      setLoadError("Could not load cancellation requests.");
+    }
+    setReady(true);
+  };
+
   useEffect(() => {
     if (status !== "authenticated" || data?.user?.role !== "ADMIN") return;
     setReady(false);
-    void load(tab);
-  }, [status, tab, data?.user?.role]);
+    if (section === "listings") void load(tab);
+    else void loadCancellations();
+  }, [status, tab, section, data?.user?.role]);
 
   const decide = async (id: string, next: "approved" | "rejected") => {
     setOverlay(next === "approved" ? "Approving listing" : "Rejecting listing");
@@ -66,6 +89,17 @@ export default function AdminPage() {
       body: JSON.stringify({ status: next, rejectReason: reason[id] || "" }),
     }).then((r) => readJson(r));
     await load(tab);
+    setOverlay(null);
+  };
+
+  const decideCancellation = async (id: string, approve: boolean) => {
+    setOverlay(approve ? "Approving cancellation" : "Denying cancellation");
+    await fetch(`/api/admin/bookings/${id}/cancel`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ approve }),
+    }).then((r) => readJson(r));
+    await loadCancellations();
     setOverlay(null);
   };
 
@@ -89,19 +123,40 @@ export default function AdminPage() {
     <div className="mx-auto max-w-5xl px-5 py-12">
       <LoaderOverlay show={Boolean(overlay)} label={overlay ?? "Updating"} />
       <p className="text-[11px] uppercase tracking-[0.3em] text-brass">Admin</p>
-      <h1 className="font-display mt-2 text-5xl">Listing approvals</h1>
+      <h1 className="font-display mt-2 text-5xl">{section === "listings" ? "Listing approvals" : "Cancellation requests"}</h1>
       <p className="mt-3 max-w-xl text-mist">
-        New and edited owner listings stay off the public site until you approve them.
+        {section === "listings"
+          ? "New and edited owner listings stay off the public site until you approve them."
+          : "Guests who requested a cancellation wait here until you approve or deny it."}
       </p>
 
-      <div className="mt-8 flex flex-wrap gap-2">
-        {(["pending", "approved", "rejected"] as const).map((id) => (
-          <button key={id} type="button" className="filter-chip capitalize" data-on={tab === id} onClick={() => setTab(id)}>
-            {id}
+      <div className="mt-6 flex flex-wrap gap-2">
+        {(
+          [
+            ["listings", "Listings"],
+            ["cancellations", "Cancellations"],
+          ] as const
+        ).map(([id, label]) => (
+          <button key={id} type="button" className="filter-chip" data-on={section === id} onClick={() => setSection(id)}>
+            {label}
+            {id === "cancellations" && cancellations.length > 0 && (
+              <span className="ml-1.5 rounded-full bg-rose px-1.5 py-0.5 text-[10px] font-semibold text-bone">{cancellations.length}</span>
+            )}
           </button>
         ))}
       </div>
 
+      {section === "listings" && (
+        <div className="mt-6 flex flex-wrap gap-2">
+          {(["pending", "approved", "rejected"] as const).map((id) => (
+            <button key={id} type="button" className="filter-chip capitalize" data-on={tab === id} onClick={() => setTab(id)}>
+              {id}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {section === "listings" && (
       <div className="mt-8 space-y-4">
         {loadError && <p className="text-sm text-rose">{loadError}</p>}
         {items.length === 0 && !loadError && <p className="text-mist">Nothing in this queue.</p>}
@@ -145,6 +200,44 @@ export default function AdminPage() {
           </article>
         ))}
       </div>
+      )}
+
+      {section === "cancellations" && (
+      <div className="mt-8 space-y-4">
+        {loadError && <p className="text-sm text-rose">{loadError}</p>}
+        {cancellations.length === 0 && !loadError && <p className="text-mist">No pending cancellation requests.</p>}
+        {cancellations.map((b) => (
+          <article key={b.id} className="overflow-hidden rounded-2xl border border-brass/30 bg-ink-2 md:grid md:grid-cols-[200px_minmax(0,1fr)]">
+            <div className="relative h-40 min-h-[160px] md:h-full">
+              <Image src={b.listing.cover || "/images/hero-hunza-dusk.png"} alt="" fill className="object-cover" />
+            </div>
+            <div className="p-5">
+              <p className="text-[11px] uppercase tracking-[0.16em] text-brass">{b.number}</p>
+              <h2 className="font-display mt-1 text-3xl">{b.listing.name}</h2>
+              <p className="mt-1 text-sm text-mist">
+                {formatDay(b.startDate)} — {formatDay(b.endDate)} · {money(b.total)} · {b.guestName} ({b.guestEmail})
+              </p>
+              {b.extra?.cancelReason ? (
+                <p className="mt-3 rounded-xl bg-rose/10 px-3.5 py-2.5 text-sm text-rose">
+                  “{String(b.extra.cancelReason)}”
+                </p>
+              ) : null}
+              <div className="mt-4 flex flex-wrap gap-2">
+                <Link href={`/bookings/${b.id}`} className="btn-ghost">
+                  Booking details
+                </Link>
+                <button type="button" className="btn-primary" onClick={() => decideCancellation(b.id, true)}>
+                  Approve cancellation
+                </button>
+                <button type="button" className="btn-ghost" onClick={() => decideCancellation(b.id, false)}>
+                  Deny — keep booking
+                </button>
+              </div>
+            </div>
+          </article>
+        ))}
+      </div>
+      )}
     </div>
   );
 }

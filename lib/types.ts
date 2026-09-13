@@ -117,7 +117,7 @@ export type Stay = {
   mealRates?: { breakfast: number; lunch: number; dinner: number };
   stories: Story[];
   experienceIds: string[];
-  host: { name: string; portrait: string; years: number; letter: string };
+  host: { name: string; portrait: string; years: number; letter: string; phone?: string; email?: string; contactHours?: string };
   description: string;
   address?: string;
 };

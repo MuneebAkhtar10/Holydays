@@ -46,6 +46,7 @@ function toCard(listing: {
     rejectReason: listing.rejectReason ?? "",
     reviewCount: stats.reviewCount,
     reviewAvg: stats.reviewAvg,
+    closedFrom: meta.closedFrom,
     meta,
   };
 }

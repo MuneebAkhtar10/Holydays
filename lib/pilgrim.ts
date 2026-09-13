@@ -1,10 +1,10 @@
-export const PILGRIM_CODES = ["IQ", "IR", "SA"] as const;
+export const PILGRIM_CODES = ["SA", "IQ", "IR"] as const;
 export type PilgrimCountry = (typeof PILGRIM_CODES)[number];
 
 export const pilgrimCountries: { code: PilgrimCountry; name: string; cities: string[] }[] = [
+  { code: "SA", name: "Saudi Arabia", cities: ["Makkah", "Madinah", "Jeddah", "Riyadh", "AlUla"] },
   { code: "IQ", name: "Iraq", cities: ["Najaf", "Karbala", "Baghdad", "Kufa", "Kadhimiya", "Samarra", "Basra"] },
   { code: "IR", name: "Iran", cities: ["Mashhad", "Qom", "Tehran", "Isfahan", "Shiraz", "Yazd"] },
-  { code: "SA", name: "Saudi Arabia", cities: ["Makkah", "Madinah", "Jeddah", "Riyadh", "AlUla"] },
 ];
 
 const NAME_TO_CODE: Record<string, PilgrimCountry> = {

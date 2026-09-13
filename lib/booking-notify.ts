@@ -22,6 +22,7 @@ export async function notifyBookingCreated(input: {
   total: number;
   origin: string;
   ownerEmail?: string;
+  pending?: boolean;
 }) {
   const number = bookingNumber(input.id);
   const url = `${input.origin}/bookings/${input.id}`;
@@ -34,15 +35,17 @@ export async function notifyBookingCreated(input: {
     url,
   });
   const dates = `${formatDay(input.startDate)} — ${formatDay(input.endDate)}`;
-  const body = `Booking ${number} is confirmed for ${input.listing}. ${dates}. Total ${formatPKR(input.total)}.`;
+  const body = input.pending
+    ? `Request ${number} sent to ${input.listing} for ${dates}. It is not confirmed yet — the driver needs to accept it first.`
+    : `Booking ${number} is confirmed for ${input.listing}. ${dates}. Total ${formatPKR(input.total)}.`;
 
   const email = input.email.includes("@")
     ? await notifyUser({
         to: input.email,
-        subject: `HolyDays confirmation ${number}`,
+        subject: input.pending ? `HolyDays request sent ${number}` : `HolyDays confirmation ${number}`,
         text: `${body}\n\nOpen your booking: ${url}`,
         html: mailHtml(
-          "Your booking is confirmed",
+          input.pending ? "Your trip request is sent" : "Your booking is confirmed",
           `Hello ${input.name},\n\n${body}\n\nWe sent this to the email on your HolyDays account.`,
           url,
           "View booking",
@@ -64,11 +67,15 @@ export async function notifyBookingCreated(input: {
   if (input.ownerEmail?.includes("@")) {
     await notifyUser({
       to: input.ownerEmail,
-      subject: `New HolyDays booking ${number}`,
-      text: `${input.name} booked ${input.listing}. ${body} ${url}`,
+      subject: input.pending ? `New HolyDays trip request ${number}` : `New HolyDays booking ${number}`,
+      text: input.pending
+        ? `${input.name} sent a custom trip request for ${input.listing}. ${dates}. Accept or decline it in your partner desk. ${url}`
+        : `${input.name} booked ${input.listing}. ${body} ${url}`,
       html: mailHtml(
-        "New guest booking",
-        `${input.name} booked ${input.listing}.\n${dates}.\nTotal ${formatPKR(input.total)}.`,
+        input.pending ? "New custom trip request" : "New guest booking",
+        input.pending
+          ? `${input.name} wants a custom trip with ${input.listing} on ${dates}. Review the details and accept or decline in your partner desk.`
+          : `${input.name} booked ${input.listing}.\n${dates}.\nTotal ${formatPKR(input.total)}.`,
         `${input.origin}/owner#bookings`,
         "Open partner desk",
       ),

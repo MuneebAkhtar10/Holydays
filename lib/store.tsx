@@ -76,7 +76,7 @@ const dates = defaultDates();
 export function Providers({ children }: { children: ReactNode }) {
   const [lang, setLang] = useState<Lang>("en");
   const [theme, setThemeState] = useState<Theme>("dark");
-  const [currency, setCurrencyState] = useState<DisplayCurrency>("PKR");
+  const [currency, setCurrencyState] = useState<DisplayCurrency>("USD");
   const [user, setUser] = useState<string | null>(null);
   const [wishlist, setWishlist] = useState<string[]>([]);
   const [reservation, setReservation] = useState<Reservation | null>(null);

@@ -9,7 +9,7 @@ export function Footer() {
           <BrandLogo size="lg" />
           <p className="mt-3 max-w-sm text-sm text-mist">{APP_TAGLINE}</p>
         </div>
-        <p className="text-xs text-mist">Iraq · Iran · Saudi Arabia</p>
+        <p className="text-xs text-mist">Saudi Arabia · Iraq · Iran</p>
       </div>
     </footer>
   );

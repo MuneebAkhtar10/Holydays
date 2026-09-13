@@ -29,10 +29,10 @@ const tiles = [
 ];
 
 const destinations = [
+  { name: "Makkah", ur: "مكة", img: "/images/dest-hunza.png", city: "Makkah", country: "SA" },
   { name: "Najaf", ur: "نجف", img: "/images/stay-walled-city.png", city: "Najaf", country: "IQ" },
   { name: "Karbala", ur: "کربلا", img: "/images/dest-lahore.png", city: "Karbala", country: "IQ" },
   { name: "Mashhad", ur: "مشهد", img: "/images/stay-apricot-court.png", city: "Mashhad", country: "IR" },
-  { name: "Makkah", ur: "مكة", img: "/images/dest-hunza.png", city: "Makkah", country: "SA" },
 ];
 
 export function HomeDashboard() {
@@ -80,7 +80,7 @@ export function HomeDashboard() {
             {status === "authenticated" ? `Welcome back${first ? `, ${first}` : ""}` : "Find a hotel"}
           </h1>
           <p className="mt-2 max-w-xl text-mist">
-            Browse hotels, ziyarat, and taxis in Iraq, Iran, and Saudi Arabia.
+            Browse hotels, ziyarat, and taxis in Saudi Arabia, Iraq, and Iran.
           </p>
         </div>
         {status !== "authenticated" && (
@@ -143,7 +143,7 @@ export function HomeDashboard() {
       </section>
 
       <section className="relative z-0 mt-14">
-        <h2 className="font-display text-3xl">Iraq, Iran, Saudi</h2>
+        <h2 className="font-display text-3xl">Saudi, Iraq, Iran</h2>
         <div className="mt-6 grid gap-4 md:grid-cols-4">
           {destinations.map((d) => (
             <Link

@@ -15,7 +15,7 @@ export const copy = {
     saved: "Saved",
     trips: "Trips",
     pkr: "PKR",
-    tagline: "Hotels for ziyarat in Iraq, Iran, and Saudi Arabia.",
+    tagline: "Hotels for ziyarat in Saudi Arabia, Iraq, and Iran.",
   },
   ur: {
     stays: "ہوٹل",

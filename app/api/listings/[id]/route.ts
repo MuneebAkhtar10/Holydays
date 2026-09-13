@@ -6,6 +6,7 @@ import { withReviewStats } from "@/lib/moderation";
 import { isPastBooking } from "@/lib/format";
 import { fetchListingByKey, fetchListingReviews, isPublishedLive, userHasReview } from "@/lib/listing-query";
 import { encodeStayMeta, parseListingMeta } from "@/lib/listing-meta";
+import { todayIso } from "@/lib/format";
 
 type Ctx = { params: Promise<{ id: string }> };
 
@@ -54,6 +55,7 @@ export async function GET(_req: Request, { params }: Ctx) {
       price: Number(listing.price),
       priceUnit: listing.priceUnit,
       status: listing.status,
+      rejectReason: listing.rejectReason ?? "",
       published: Boolean(listing.published),
       reviewCount: stats.reviewCount,
       reviewAvg: stats.reviewAvg,
@@ -127,6 +129,18 @@ export async function DELETE(_req: Request, { params }: Ctx) {
     const listing = await fetchListingByKey(id);
     if (!listing || listing.ownerId !== session.user.id) {
       return NextResponse.json({ error: "You can only remove your own listing" }, { status: 403 });
+    }
+    const today = todayIso();
+    const future = await prisma.booking.findMany({
+      where: { listingId: listing.id, status: "confirmed", endDate: { gte: today } },
+      select: { endDate: true },
+    });
+    if (future.length) {
+      const blockedUntil = future.reduce((max, b) => (b.endDate > max ? b.endDate : max), future[0].endDate);
+      return NextResponse.json(
+        { error: "This listing has a confirmed booking and cannot be deleted.", blockedUntil },
+        { status: 409 },
+      );
     }
     await prisma.listing.delete({ where: { id: listing.id } });
     return NextResponse.json({ ok: true });

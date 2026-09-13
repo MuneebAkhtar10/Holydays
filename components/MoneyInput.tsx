@@ -2,6 +2,7 @@
 
 import { convertToPkr, inputFromPkr } from "@/lib/currency";
 import { useSerai } from "@/lib/store";
+import { FieldHint } from "@/components/FieldHint";
 
 export function MoneyInput({
   label,
@@ -10,6 +11,7 @@ export function MoneyInput({
   required,
   placeholder,
   compact,
+  hint,
 }: {
   label: string;
   pkr: string | number;
@@ -17,6 +19,7 @@ export function MoneyInput({
   required?: boolean;
   placeholder?: string;
   compact?: boolean;
+  hint?: string;
 }) {
   const { currency } = useSerai();
   const blank = pkr === "" || pkr == null;
@@ -25,7 +28,10 @@ export function MoneyInput({
     <label className={compact ? "block" : "paper-label"}>
       {compact ? (
         <span className="flex items-center justify-between gap-2">
-          <span className="form-label">{label}</span>
+          <span className="form-label">
+            {label}
+            {hint ? <FieldHint text={hint} /> : null}
+          </span>
           <span className="text-xs font-medium text-ink/45">{currency}</span>
         </span>
       ) : (

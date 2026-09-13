@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import Link from "next/link";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState, type ReactNode } from "react";
 import { stayById } from "@/lib/stays";
@@ -11,6 +12,7 @@ import { GoogleStayMap } from "@/components/GoogleStayMap";
 import { ListingBook } from "@/components/ListingBook";
 import { ListingReviewsLoader } from "@/components/ListingReviews";
 import { PropertyGallery } from "@/components/PropertyGallery";
+import { SearchPass } from "@/components/SearchPass";
 import { StarIcon } from "@/components/StarIcon";
 import { PageLoader } from "@/components/PageLoader";
 import { useSession } from "next-auth/react";
@@ -23,6 +25,25 @@ import { PriceBreakdown } from "@/components/PriceBreakdown";
 import { readJson } from "@/lib/readJson";
 import type { Stay } from "@/lib/types";
 import { pilgrimCountryForPlace } from "@/lib/pilgrim";
+
+function initials(name: string) {
+  return (
+    name
+      .split(" ")
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((p) => p[0]?.toUpperCase())
+      .join("") || "?"
+  );
+}
+
+function maskContact(value: string) {
+  const visible = 2;
+  return value
+    .split("")
+    .map((ch, i, all) => (i < visible || i >= all.length - visible || ch === " " || ch === "@" || ch === "." ? ch : "•"))
+    .join("");
+}
 
 export default function StayPage() {
   return (
@@ -67,12 +88,18 @@ function StayInner() {
   const [partnerStay, setPartnerStay] = useState<Stay | null>(null);
   const [partnerOffer, setPartnerOffer] = useState<StayOffer | null>(null);
   const [partnerFacts, setPartnerFacts] = useState<PropertyFacts | null>(null);
+  const [partnerStatus, setPartnerStatus] = useState<string | null>(null);
+  const [partnerRejectReason, setPartnerRejectReason] = useState("");
+  const [partnerOwnerId, setPartnerOwnerId] = useState<string | undefined>(undefined);
+  const [rejecting, setRejecting] = useState(false);
+  const [rejectReasonInput, setRejectReasonInput] = useState("");
+  const [decisionBusy, setDecisionBusy] = useState(false);
   const [liveReady, setLiveReady] = useState(Boolean(catalog));
   const stay = catalog ?? partnerStay;
   const router = useRouter();
   const params = useSearchParams();
   const { search, setSearch, toggleWish, wishlist, money } = useSerai();
-  const { status } = useSession();
+  const { status, data: session } = useSession();
   const [roomId, setRoomId] = useState(stay?.rooms[0]?.id ?? "");
   const [ratePlanId, setRatePlanId] = useState(stay?.rooms[0]?.rates?.[0]?.id ?? "");
   const [roomCount, setRoomCount] = useState(Number(params.get("rooms") || search.rooms || 1));
@@ -80,9 +107,9 @@ function StayInner() {
   const [cribs, setCribs] = useState(0);
   const [extras, setExtras] = useState<string[]>([]);
 
-  useEffect(() => {
+  const loadListing = () => {
     if (catalog) return;
-    fetch(`/api/listings/${id}`, { cache: "no-store" })
+    return fetch(`/api/listings/${id}`, { cache: "no-store" })
       .then((r) => readJson<Record<string, unknown>>(r))
       .then((d) => {
         if (d?.error || d?.kind !== "STAY") {
@@ -92,6 +119,9 @@ function StayInner() {
         const mapped = listingToStay(d as never);
         const meta = parseListingMeta(d.meta);
         setPartnerStay(mapped);
+        setPartnerStatus(String(d.status ?? "approved"));
+        setPartnerRejectReason(String(d.rejectReason ?? ""));
+        setPartnerOwnerId(typeof d.ownerId === "string" ? d.ownerId : undefined);
         setPartnerOffer(listingOffer(d as never));
         setPartnerFacts({
           address: meta.address || `${mapped.city}, ${mapped.region}`,
@@ -107,6 +137,11 @@ function StayInner() {
         setLiveReady(true);
       })
       .catch(() => setLiveReady(true));
+  };
+
+  useEffect(() => {
+    void loadListing();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id, catalog]);
 
   const checkin = params.get("checkin") || search.checkin;
@@ -115,9 +150,49 @@ function StayInner() {
   const children = Number(params.get("children") || search.children || 0);
   const childAges = (params.get("ages") ?? "").split(",").map(Number).filter((n) => Number.isFinite(n));
   const guests = adults + children;
+
+  const urlCheckin = params.get("checkin");
+  const urlCheckout = params.get("checkout");
+  useEffect(() => {
+    if (urlCheckin && urlCheckout && (urlCheckin !== search.checkin || urlCheckout !== search.checkout)) {
+      setSearch({ checkin: urlCheckin, checkout: urlCheckout });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [urlCheckin, urlCheckout]);
+  useEffect(() => {
+    if (stay?.city && !search.city && !search.q) {
+      setSearch({ city: stay.city, q: stay.city });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [stay?.city]);
   const nights = nightsBetween(checkin, checkout);
   const roomsList = stay ? stayRooms(stay) : [];
   const room = roomsList.find((r) => r.id === roomId) ?? roomsList[0];
+  const totalCapacity = roomsList.reduce((sum, r) => sum + r.available, 0);
+
+  const [overlapBookings, setOverlapBookings] = useState<number | null>(null);
+  useEffect(() => {
+    if (!id || !checkin || !checkout) return;
+    let cancelled = false;
+    setOverlapBookings(null);
+    fetch(`/api/listings/${id}/availability?checkin=${checkin}&checkout=${checkout}`, { cache: "no-store" })
+      .then((r) => readJson<{ overlapping?: number }>(r))
+      .then((d) => {
+        if (!cancelled) setOverlapBookings(typeof d?.overlapping === "number" ? d.overlapping : 0);
+      })
+      .catch(() => {
+        if (!cancelled) setOverlapBookings(0);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [id, checkin, checkout]);
+  const roomsLeft = overlapBookings === null ? null : Math.max(0, totalCapacity - overlapBookings);
+  const roomCap = room ? (roomsLeft == null ? room.available : Math.max(0, Math.min(room.available, roomsLeft))) : null;
+
+  useEffect(() => {
+    if (roomCap != null && roomCap > 0 && roomCount > roomCap) setRoomCount(roomCap);
+  }, [roomCap, roomCount]);
 
   const quoteInput: QuoteInput = {
     checkin,
@@ -147,6 +222,22 @@ function StayInner() {
   const extraFacilities = ((offer?.facilities ?? []) as FacilityKey[]).filter((f) => !SHOWCASE_FACILITIES.includes(f));
   const weatherReal = stay.weather.filter((w) => w.t && w.t !== "—");
   const pilgrimStay = Boolean(pilgrimCountryForPlace(stay.city, stay.region));
+  const asAdmin = session?.user?.role === "ADMIN";
+  const mine = Boolean(session?.user?.id && partnerOwnerId && session.user.id === partnerOwnerId);
+  const pendingPreview = !catalog && Boolean(partnerStatus) && partnerStatus !== "approved" && (asAdmin || mine);
+
+  const decideListing = async (next: "approved" | "rejected", reason?: string) => {
+    setDecisionBusy(true);
+    await fetch(`/api/admin/listings/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status: next, rejectReason: reason ?? "" }),
+    });
+    setDecisionBusy(false);
+    setRejecting(false);
+    setRejectReasonInput("");
+    await loadListing();
+  };
 
   return (
     <div>
@@ -181,6 +272,67 @@ function StayInner() {
             {wishlist.includes(stay.id) ? "♥ Saved" : "♡ Save"}
           </button>
         </div>
+        {!catalog && partnerStatus && partnerStatus !== "approved" && (asAdmin || mine) && (
+          <div className="mt-5 rounded-2xl border border-brass/35 bg-ink-2/70 px-5 py-4 text-sm text-sand">
+            <p>Status: {partnerStatus === "rejected" ? "Rejected by admin" : "Waiting for admin approval"}. Guests cannot see this yet.</p>
+            {partnerStatus === "rejected" && partnerRejectReason && <p className="mt-1 text-rose">{partnerRejectReason}</p>}
+            {asAdmin && (
+              <div className="mt-3 flex flex-wrap items-center gap-2">
+                {partnerStatus !== "approved" && (
+                  <button
+                    type="button"
+                    className="btn-primary px-3 py-1.5 text-sm"
+                    disabled={decisionBusy}
+                    onClick={() => void decideListing("approved")}
+                  >
+                    Approve & publish
+                  </button>
+                )}
+                {partnerStatus !== "rejected" && !rejecting && (
+                  <button type="button" className="btn-ghost px-3 py-1.5 text-sm" onClick={() => setRejecting(true)}>
+                    Reject
+                  </button>
+                )}
+                {rejecting && (
+                  <div className="flex w-full flex-wrap items-center gap-2 pt-1">
+                    <input
+                      className="auth-field flex-1"
+                      placeholder="Rejection reason (optional)"
+                      value={rejectReasonInput}
+                      onChange={(e) => setRejectReasonInput(e.target.value)}
+                    />
+                    <button
+                      type="button"
+                      className="btn-primary px-3 py-1.5 text-sm"
+                      disabled={decisionBusy}
+                      onClick={() => void decideListing("rejected", rejectReasonInput || "Does not meet Serai standards.")}
+                    >
+                      Confirm reject
+                    </button>
+                    <button
+                      type="button"
+                      className="btn-ghost px-3 py-1.5 text-sm"
+                      onClick={() => {
+                        setRejecting(false);
+                        setRejectReasonInput("");
+                      }}
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+        {mine && (
+          <div className="mt-5 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-brass/35 bg-ink-2/70 px-5 py-4 text-sm text-sand">
+            <p>This is your listing. Guests see it once admin approves it.</p>
+            <Link href={`/owner/${stay.id}`} className="btn-primary">
+              Edit listing
+            </Link>
+          </div>
+        )}
         <nav className="mt-5 flex flex-wrap gap-1.5">
           {[
             ["gallery", "Gallery"],
@@ -198,13 +350,16 @@ function StayInner() {
         </nav>
       </div>
 
-      <div id="gallery" className="mx-auto max-w-7xl px-5 py-6">
-        <PropertyGallery stay={stay} />
+      <div className="relative mx-auto max-w-7xl px-5 pt-6">
+        <SearchPass compact stayCity={stay.city} />
       </div>
 
-      <div className="mx-auto grid max-w-7xl gap-8 px-5 pb-12 lg:grid-cols-[minmax(0,1fr)_320px]">
+      <div className="mx-auto grid max-w-7xl gap-8 px-5 py-6 pb-12 lg:grid-cols-[minmax(0,1fr)_320px]">
         <div>
-          <section id="info">
+          <div id="gallery">
+            <PropertyGallery stay={stay} />
+          </div>
+          <section id="info" className="mt-8">
             <h2 className="font-display text-3xl">About this hotel</h2>
             <p className="mt-3 max-w-2xl leading-relaxed text-sand/90">{stay.description}</p>
             <div className="mt-6 grid grid-cols-2 gap-2 sm:grid-cols-4">
@@ -286,6 +441,7 @@ function StayInner() {
                 onRooms={setRoomCount}
                 onExtraBeds={setExtraBeds}
                 onCribs={setCribs}
+                roomsLeft={roomsLeft}
                 roomShots={roomsGallery}
               />
             </div>
@@ -310,11 +466,32 @@ function StayInner() {
               </p>
             </Accordion>
             <div className="pane flex gap-3 p-4">
-              <Image src={stay.host.portrait} alt={stay.host.name} width={56} height={56} className="h-14 w-14 rounded-full object-cover" />
+              {stay.host.portrait ? (
+                <Image src={stay.host.portrait} alt={stay.host.name} width={56} height={56} className="h-14 w-14 shrink-0 rounded-full object-cover" />
+              ) : (
+                <span className="grid h-14 w-14 shrink-0 place-items-center rounded-full bg-brass/20 text-sm font-semibold text-sand">
+                  {initials(stay.host.name)}
+                </span>
+              )}
               <div>
                 <p className="text-[10px] uppercase tracking-[0.16em] text-brass">Host</p>
                 <p className="font-display text-xl">{stay.host.name}</p>
                 {stay.host.letter ? <p className="mt-1 text-sm italic text-mist">“{stay.host.letter}”</p> : null}
+                {(stay.host.phone || stay.host.email) && (
+                  <div className="mt-2 space-y-0.5">
+                    {stay.host.phone && (
+                      <p className="select-none text-sm text-mist blur-[3px]" aria-hidden="true">
+                        {maskContact(stay.host.phone)}
+                      </p>
+                    )}
+                    {stay.host.email && (
+                      <p className="select-none text-sm text-mist blur-[3px]" aria-hidden="true">
+                        {maskContact(stay.host.email)}
+                      </p>
+                    )}
+                    <p className="text-xs text-brass/80">Full contact details unlock once your booking is confirmed.</p>
+                  </div>
+                )}
               </div>
             </div>
           </section>
@@ -394,26 +571,39 @@ function StayInner() {
               </p>
             )}
             <div className="mt-4 grid grid-cols-2 gap-2">
-              <label className="paper-light text-[10px] uppercase tracking-[0.14em] text-ink/45">
+              <label className="text-[10px] uppercase tracking-[0.14em] text-mist">
                 Arrive
                 <input
                   type="date"
-                  className="mt-1 w-full rounded-xl border border-ink/10 bg-white px-2 py-2 text-sm text-ink outline-none"
+                  style={{ colorScheme: "light" }}
+                  className="paper-light mt-1 w-full rounded-xl border border-ink/10 bg-white px-2 py-2 text-sm text-ink outline-none"
                   value={checkin}
                   onChange={(e) => setSearch({ checkin: e.target.value })}
                 />
               </label>
-              <label className="paper-light text-[10px] uppercase tracking-[0.14em] text-ink/45">
+              <label className="text-[10px] uppercase tracking-[0.14em] text-mist">
                 Depart
                 <input
                   type="date"
-                  className="mt-1 w-full rounded-xl border border-ink/10 bg-white px-2 py-2 text-sm text-ink outline-none"
+                  style={{ colorScheme: "light" }}
+                  className="paper-light mt-1 w-full rounded-xl border border-ink/10 bg-white px-2 py-2 text-sm text-ink outline-none"
                   value={checkout}
                   onChange={(e) => setSearch({ checkout: e.target.value })}
                 />
               </label>
             </div>
-            <p className="mt-3 text-xs leading-relaxed text-ink/55">
+            <p
+              className={`mt-3 text-xs font-medium ${
+                roomsLeft === null ? "text-ink/45" : roomsLeft > 0 ? "text-emerald-600" : "text-red-600"
+              }`}
+            >
+              {roomsLeft === null
+                ? "Checking availability…"
+                : roomsLeft > 0
+                  ? `✓ Available — ${roomsLeft} room${roomsLeft === 1 ? "" : "s"} left for these dates`
+                  : "✗ Not available for these dates"}
+            </p>
+            <p className="mt-2 text-xs leading-relaxed text-ink/55">
               {formatDay(checkin)} — {formatDay(checkout)} · {nights} night{nights > 1 ? "s" : ""} · {guests} guests · {roomCount} room
               {roomCount === 1 ? "" : "s"}
             </p>
@@ -445,31 +635,40 @@ function StayInner() {
                 if (flow) nextParams.set("flow", flow);
                 const next = `/checkout?${nextParams.toString()}`;
                 if (status !== "authenticated") {
-                  router.push(`/login?callbackUrl=${encodeURIComponent(next)}`);
+                  const backHere = `${window.location.pathname}${window.location.search}`;
+                  router.push(`/login?callbackUrl=${encodeURIComponent(backHere)}`);
                   return;
                 }
                 router.push(next);
               };
+              const soldOut = roomsLeft === 0;
+              if (pendingPreview) {
+                return (
+                  <p className="mt-4 rounded-xl bg-ink/5 px-4 py-3 text-sm text-ink/55">
+                    Booking opens once this listing is approved and live.
+                  </p>
+                );
+              }
               if (status !== "authenticated") {
                 return (
-                  <button type="button" className="btn-primary mt-4 w-full py-3" onClick={() => go()}>
-                    Sign in to book
+                  <button type="button" disabled={soldOut} className="btn-primary mt-4 w-full py-3 disabled:cursor-not-allowed disabled:opacity-50" onClick={() => go()}>
+                    {soldOut ? "Not available for these dates" : "Sign in to book"}
                   </button>
                 );
               }
               if (!pilgrimStay) {
                 return (
-                  <button type="button" className="btn-primary mt-4 w-full py-3" onClick={() => go()}>
-                    Continue to guest details
+                  <button type="button" disabled={soldOut} className="btn-primary mt-4 w-full py-3 disabled:cursor-not-allowed disabled:opacity-50" onClick={() => go()}>
+                    {soldOut ? "Not available for these dates" : "Continue to guest details"}
                   </button>
                 );
               }
               return (
                 <div className="mt-4 space-y-2">
-                  <button type="button" className="btn-primary w-full py-3" onClick={() => go()}>
-                    Build ziyarat
+                  <button type="button" disabled={soldOut} className="btn-primary w-full py-3 disabled:cursor-not-allowed disabled:opacity-50" onClick={() => go()}>
+                    {soldOut ? "Not available for these dates" : "Book Now"}
                   </button>
-                  <button type="button" className="btn-ghost w-full py-3" onClick={() => go("package")}>
+                  <button type="button" disabled={soldOut} className="btn-ghost w-full py-3 disabled:cursor-not-allowed disabled:opacity-50" onClick={() => go("package")}>
                     Build a package
                   </button>
                 </div>

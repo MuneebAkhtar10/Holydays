@@ -1,14 +1,19 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { formatDay, nightsBetween } from "@/lib/format";
+import { formatDay, nightsBetween, stayNightDates } from "@/lib/format";
 import { useSerai } from "@/lib/store";
 import {
   airportPickupTitle,
+  ESIM_PLANS,
+  esimPlanRate,
   mealLines,
+  parseMealChoice,
   parseMealRates,
   taxiPickCost,
   tripTitle,
+  INSURANCE_RATE_PER_GUEST,
+  type EsimSelections,
   type MealChoice,
   type MealRates,
   type PackageTaxi,
@@ -133,14 +138,16 @@ function BillRow({
   hint,
   amount,
   compact,
+  tone,
 }: {
   label: string;
   hint?: string;
   amount: number;
   compact?: boolean;
+  tone?: "discount";
 }) {
   const { money } = useSerai();
-  const num = compact ? "text-ink" : "text-sand";
+  const num = tone === "discount" ? "text-sage" : compact ? "text-ink" : "text-sand";
   const mist = compact ? "text-ink/50" : "text-mist";
   return (
     <li className="flex items-start justify-between gap-3">
@@ -175,6 +182,9 @@ export function PackageBill({
   grand,
   compact,
   showTotal = true,
+  insurance,
+  esimSelections,
+  discounts,
 }: {
   hotels: ReviewHotel[];
   meals: MealChoice;
@@ -188,9 +198,18 @@ export function PackageBill({
   grand: number;
   compact?: boolean;
   showTotal?: boolean;
+  insurance?: boolean;
+  esimSelections?: EsimSelections;
+  discounts?: { id: string; label: string; amount: number }[];
 }) {
   const { money } = useSerai();
-  const mealRows = mealLines(meals, guests, nights, parseMealRates(mealRates));
+  const rates = parseMealRates(mealRates);
+  const mealGroups = hotels.map((h) => ({
+    hotel: h,
+    rows: mealLines(parseMealChoice(meals, stayNightDates(h.checkin, h.checkout)), guests, nightsBetween(h.checkin, h.checkout), rates),
+  }));
+  const mealRows = mealGroups.flatMap((g) => g.rows);
+  const splitMealsByHotel = hotels.length > 1;
   const transfers = taxis
     .map((p) => {
       const t = taxiList.find((x) => x.id === p.id);
@@ -237,10 +256,39 @@ export function PackageBill({
         </BillGroup>
       ) : null}
       {mealRows.length ? (
-        <BillGroup title="Meals" compact={compact}>
-          {mealRows.map((l) => (
-            <BillRow key={l.id} compact={compact} label={l.label} amount={l.amount} />
+        splitMealsByHotel ? (
+          mealGroups.map((g) =>
+            g.rows.length ? (
+              <BillGroup key={g.hotel.id} title={`Meals · ${g.hotel.name}`} compact={compact}>
+                {g.rows.map((l) => (
+                  <BillRow key={`${g.hotel.id}-${l.id}`} compact={compact} label={l.label} amount={l.amount} />
+                ))}
+              </BillGroup>
+            ) : null,
+          )
+        ) : (
+          <BillGroup title="Meals" compact={compact}>
+            {mealRows.map((l) => (
+              <BillRow key={l.id} compact={compact} label={l.label} amount={l.amount} />
+            ))}
+          </BillGroup>
+        )
+      ) : null}
+      {discounts && discounts.length > 0 ? (
+        <BillGroup title="Discounts" compact={compact}>
+          {discounts.map((d) => (
+            <BillRow key={d.id} compact={compact} label={d.label} amount={d.amount} tone="discount" />
           ))}
+        </BillGroup>
+      ) : null}
+      {insurance || (esimSelections && Object.values(esimSelections).some((n) => n)) ? (
+        <BillGroup title="Add-ons" compact={compact}>
+          {insurance ? <BillRow compact={compact} label="Travel insurance" amount={INSURANCE_RATE_PER_GUEST * Math.max(1, guests)} /> : null}
+          {ESIM_PLANS.map((p) => {
+            const qty = esimSelections?.[p.id] ?? 0;
+            if (!qty) return null;
+            return <BillRow key={p.id} compact={compact} label={`eSIM · ${p.label} × ${qty}`} amount={esimPlanRate(p.id) * qty} />;
+          })}
         </BillGroup>
       ) : null}
       {showTotal ? (

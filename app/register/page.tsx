@@ -10,7 +10,7 @@ import { BrandLogo } from "@/components/BrandLogo";
 import { readJson } from "@/lib/readJson";
 
 const kinds = [
-  { id: "STAY", label: "Hotels (Iraq / Iran / Saudi)" },
+  { id: "STAY", label: "Hotels (Saudi / Iraq / Iran)" },
   { id: "ATTRACTION", label: "Ziyarat" },
   { id: "TAXI", label: "Taxi (routes & seats)" },
   { id: "RESTAURANT", label: "Food" },

@@ -7,6 +7,9 @@ import { toBookingDTO } from "@/lib/booking-dto";
 import { notifyBookingUpdate } from "@/lib/booking-notify";
 import { parseBookingExtras } from "@/lib/booking-view";
 import { publicOrigin } from "@/lib/auth-tokens";
+import { parseListingMeta } from "@/lib/listing-meta";
+import { roomsLeftFor } from "@/lib/availability";
+import { loadBookableStay } from "@/lib/bookable-stay";
 
 type Ctx = { params: Promise<{ id: string }> };
 
@@ -43,23 +46,27 @@ export async function PATCH(req: Request, { params }: Ctx) {
   if (!booking) return NextResponse.json({ error: "Booking not found" }, { status: 404 });
   const body = await req.json();
 
-  if (body.status === "cancelled") {
-    if (booking.status === "cancelled") return NextResponse.json(toBookingDTO(booking));
+  if (body.status === "cancel_requested") {
+    if (booking.status === "cancelled") {
+      return NextResponse.json({ error: "This booking is already cancelled." }, { status: 400 });
+    }
+    if (booking.status === "cancel_requested") return NextResponse.json(toBookingDTO(booking));
+    const reason = String(body.reason ?? "").trim();
+    if (!reason) {
+      return NextResponse.json({ error: "Tell us why you're cancelling." }, { status: 400 });
+    }
+    const extra = parseBookingExtras(booking.extras);
+    extra.cancelReason = reason;
+    extra.cancelRequestedAt = new Date().toISOString();
     const updated = await prisma.booking.update({
       where: { id },
-      data: { status: "cancelled" },
+      data: { status: "cancel_requested", extras: JSON.stringify(extra) },
       include: { listing: true, user: true },
     });
-    await notifyBookingUpdate(
-      session.user.email || "",
-      `HolyDays booking cancelled`,
-      `Your booking at ${updated.listing.name} (${updated.startDate} — ${updated.endDate}) was cancelled.`,
-      `${publicOrigin()}/trips`,
-    );
     return NextResponse.json(toBookingDTO(updated));
   }
 
-  if (booking.status === "cancelled") {
+  if (booking.status === "cancelled" || booking.status === "cancel_requested") {
     return NextResponse.json({ error: "This booking is cancelled." }, { status: 400 });
   }
 
@@ -68,6 +75,25 @@ export async function PATCH(req: Request, { params }: Ctx) {
   const guests = body.guests !== undefined ? Number(body.guests) : booking.guests;
   if (!startDate || endDate < startDate) {
     return NextResponse.json({ error: "Choose valid dates." }, { status: 400 });
+  }
+  const listingMeta = parseListingMeta(booking.listing.meta);
+  if (listingMeta.closedFrom && startDate >= listingMeta.closedFrom) {
+    return NextResponse.json({ error: "This listing is no longer taking bookings from that date onward." }, { status: 403 });
+  }
+  if (startDate !== booking.startDate || endDate !== booking.endDate) {
+    const stay = await loadBookableStay(booking.listing.slug);
+    if (!stay) {
+      return NextResponse.json({ error: "This listing is no longer available." }, { status: 409 });
+    }
+    const existingExtras = parseBookingExtras(booking.extras);
+    const roomsHeld = Math.max(1, Number((existingExtras as Record<string, unknown>).rooms) || 1);
+    const roomsLeft = await roomsLeftFor(booking.listingId, stay, startDate, endDate, booking.id);
+    if (roomsLeft < roomsHeld) {
+      return NextResponse.json(
+        { error: `Only ${roomsLeft} room${roomsLeft === 1 ? "" : "s"} left at ${booking.listing.name} for those dates.` },
+        { status: 409 },
+      );
+    }
   }
   const others = await prisma.booking.findMany({
     where: { userId: session.user.id, listingId: booking.listingId, status: "confirmed", NOT: { id } },

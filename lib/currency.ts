@@ -1,21 +1,25 @@
-export const DISPLAY_CURRENCIES = ["PKR", "USD", "GBP"] as const;
+export const DISPLAY_CURRENCIES = ["USD", "GBP", "EUR", "PKR", "INR"] as const;
 export type DisplayCurrency = (typeof DISPLAY_CURRENCIES)[number];
 
 /** Listing amounts are stored in PKR. Header FX is for guest display only. */
 export const PKR_PER: Record<DisplayCurrency, number> = {
-  PKR: 1,
   USD: 278,
   GBP: 355,
+  EUR: 302,
+  PKR: 1,
+  INR: 3.3,
 };
 
 const LOCALE: Record<DisplayCurrency, string> = {
-  PKR: "en-PK",
   USD: "en-US",
   GBP: "en-GB",
+  EUR: "en-IE",
+  PKR: "en-PK",
+  INR: "en-IN",
 };
 
 export function isDisplayCurrency(value: string | null | undefined): value is DisplayCurrency {
-  return value === "PKR" || value === "USD" || value === "GBP";
+  return (DISPLAY_CURRENCIES as readonly string[]).includes(value ?? "");
 }
 
 export function convertFromPkr(amountPkr: number, currency: DisplayCurrency) {
@@ -38,7 +42,7 @@ export function inputFromPkr(amountPkr: number, currency: DisplayCurrency) {
   return String(rounded);
 }
 
-export function formatMoney(amountPkr: number, currency: DisplayCurrency = "PKR") {
+export function formatMoney(amountPkr: number, currency: DisplayCurrency = "USD") {
   const value = convertFromPkr(Number(amountPkr) || 0, currency);
   return new Intl.NumberFormat(LOCALE[currency], {
     style: "currency",

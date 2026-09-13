@@ -1,16 +1,19 @@
 "use client";
 
 import Image from "next/image";
+import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { addDaysIso, nightsBetween } from "@/lib/format";
 import { listingToStay, type ListingCard } from "@/lib/listing-meta";
-import { quoteStay } from "@/lib/pricing";
+import { quoteStay, stayRooms } from "@/lib/pricing";
 import { citiesForCountry, type PilgrimCountry } from "@/lib/pilgrim";
 import type { PackageStaySlice } from "@/lib/package-plan";
 import { HotelStrip, type ReviewHotel } from "@/components/PackageReview";
 import { readJson } from "@/lib/readJson";
 import { useSerai } from "@/lib/store";
 import { CANCEL_LABEL } from "@/lib/rooms";
+import { RoomPicker } from "@/components/RoomPicker";
+import { gallerySets } from "@/lib/property-details";
 
 type StayCard = ListingCard & { kind?: string };
 
@@ -45,6 +48,11 @@ export function PackageHotelPicker({
   const [rows, setRows] = useState<StayCard[]>([]);
   const [picked, setPicked] = useState<string | null>(null);
   const [ready, setReady] = useState(false);
+  const [roomId, setRoomId] = useState("");
+  const [ratePlanId, setRatePlanId] = useState("");
+  const [extraBeds, setExtraBeds] = useState(0);
+  const [cribs, setCribs] = useState(0);
+  const [roomsCount, setRoomsCount] = useState(Math.max(1, rooms));
 
   useEffect(() => {
     setPlace(city || cityOptions[0] || "");
@@ -77,19 +85,56 @@ export function PackageHotelPicker({
 
   const selected = hotels.find((h) => (h.slug || h.id) === picked) ?? null;
   const stay = selected ? listingToStay(selected) : null;
-  const room = stay?.rooms[0];
-  const rate = room?.rates?.[0];
+  const stayRoomList = stay ? stayRooms(stay) : [];
+  const room = stayRoomList.find((r) => r.id === roomId) ?? stayRoomList[0];
+  const totalCapacity = stayRoomList.reduce((sum, r) => sum + r.available, 0);
+
+  useEffect(() => {
+    if (!stay) return;
+    const list = stayRooms(stay);
+    setRoomId(list[0]?.id ?? "");
+    setRatePlanId(list[0]?.rates?.[0]?.id ?? "");
+    setExtraBeds(0);
+    setCribs(0);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [picked]);
+
+  const [overlapBookings, setOverlapBookings] = useState<number | null>(null);
+  const stayId = stay?.id ?? "";
+  useEffect(() => {
+    if (!stayId || !checkin || !checkout || checkout <= checkin) {
+      setOverlapBookings(null);
+      return;
+    }
+    let cancelled = false;
+    setOverlapBookings(null);
+    fetch(`/api/listings/${stayId}/availability?checkin=${checkin}&checkout=${checkout}`, { cache: "no-store" })
+      .then((r) => readJson<{ overlapping?: number }>(r))
+      .then((d) => {
+        if (!cancelled) setOverlapBookings(typeof d?.overlapping === "number" ? d.overlapping : 0);
+      })
+      .catch(() => {
+        if (!cancelled) setOverlapBookings(0);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [stayId, checkin, checkout]);
+  const roomsLeft = overlapBookings === null ? null : Math.max(0, totalCapacity - overlapBookings);
+
   const quote =
     stay && room && checkin && checkout && checkout > checkin
       ? quoteStay(stay, {
           checkin,
           checkout,
-          rooms,
+          rooms: roomsCount,
           adults,
           children,
           childAges,
           roomId: room.id,
-          ratePlanId: rate?.id,
+          ratePlanId: ratePlanId || room.rates[0]?.id,
+          extraBeds,
+          cribs,
         })
       : null;
 
@@ -135,51 +180,91 @@ export function PackageHotelPicker({
           const id = h.slug || h.id;
           const on = picked === id;
           return (
-            <button
-              key={id}
-              type="button"
-              className={`flex w-full gap-3 rounded-2xl p-3 text-left ring-1 ${on ? "bg-flame/10 ring-brass/40" : "bg-sand/[0.03] ring-sand/[0.08]"}`}
-              onClick={() => setPicked(id)}
-            >
-              <div className="relative h-16 w-20 shrink-0 overflow-hidden rounded-xl">
-                <Image src={h.cover || "/images/hero-hunza-dusk.png"} alt="" fill className="object-cover" />
-              </div>
-              <div className="min-w-0">
-                <p className="font-display truncate text-lg leading-tight">{h.name}</p>
-                <p className="text-sm text-mist">{h.city} · from {money(h.price)}</p>
-              </div>
-            </button>
+            <div key={id} className={`flex w-full items-center gap-3 rounded-2xl p-3 ring-1 ${on ? "bg-flame/10 ring-brass/40" : "bg-sand/[0.03] ring-sand/[0.08]"}`}>
+              <button type="button" className="flex min-w-0 flex-1 items-center gap-3 text-left" onClick={() => setPicked(id)}>
+                <div className="relative h-16 w-20 shrink-0 overflow-hidden rounded-xl">
+                  <Image src={h.cover || "/images/hero-hunza-dusk.png"} alt="" fill className="object-cover" />
+                </div>
+                <div className="min-w-0">
+                  <p className="font-display truncate text-lg leading-tight">{h.name}</p>
+                  <p className="text-sm text-mist">{h.city} · from {money(h.price)}</p>
+                </div>
+              </button>
+              <Link
+                href={`/stay/${id}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="shrink-0 whitespace-nowrap text-xs text-mist underline hover:text-sand"
+              >
+                View details
+              </Link>
+            </div>
           );
         })}
       </div>
 
-      {quote && stay && room ? (
-        <div className="rounded-xl bg-ink/30 px-3 py-3 text-sm">
-          <p className="text-sand">
-            {room.name} · {nightsBetween(checkin, checkout)} night{nightsBetween(checkin, checkout) === 1 ? "" : "s"} · {CANCEL_LABEL[quote.rate.cancellation]}
+      {stay && quote ? (
+        <div>
+          <p className="mb-2 text-sm text-mist">
+            {stayRoomList.length} room type{stayRoomList.length === 1 ? "" : "s"} · {nightsBetween(checkin, checkout)} night
+            {nightsBetween(checkin, checkout) === 1 ? "" : "s"}
           </p>
-          <p className="mt-1 font-display text-xl">{money(quote.grand)}</p>
-          <button
-            type="button"
-            className="btn-primary mt-3 rounded-full"
-            onClick={() =>
-              onAdd({
-                listingId: stay.id,
-                name: stay.name,
-                city: stay.city,
-                cover: stay.cover,
-                checkin,
-                checkout,
-                roomId: room.id,
-                ratePlanId: quote.rate.id,
-                roomName: room.name,
-                amount: quote.grand,
-                cancellation: quote.rate.cancellation,
-              })
-            }
-          >
-            Add this hotel
-          </button>
+          <p className={`mb-3 text-sm font-medium ${roomsLeft === null ? "text-mist" : roomsLeft > 0 ? "text-emerald-600" : "text-red-600"}`}>
+            {roomsLeft === null
+              ? "Checking availability…"
+              : roomsLeft > 0
+                ? `✓ Available — ${roomsLeft} room${roomsLeft === 1 ? "" : "s"} left for these dates`
+                : "✗ Not available for these dates"}
+          </p>
+          <RoomPicker
+            stay={stay}
+            input={{ checkin, checkout, rooms: roomsCount, adults, children, childAges, roomId: room?.id, ratePlanId, extraBeds, cribs }}
+            roomId={room?.id ?? ""}
+            ratePlanId={ratePlanId || room?.rates[0]?.id || ""}
+            extraBeds={extraBeds}
+            cribs={cribs}
+            roomsLeft={roomsLeft}
+            onRoom={(id) => {
+              setRoomId(id);
+              const next = stayRooms(stay).find((r) => r.id === id);
+              setRatePlanId(next?.rates[0]?.id ?? "");
+            }}
+            onRate={setRatePlanId}
+            onRooms={setRoomsCount}
+            onExtraBeds={setExtraBeds}
+            onCribs={setCribs}
+            roomShots={gallerySets(stay).room}
+          />
+          <div className="mt-4 rounded-xl bg-ink/30 px-3 py-3 text-sm">
+            <p className="text-sand">
+              {room?.name} · {CANCEL_LABEL[quote.rate.cancellation]}
+            </p>
+            <p className="mt-1 font-display text-xl">{money(quote.grand)}</p>
+            <button
+              type="button"
+              disabled={roomsLeft === 0}
+              className="btn-primary mt-3 rounded-full disabled:cursor-not-allowed disabled:opacity-50"
+              onClick={() =>
+                room &&
+                onAdd({
+                  listingId: stay.id,
+                  name: stay.name,
+                  city: stay.city,
+                  cover: stay.cover,
+                  checkin,
+                  checkout,
+                  roomId: room.id,
+                  ratePlanId: quote.rate.id,
+                  roomName: room.name,
+                  amount: quote.grand,
+                  cancellation: quote.rate.cancellation,
+                  rooms: roomsCount,
+                })
+              }
+            >
+              {roomsLeft === 0 ? "Not available for these dates" : "Add this hotel"}
+            </button>
+          </div>
         </div>
       ) : null}
     </div>

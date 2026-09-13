@@ -1,13 +1,14 @@
 "use client";
 
 import Image from "next/image";
-import type { Dispatch, ReactNode, RefObject, SetStateAction } from "react";
+import { useRef, useState, type Dispatch, type ReactNode, type RefObject, type SetStateAction } from "react";
 import { FACILITY_LABEL, MEAL_LABEL, PROPERTY_LABEL, SHOWCASE_FACILITIES, type FacilityKey, type MealKey, type PropertyKind } from "@/lib/search-index";
 import { StayPricingEditor, StayRoomEditor } from "@/components/StayRoomEditor";
 import { MoneyInput } from "@/components/MoneyInput";
 import { citiesForCountry, pilgrimCountries, pilgrimCountryName, type PilgrimCountry } from "@/lib/pilgrim";
 import type { BookableRoom } from "@/lib/rooms";
 import type { StayGalleries, StayPricing } from "@/lib/types";
+import { isValidEmail, isValidPhone } from "@/lib/validate";
 
 type PhotoBucket = keyof StayGalleries;
 
@@ -56,6 +57,8 @@ export function StayListingWizard({
   setMeals,
   mealRates,
   setMealRates,
+  hostPhotoUploading,
+  onHostPhoto,
 }: {
   step: number;
   setStep: (n: number) => void;
@@ -82,10 +85,18 @@ export function StayListingWizard({
   setMeals: Dispatch<SetStateAction<MealKey[]>>;
   mealRates: { breakfast: string; lunch: string; dinner: string };
   setMealRates: Dispatch<SetStateAction<{ breakfast: string; lunch: string; dinner: string }>>;
+  hostPhotoUploading: boolean;
+  onHostPhoto: (file: File) => void;
 }) {
   const pane = (i: number, node: ReactNode) => (
     <div className={step === i ? "space-y-2.5 pb-3" : "hidden"}>{node}</div>
   );
+
+  const hostPhotoRef = useRef<HTMLInputElement | null>(null);
+  const [touched, setTouched] = useState<Record<string, boolean>>({});
+  const touch = (k: string) => setTouched((t) => ({ ...t, [k]: true }));
+  const fieldError = (k: string, v: string, check: (v: string) => boolean, message: string) =>
+    touched[k] && v.trim() && !check(v) ? <p className="mt-1 text-xs text-rose">{message}</p> : null;
 
   return (
     <div className="mt-2 flex min-h-0 flex-1 flex-col gap-3 lg:flex-row">
@@ -120,8 +131,8 @@ export function StayListingWizard({
             </p>
             <div className="grid gap-2.5 md:grid-cols-2 lg:grid-cols-3">
               <label className="form-label mt-0">
-                Property name
-                <input className="paper-field" placeholder="Canal Breeze Studio" value={String(form.name)} onChange={(e) => set("name", e.target.value)} />
+                Property name <span className="text-red-500">*</span>
+                <input className="paper-field" placeholder="Canal Breeze Studio" value={String(form.name)} onChange={(e) => set("name", e.target.value)} required />
               </label>
               <label className="form-label mt-0">
                 Nastaliq name
@@ -184,8 +195,8 @@ export function StayListingWizard({
               </label>
             </div>
             <label className="form-label">
-              Street address
-              <input className="paper-field" placeholder="Canal Bank Road, GOR-I, Lahore" value={String(form.address)} onChange={(e) => set("address", e.target.value)} />
+              Street address (Google Maps) <span className="text-red-500">*</span>
+              <input className="paper-field" placeholder="Canal Bank Road, GOR-I, Lahore" value={String(form.address)} onChange={(e) => set("address", e.target.value)} required />
             </label>
             <label className="form-label">
               Description
@@ -382,11 +393,26 @@ export function StayListingWizard({
             <div className="grid gap-2.5 sm:grid-cols-2">
               <label className="form-label">
                 Contact phone
-                <input className="paper-field" value={String(form.phone)} onChange={(e) => set("phone", e.target.value)} />
+                <input
+                  className="paper-field"
+                  type="tel"
+                  placeholder="+92 300 1234567"
+                  value={String(form.phone)}
+                  onChange={(e) => set("phone", e.target.value)}
+                  onBlur={() => touch("phone")}
+                />
+                {fieldError("phone", String(form.phone), isValidPhone, "Enter a valid phone number, e.g. +92 300 1234567")}
               </label>
               <label className="form-label">
                 Contact email
-                <input className="paper-field" type="email" value={String(form.email)} onChange={(e) => set("email", e.target.value)} />
+                <input
+                  className="paper-field"
+                  type="email"
+                  value={String(form.email)}
+                  onChange={(e) => set("email", e.target.value)}
+                  onBlur={() => touch("email")}
+                />
+                {fieldError("email", String(form.email), isValidEmail, "Enter a valid email address")}
               </label>
             </div>
             <label className="form-label">
@@ -425,8 +451,8 @@ export function StayListingWizard({
                 <input className="paper-field" type="number" step="any" value={String(form.lng)} onChange={(e) => set("lng", e.target.value)} />
               </label>
               <label className="form-label sm:col-span-2">
-                Street address (Google Maps)
-                <input className="paper-field" placeholder="Exact hotel address" value={String(form.address)} onChange={(e) => set("address", e.target.value)} />
+                Street address (Google Maps) <span className="text-red-500">*</span>
+                <input className="paper-field" placeholder="Exact hotel address" value={String(form.address)} onChange={(e) => set("address", e.target.value)} required />
               </label>
               <label className="form-label">
                 km from airport
@@ -444,16 +470,74 @@ export function StayListingWizard({
           6,
           <>
             <p className="mb-1 max-w-2xl text-[15px] leading-relaxed text-ink/65">
-              Who runs the house. Guests see this on the listing.
+              Who runs the house. Guests see this on the listing. We only reveal your phone and email to a guest once their booking is confirmed.
             </p>
+            <div>
+              <p className="form-label">Host picture <span className="text-red-500">*</span></p>
+              <div className="mt-2 flex items-center gap-3">
+                <div className="relative h-16 w-16 overflow-hidden rounded-full border border-ink/10 bg-ink/5">
+                  {form.hostPortrait ? (
+                    <Image src={String(form.hostPortrait)} alt="Host preview" fill className="object-cover" />
+                  ) : null}
+                </div>
+                <button
+                  type="button"
+                  className="btn-ghost text-sm"
+                  onClick={() => hostPhotoRef.current?.click()}
+                >
+                  {hostPhotoUploading ? "Uploading…" : "Upload photo"}
+                </button>
+                <input
+                  ref={hostPhotoRef}
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) onHostPhoto(file);
+                    e.target.value = "";
+                  }}
+                />
+              </div>
+            </div>
             <div className="grid gap-2.5 sm:grid-cols-2">
               <label className="form-label">
-                Host name
-                <input className="paper-field" value={String(form.hostName)} onChange={(e) => set("hostName", e.target.value)} />
+                Host name <span className="text-red-500">*</span>
+                <input className="paper-field" value={String(form.hostName)} onChange={(e) => set("hostName", e.target.value)} required />
               </label>
               <label className="form-label">
                 Years with this house
                 <input className="paper-field" type="number" min={0} value={String(form.hostYears)} onChange={(e) => set("hostYears", e.target.value)} />
+              </label>
+              <label className="form-label">
+                Host phone number <span className="text-red-500">*</span>
+                <input
+                  className="paper-field"
+                  type="tel"
+                  placeholder="+92 300 1234567"
+                  value={String(form.hostPhone)}
+                  onChange={(e) => set("hostPhone", e.target.value)}
+                  onBlur={() => touch("hostPhone")}
+                  required
+                />
+                {fieldError("hostPhone", String(form.hostPhone), isValidPhone, "Enter a valid phone number, e.g. +92 300 1234567")}
+              </label>
+              <label className="form-label">
+                Host email address <span className="text-red-500">*</span>
+                <input
+                  className="paper-field"
+                  type="email"
+                  placeholder="host@example.com"
+                  value={String(form.hostEmail)}
+                  onChange={(e) => set("hostEmail", e.target.value)}
+                  onBlur={() => touch("hostEmail")}
+                  required
+                />
+                {fieldError("hostEmail", String(form.hostEmail), isValidEmail, "Enter a valid email address")}
+              </label>
+              <label className="form-label sm:col-span-2">
+                Time to contact the host <span className="text-red-500">*</span>
+                <input className="paper-field" placeholder="9am – 9pm PKT" value={String(form.hostContactHours)} onChange={(e) => set("hostContactHours", e.target.value)} required />
               </label>
             </div>
             <label className="form-label">

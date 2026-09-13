@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import Link from "next/link";
 import { useMemo, useState, type ReactNode } from "react";
 import { datesInclusive, formatDay } from "@/lib/format";
 import { useSerai } from "@/lib/store";
@@ -271,11 +272,21 @@ function TripComposer({
                       <p className="mt-1 text-sm text-mist">
                         {r.drivers.length} vehicle{r.drivers.length === 1 ? "" : "s"} · from {money(r.from)}
                       </p>
-                      <div className="mt-2">
+                      <div className="mt-2 flex flex-wrap items-center gap-3">
                         <MoreInfo open={infoRoute === r.key} onToggle={() => setInfoRoute(infoRoute === r.key ? null : r.key)}>
                           {r.hours ? <p>{r.hours}</p> : null}
                           <p className="mt-1">{r.plan || "Stops confirmed with the driver."}</p>
                         </MoreInfo>
+                        {r.drivers[0] ? (
+                          <Link
+                            href={`/taxis/${r.drivers[0].id}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-xs text-mist underline hover:text-sand"
+                          >
+                            View details
+                          </Link>
+                        ) : null}
                       </div>
                     </div>
                     <button
@@ -373,13 +384,16 @@ function TripComposer({
                           {t.model ? ` · ${t.model}` : ""}
                         </p>
                         <p className="mt-1 text-lg text-sand">{money(t.privateRate)}</p>
-                        <div className="mt-2">
+                        <div className="mt-2 flex flex-wrap items-center gap-3">
                           <MoreInfo open={infoCar === t.id} onToggle={() => setInfoCar(infoCar === t.id ? null : t.id)}>
                             <p>
                               {t.seats} seats · {t.hours || "Full day"}
                             </p>
                             <p className="mt-1">{t.itinerary.map((s) => s.place).join(" → ") || t.blurb}</p>
                           </MoreInfo>
+                          <Link href={`/taxis/${t.id}`} target="_blank" rel="noopener noreferrer" className="text-xs text-mist underline hover:text-sand">
+                            View details
+                          </Link>
                         </div>
                       </div>
                       <button
@@ -414,6 +428,7 @@ function TripComposer({
 export function AirportTransferStep({
   country,
   city,
+  cities,
   stayName,
   catalog,
   picks,
@@ -426,6 +441,8 @@ export function AirportTransferStep({
 }: {
   country: PilgrimCountry | null;
   city: string;
+  /** Other cities visited on this trip — airports serving any of them are offered too, not just `city`. */
+  cities?: string[];
   stayName: string;
   catalog: PackageTaxi[];
   picks: TaxiPick[];
@@ -436,24 +453,23 @@ export function AirportTransferStep({
   title?: string;
   blurb?: string;
 }) {
-  const items = useMemo(
-    () =>
-      taxisFor(catalog, country, city).filter((t) => {
-        if (t.service !== "airport") return false;
-        const needle = city.trim().toLowerCase();
-        const airCity = (country ? airportForCity(country, city).city : city).trim().toLowerCase();
-        return (
-          t.cities.some((c) => {
-            const n = c.toLowerCase();
-            return n === needle || n === airCity;
-          }) ||
-          t.origin.toLowerCase().includes(needle) ||
-          t.origin.toLowerCase().includes(airCity) ||
-          airportLabelOf(t).toLowerCase().includes(needle)
-        );
-      }),
-    [catalog, country, city],
-  );
+  const items = useMemo(() => {
+    const candidateCities = Array.from(new Set([city, ...(cities ?? [])].map((c) => c.trim()).filter(Boolean)));
+    const needles = candidateCities.map((c) => c.toLowerCase());
+    const airCities = candidateCities.map((c) => (country ? airportForCity(country, c).city : c).trim().toLowerCase());
+    return taxisFor(catalog, country, city).filter((t) => {
+      if (t.service !== "airport") return false;
+      return (
+        t.cities.some((c) => {
+          const n = c.toLowerCase();
+          return needles.includes(n) || airCities.includes(n);
+        }) ||
+        needles.some((n) => t.origin.toLowerCase().includes(n)) ||
+        airCities.some((n) => t.origin.toLowerCase().includes(n)) ||
+        needles.some((n) => airportLabelOf(t).toLowerCase().includes(n))
+      );
+    });
+  }, [catalog, country, city, cities]);
   return (
     <TripComposer
       title={title || (airportLeg === "in" ? "Airport pick up" : airportLeg === "out" ? "Airport drop off" : "Airport transfer")}
@@ -510,8 +526,9 @@ export function DayTripsStep({
         if (t.service === "airport") return false;
         const from = (cities?.length ? cities : [city]).map((c) => c.trim().toLowerCase()).filter(Boolean);
         if (!from.length) return true;
+        // Only trips that actually depart from one of our current cities — not ones that merely pass through.
         const origin = t.origin.trim().toLowerCase();
-        return from.some((c) => origin === c || origin.includes(c) || t.cities.some((x) => x.toLowerCase() === c));
+        return from.some((c) => origin === c || origin.includes(c));
       }),
     [catalog, country, city, cities],
   );

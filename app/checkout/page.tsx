@@ -12,19 +12,28 @@ import { LoaderOverlay, PageLoader } from "@/components/PageLoader";
 import { PriceBreakdown } from "@/components/PriceBreakdown";
 import { readJson } from "@/lib/readJson";
 import { listingToStay } from "@/lib/listing-meta";
-import { quoteStay, type QuoteInput } from "@/lib/pricing";
+import { quoteStay, stayRooms, type QuoteInput } from "@/lib/pricing";
 import { CANCEL_LABEL, MEAL_PLAN_LABEL, PAY_LABEL } from "@/lib/rooms";
 import { experienceById } from "@/lib/experiences";
 import type { Stay } from "@/lib/types";
 import { cityNamedIn, pilgrimCountryName } from "@/lib/pilgrim";
+import { isValidPhone } from "@/lib/validate";
 import {
+  ESIM_PLANS,
+  INSURANCE_RATE_PER_GUEST,
+  esimPlanRate,
+  esimSelectionsCount,
+  esimSelectionsTotal,
   listingToTaxi,
   listingToZiyarat,
   mealLines,
+  mergeMealChoiceScope,
+  parseMealChoice,
   packageAddonsTotal,
   parseMealRates,
   pilgrimCountryForPlace,
   tripDestinationCity,
+  type EsimSelections,
   type MealChoice,
   type PackageListing,
   type PackageStaySlice,
@@ -33,17 +42,191 @@ import {
   type ZiyaratStop,
 } from "@/lib/package-plan";
 import { MealPlanStep, AirportTransferStep, DayTripsStep } from "@/components/PackageSteps";
-import { PackageHotelPicker, PackageStayList } from "@/components/PackageHotelPicker";
+import { PackageHotelPicker } from "@/components/PackageHotelPicker";
 import { HotelStrip, PackageBill, TransferTimeline, type ReviewHotel } from "@/components/PackageReview";
 import { PoliciesConsent } from "@/components/PoliciesConsent";
-import { BedIcon, CarIcon, CheckIcon, GuestsIcon, LandmarkIcon, TableIcon, WalletIcon } from "@/components/icons";
+import { BedIcon, CarIcon, CheckIcon, GuestsIcon, LandmarkIcon, ShieldIcon, SimIcon, TableIcon, WalletIcon } from "@/components/icons";
 
 const ZIYARAT_STEPS = ["Guests", "Meals", "Airport Transfer", "Day trips", "Pay", "Confirm"] as const;
-const BUILD_STEPS = ["Guests", "Meals", "Airport pick up", "Hotels & trips", "Airport drop off", "Pay", "Confirm"] as const;
+const BUILD_STEPS = ["Guests", "Hotels & trips", "Meals", "Airport pick up", "Airport drop off", "Insurance", "eSIM", "Pay", "Confirm"] as const;
 const STAY_STEPS = ["Guests", "Pay", "Confirm"] as const;
 const ZIYARAT_ICONS = [GuestsIcon, TableIcon, CarIcon, LandmarkIcon, WalletIcon, CheckIcon];
-const BUILD_ICONS = [GuestsIcon, TableIcon, CarIcon, BedIcon, CarIcon, WalletIcon, CheckIcon];
+const BUILD_ICONS = [GuestsIcon, BedIcon, TableIcon, CarIcon, CarIcon, ShieldIcon, SimIcon, WalletIcon, CheckIcon];
 const STAY_ICONS = [GuestsIcon, WalletIcon, CheckIcon];
+
+function GuestStepper({
+  label,
+  value,
+  onChange,
+  min = 0,
+  max = 10,
+  readOnly = false,
+  hint,
+}: {
+  label: string;
+  value: number;
+  onChange: (n: number) => void;
+  min?: number;
+  max?: number;
+  readOnly?: boolean;
+  hint?: string;
+}) {
+  if (readOnly) {
+    return (
+      <div className="flex items-center justify-between rounded-xl bg-sand/[0.03] px-4 py-3 ring-1 ring-sand/[0.08]">
+        <div>
+          <span className="text-sm text-sand">{label}</span>
+          {hint && <p className="mt-0.5 text-xs text-mist">{hint}</p>}
+        </div>
+        <span className="w-5 text-center text-sm text-sand">{value}</span>
+      </div>
+    );
+  }
+  return (
+    <div className="flex items-center justify-between rounded-xl bg-sand/[0.03] px-4 py-3 ring-1 ring-sand/[0.08]">
+      <span className="text-sm text-sand">{label}</span>
+      <div className="flex items-center gap-3">
+        <button
+          type="button"
+          className="grid h-7 w-7 place-items-center rounded-full text-sand ring-1 ring-sand/20 disabled:opacity-30"
+          disabled={value <= min}
+          onClick={() => onChange(Math.max(min, value - 1))}
+        >
+          −
+        </button>
+        <span className="w-5 text-center text-sm text-sand">{value}</span>
+        <button
+          type="button"
+          className="grid h-7 w-7 place-items-center rounded-full text-sand ring-1 ring-sand/20 disabled:opacity-30"
+          disabled={value >= max}
+          onClick={() => onChange(Math.min(max, value + 1))}
+        >
+          +
+        </button>
+      </div>
+    </div>
+  );
+}
+
+type TripLeg = { id: string; name: string; city: string; cover?: string; checkin: string; checkout: string; room?: string; amount: number; isPrimary: boolean; rooms: number };
+type LegAvailability = { checking: boolean; roomsLeft: number | null; error?: string };
+
+function TripOrderEditor({
+  legs,
+  money,
+  availability,
+  onMove,
+  onRemove,
+  onEditDates,
+  onRoomsChange,
+}: {
+  legs: TripLeg[];
+  money: (n: number) => string;
+  availability: Record<string, LegAvailability | undefined>;
+  onMove: (id: string, dir: -1 | 1) => void;
+  onRemove: (id: string) => void;
+  onEditDates: (id: string, checkin: string, checkout: string) => void;
+  onRoomsChange: (id: string, rooms: number) => void;
+}) {
+  return (
+    <div className="space-y-2">
+      {legs.map((leg, i) => {
+        const status = availability[leg.id];
+        const unavailable = status && status.roomsLeft !== null && status.roomsLeft < leg.rooms;
+        return (
+          <div key={leg.id} className="rounded-2xl bg-sand/[0.03] p-3 ring-1 ring-sand/[0.08]">
+            <div className="flex items-center gap-3">
+              <div className="flex shrink-0 flex-col gap-1">
+                <button
+                  type="button"
+                  disabled={i === 0}
+                  aria-label="Move earlier"
+                  className="grid h-6 w-6 place-items-center rounded-full text-sand ring-1 ring-sand/20 disabled:opacity-20"
+                  onClick={() => onMove(leg.id, -1)}
+                >
+                  ▲
+                </button>
+                <button
+                  type="button"
+                  disabled={i === legs.length - 1}
+                  aria-label="Move later"
+                  className="grid h-6 w-6 place-items-center rounded-full text-sand ring-1 ring-sand/20 disabled:opacity-20"
+                  onClick={() => onMove(leg.id, 1)}
+                >
+                  ▼
+                </button>
+              </div>
+              <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-flame/20 text-xs font-medium text-sand">{i + 1}</span>
+              <div className="min-w-0 flex-1">
+                <p className="font-display truncate text-lg leading-tight">
+                  {leg.name}
+                  {leg.isPrimary ? <span className="ml-2 text-[10px] uppercase tracking-wide text-brass">First booked</span> : null}
+                </p>
+                <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-mist">
+                  <span>{leg.city}</span>
+                  <input
+                    type="date"
+                    style={{ colorScheme: "light" }}
+                    className="rounded-lg bg-white px-2 py-1 text-ink ring-1 ring-sand/10"
+                    value={leg.checkin}
+                    onChange={(e) => onEditDates(leg.id, e.target.value, leg.checkout)}
+                  />
+                  <span>–</span>
+                  <input
+                    type="date"
+                    style={{ colorScheme: "light" }}
+                    className="rounded-lg bg-white px-2 py-1 text-ink ring-1 ring-sand/10"
+                    value={leg.checkout}
+                    onChange={(e) => onEditDates(leg.id, leg.checkin, e.target.value)}
+                  />
+                </div>
+              </div>
+              <p className="shrink-0 text-sm text-sand">{money(leg.amount)}</p>
+              {!leg.isPrimary ? (
+                <button type="button" className="shrink-0 text-xs text-mist underline hover:text-sand" onClick={() => onRemove(leg.id)}>
+                  Remove
+                </button>
+              ) : null}
+            </div>
+            <div className="mt-2 flex items-center gap-2 text-xs text-mist">
+              <span>Rooms</span>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  disabled={leg.rooms <= 1}
+                  className="grid h-6 w-6 place-items-center rounded-full text-sand ring-1 ring-sand/20 disabled:opacity-30"
+                  onClick={() => onRoomsChange(leg.id, Math.max(1, leg.rooms - 1))}
+                >
+                  −
+                </button>
+                <span className="w-4 text-center text-sand">{leg.rooms}</span>
+                <button
+                  type="button"
+                  disabled={leg.rooms >= 8}
+                  className="grid h-6 w-6 place-items-center rounded-full text-sand ring-1 ring-sand/20 disabled:opacity-30"
+                  onClick={() => onRoomsChange(leg.id, Math.min(8, leg.rooms + 1))}
+                >
+                  +
+                </button>
+              </div>
+            </div>
+            {status ? (
+              <p className={`mt-2 text-xs font-medium ${status.checking ? "text-mist" : unavailable ? "text-red-600" : "text-emerald-600"}`}>
+                {status.checking
+                  ? "Checking availability…"
+                  : status.error
+                    ? status.error
+                    : unavailable
+                      ? `✗ Only ${status.roomsLeft} room${status.roomsLeft === 1 ? "" : "s"} left for these dates — need ${leg.rooms}`
+                      : `✓ Available — ${status.roomsLeft} room${status.roomsLeft === 1 ? "" : "s"} left for these dates`}
+              </p>
+            ) : null}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
 
 function CheckoutInner() {
   const { money } = useSerai();
@@ -59,7 +242,7 @@ function CheckoutInner() {
   const buildPackage = packageStay && params.get("flow") === "package";
   const steps = !packageStay ? STAY_STEPS : buildPackage ? BUILD_STEPS : ZIYARAT_STEPS;
   const lastStep = steps.length - 1;
-  const payStep = !packageStay ? 1 : buildPackage ? 5 : 4;
+  const payStep = !packageStay ? 1 : buildPackage ? 7 : 4;
   const confirmStep = lastStep;
 
   const [step, setStep] = useState(0);
@@ -67,6 +250,25 @@ function CheckoutInner() {
   const [phoneError, setPhoneError] = useState(false);
   const [specialRequests, setSpecialRequests] = useState(params.get("requests") ?? "");
   const [promo, setPromo] = useState(params.get("promo") ?? "");
+  const [promoChecked, setPromoChecked] = useState(false);
+  const [roomsOv, setRoomsOv] = useState(() => Number(params.get("rooms") || 1));
+  const [adultsOv, setAdultsOv] = useState(() => Number(params.get("adults") || params.get("guests") || 2));
+  const [childrenOv, setChildrenOv] = useState(() => Number(params.get("children") || 0));
+  const [childAgesOv, setChildAgesOv] = useState<number[]>(() => {
+    const ages = (params.get("ages") ?? "").split(",").map(Number).filter((n) => Number.isFinite(n));
+    const n = Number(params.get("children") || 0);
+    return ages.length === n ? ages : Array.from({ length: n }, (_, i) => ages[i] ?? 8);
+  });
+  const setChildrenCount = (n: number) => {
+    setChildrenOv(n);
+    setChildAgesOv((ages) => {
+      const next = ages.slice(0, n);
+      while (next.length < n) next.push(8);
+      return next;
+    });
+  };
+  const [insurance, setInsurance] = useState(false);
+  const [esimSelections, setEsimSelections] = useState<EsimSelections>({});
   const [airport, setAirport] = useState(params.get("airport") === "1");
   const [extras, setExtras] = useState(() => (params.get("extras") ?? "").split(",").filter(Boolean));
   const [meals, setMeals] = useState<MealChoice>(() => {
@@ -81,9 +283,14 @@ function CheckoutInner() {
   const [error, setError] = useState("");
   const [overlay, setOverlay] = useState<string | null>(null);
   const [firstEnd, setFirstEnd] = useState(params.get("checkout") ?? "");
+  const [primaryCheckin, setPrimaryCheckin] = useState<string | null>(null);
   const [extraStays, setExtraStays] = useState<PackageStaySlice[]>([]);
   const [hotelAsk, setHotelAsk] = useState<{ city: string; date: string } | null>(null);
   const [addingHotel, setAddingHotel] = useState(false);
+  const [legOrder, setLegOrder] = useState<string[] | null>(null);
+  const [confirmDialog, setConfirmDialog] = useState<{ message: string; onConfirm: () => void } | null>(null);
+  const [legAvailability, setLegAvailability] = useState<Record<string, LegAvailability>>({});
+  const [extraStayCache, setExtraStayCache] = useState<Record<string, Stay>>({});
 
   useEffect(() => {
     if (catalog) return;
@@ -123,12 +330,12 @@ function CheckoutInner() {
 
   const input: QuoteInput = useMemo(
     () => ({
-      checkin: params.get("checkin") ?? "",
+      checkin: (buildPackage && primaryCheckin) || (params.get("checkin") ?? ""),
       checkout: buildPackage ? firstEnd || (params.get("checkout") ?? "") : params.get("checkout") ?? "",
-      rooms: Number(params.get("rooms") || 1),
-      adults: Number(params.get("adults") || params.get("guests") || 2),
-      children: Number(params.get("children") || 0),
-      childAges: (params.get("ages") ?? "").split(",").map(Number).filter((n) => Number.isFinite(n)),
+      rooms: roomsOv,
+      adults: adultsOv,
+      children: childrenOv,
+      childAges: childAgesOv,
       roomId: params.get("room") ?? undefined,
       ratePlanId: params.get("rate") ?? undefined,
       extraBeds: Number(params.get("extraBeds") || 0),
@@ -138,7 +345,7 @@ function CheckoutInner() {
       promo,
       member: Boolean(session?.user?.id),
     }),
-    [params, extras, airport, promo, session?.user?.id, packageStay, buildPackage, firstEnd],
+    [params, extras, airport, promo, session?.user?.id, packageStay, buildPackage, firstEnd, primaryCheckin, roomsOv, adultsOv, childrenOv, childAgesOv],
   );
 
   const quote = stay ? quoteStay(stay, input) : null;
@@ -157,19 +364,54 @@ function CheckoutInner() {
 
   useEffect(() => {
     if (!buildPackage) return;
-    const nextEnd = extraStays.reduce((end, s) => (s.checkout > end ? s.checkout : end), input.checkout);
+    const hotels = [
+      { id: stay?.id ?? "", name: stay?.name ?? "", checkout: input.checkout },
+      ...extraStays.map((s) => ({ id: s.listingId, name: s.name, checkout: s.checkout })),
+    ];
+    const allIds = hotels.map((h) => h.id);
+    const order = legOrder ? [...legOrder.filter((id) => allIds.includes(id)), ...allIds.filter((id) => !legOrder.includes(id))] : allIds;
+    const lastId = order[order.length - 1];
+    const target = hotels.find((h) => h.id === lastId) ?? hotels[hotels.length - 1];
+    const targetEnd = target?.checkout || input.checkout;
     setTaxiPicks((picks) => {
       let changed = false;
-      const next = picks.map((p) => {
-        if (p.leg === "out" && p.date !== nextEnd) {
-          changed = true;
-          return { ...p, date: nextEnd };
+      const next: typeof picks = [];
+      for (const p of picks) {
+        if (p.leg === "out") {
+          // A drop-off booked for a hotel that's no longer last in the itinerary is stale — drop it so the user re-picks.
+          if (p.hotelName && target?.name && p.hotelName !== target.name) {
+            changed = true;
+            continue;
+          }
+          if (p.date !== targetEnd) {
+            changed = true;
+            next.push({ ...p, date: targetEnd });
+            continue;
+          }
         }
-        return p;
-      });
+        next.push(p);
+      }
       return changed ? next : picks;
     });
-  }, [buildPackage, extraStays, input.checkout]);
+  }, [buildPackage, extraStays, input.checkout, legOrder, stay?.id, stay?.name]);
+
+  const extraStaysKey = extraStays.map((s) => `${s.listingId}:${s.checkin}:${s.checkout}`).join("|");
+  useEffect(() => {
+    if (!packageStay || !stay) return;
+    const allIds = [stay.id, ...extraStays.map((s) => s.listingId)];
+    const order = legOrder ? [...legOrder.filter((id) => allIds.includes(id)), ...allIds.filter((id) => !legOrder.includes(id))] : allIds;
+    const legs = order
+      .map((id) => {
+        if (id === stay.id) return { id: stay.id, checkin: input.checkin, checkout: input.checkout };
+        const s = extraStays.find((x) => x.listingId === id);
+        return s ? { id: s.listingId, checkin: s.checkin, checkout: s.checkout } : null;
+      })
+      .filter((l): l is { id: string; checkin: string; checkout: string } => Boolean(l));
+    legs.forEach((l) => {
+      checkAndRequoteLeg(l.id, l.checkin, l.checkout);
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [packageStay, stay?.id, extraStaysKey, legOrder, input.checkin, input.checkout, input.rooms]);
 
   if (status === "loading" || !liveReady) return <PageLoader label="Preparing checkout" />;
   if (status === "unauthenticated") return <PageLoader label="Redirecting to sign in" />;
@@ -177,9 +419,183 @@ function CheckoutInner() {
 
   const addons = stay.experienceIds.map(experienceById);
   const party = input.adults + input.children;
-  const lastHotel = extraStays.length ? extraStays[extraStays.length - 1] : { name: stay.name, city: stay.city, checkout: input.checkout };
-  const tripCities = [stay.city, ...extraStays.map((s) => s.city)];
-  const tripEnd = extraStays.reduce((end, s) => (s.checkout > end ? s.checkout : end), input.checkout);
+  const esimTotalQty = esimSelectionsCount(esimSelections);
+  const esimRemaining = Math.max(0, Math.max(1, party) - esimTotalQty);
+  const adjustEsim = (id: keyof EsimSelections, delta: number) => {
+    setEsimSelections((prev) => {
+      const cur = prev[id] ?? 0;
+      const others = ESIM_PLANS.reduce((s, p) => s + (p.id === id ? 0 : prev[p.id] ?? 0), 0);
+      const cap = Math.max(0, Math.max(1, party) - others);
+      const nextQty = Math.min(cap, Math.max(0, cur + delta));
+      const next = { ...prev };
+      if (nextQty <= 0) delete next[id];
+      else next[id] = nextQty;
+      return next;
+    });
+  };
+  const promoInvalid = promoChecked && Boolean(promo.trim()) && !quote.rulesApplied.includes("promo_codes");
+
+  // Every hotel in the package, in the order the guest chose to visit them — the primary (anchor) hotel plus any added stays.
+  const allLegIds = [stay.id, ...extraStays.map((s) => s.listingId)];
+  const effectiveOrder = legOrder
+    ? [...legOrder.filter((id) => allLegIds.includes(id)), ...allLegIds.filter((id) => !legOrder.includes(id))]
+    : allLegIds;
+  const orderedLegs: TripLeg[] = effectiveOrder
+    .map((id): TripLeg | null => {
+      if (id === stay.id) {
+        return {
+          id: stay.id,
+          name: stay.name,
+          city: stay.city,
+          cover: stay.cover,
+          checkin: input.checkin,
+          checkout: input.checkout,
+          room: `${quote.room.name} · ${quote.rate.name}`,
+          amount: quote.grand,
+          isPrimary: true,
+          rooms: roomsOv,
+        };
+      }
+      const s = extraStays.find((x) => x.listingId === id);
+      return s
+        ? { id: s.listingId, name: s.name, city: s.city, cover: s.cover, checkin: s.checkin, checkout: s.checkout, room: s.roomName, amount: s.amount, isPrimary: false, rooms: s.rooms }
+        : null;
+    })
+    .filter((l): l is TripLeg => Boolean(l));
+  const lastHotel = orderedLegs[orderedLegs.length - 1] ?? { name: stay.name, city: stay.city, checkout: input.checkout };
+  const tripCities = orderedLegs.map((l) => l.city);
+  const tripEnd = orderedLegs.reduce((end, l) => (l.checkout > end ? l.checkout : end), input.checkout);
+  const anyLegUnavailable = orderedLegs.some((l) => {
+    const st = legAvailability[l.id];
+    return st && !st.checking && st.roomsLeft !== null && st.roomsLeft < l.rooms;
+  });
+
+  // Meals default to "on" for every night from the moment the page loads, so their presence alone can't signal
+  // the guest actually customized anything — only real, explicit choices (a trip/transfer picked) are used to
+  // decide whether a confirmation is worth showing.
+  const hasDownstreamPicks = () => taxiPicks.length > 0;
+  const clearDownstream = () => {
+    setTaxiPicks([]);
+    setMeals({ breakfast: [], lunch: [], dinner: [] });
+  };
+  const withConfirmClear = (action: () => void) => {
+    if (!hasDownstreamPicks()) {
+      action();
+      return;
+    }
+    setConfirmDialog({
+      message: "Changing your hotels or dates clears your city-to-city trips, airport transfers, and meal selections so you can reassign them for the new plan.",
+      onConfirm: () => {
+        clearDownstream();
+        action();
+        setConfirmDialog(null);
+      },
+    });
+  };
+  const fetchFullStay = async (listingId: string): Promise<Stay | null> => {
+    if (listingId === stay.id) return stay;
+    if (extraStayCache[listingId]) return extraStayCache[listingId];
+    try {
+      const res = await fetch(`/api/listings/${listingId}`, { cache: "no-store" });
+      const d = await readJson<Record<string, unknown>>(res);
+      if (!d || d.error || d.kind !== "STAY") return null;
+      const full = listingToStay(d as never);
+      setExtraStayCache((c) => ({ ...c, [listingId]: full }));
+      return full;
+    } catch {
+      return null;
+    }
+  };
+
+  /** Re-checks live room availability for a hotel leg's (new) dates, and — for added hotels — re-quotes its price against those dates and that hotel's own room count. */
+  const checkAndRequoteLeg = async (id: string, checkin: string, checkout: string, roomsOverride?: number) => {
+    setLegAvailability((s) => ({ ...s, [id]: { checking: true, roomsLeft: null } }));
+    const fullStay = await fetchFullStay(id);
+    if (!fullStay) {
+      setLegAvailability((s) => ({ ...s, [id]: { checking: false, roomsLeft: null, error: "Could not check this hotel's availability." } }));
+      return;
+    }
+    try {
+      const availRes = await fetch(`/api/listings/${id}/availability?checkin=${checkin}&checkout=${checkout}`, { cache: "no-store" });
+      const availData = await readJson<{ overlapping?: number }>(availRes);
+      const overlapping = typeof availData?.overlapping === "number" ? availData.overlapping : 0;
+      const rooms = stayRooms(fullStay);
+      const totalCapacity = rooms.reduce((sum, r) => sum + r.available, 0);
+      const roomsLeft = Math.max(0, totalCapacity - overlapping);
+      setLegAvailability((s) => ({ ...s, [id]: { checking: false, roomsLeft } }));
+      if (id !== stay.id) {
+        const slice = extraStays.find((s) => s.listingId === id);
+        const room = rooms.find((r) => r.id === slice?.roomId) ?? rooms[0];
+        const q = quoteStay(fullStay, {
+          checkin,
+          checkout,
+          rooms: roomsOverride ?? slice?.rooms ?? 1,
+          adults: input.adults,
+          children: input.children,
+          childAges: input.childAges,
+          roomId: room?.id,
+          ratePlanId: slice?.ratePlanId || room?.rates[0]?.id,
+        });
+        setExtraStays((rows) =>
+          rows.map((s) =>
+            s.listingId === id
+              ? { ...s, checkin, checkout, amount: q.grand, cancellation: q.rate.cancellation, rooms: roomsOverride ?? s.rooms }
+              : s,
+          ),
+        );
+      }
+    } catch {
+      setLegAvailability((s) => ({ ...s, [id]: { checking: false, roomsLeft: null, error: "Could not check availability." } }));
+    }
+  };
+
+  const onLegRoomsChange = (id: string, rooms: number) => {
+    if (id === stay.id) {
+      setRoomsOv(rooms);
+      return;
+    }
+    const slice = extraStays.find((s) => s.listingId === id);
+    setExtraStays((rows) => rows.map((s) => (s.listingId === id ? { ...s, rooms } : s)));
+    if (slice) checkAndRequoteLeg(id, slice.checkin, slice.checkout, rooms);
+  };
+
+  const onEditLegDates = (id: string, checkin: string, checkout: string) => {
+    withConfirmClear(() => {
+      if (id === stay.id) {
+        setPrimaryCheckin(checkin);
+        setFirstEnd(checkout);
+      }
+      checkAndRequoteLeg(id, checkin, checkout);
+    });
+  };
+
+  const moveLeg = (id: string, dir: -1 | 1) => {
+    const idx = effectiveOrder.indexOf(id);
+    const swapIdx = idx + dir;
+    if (idx < 0 || swapIdx < 0 || swapIdx >= effectiveOrder.length) return;
+    const aId = effectiveOrder[idx];
+    const bId = effectiveOrder[swapIdx];
+    const aLeg = orderedLegs.find((l) => l.id === aId);
+    const bLeg = orderedLegs.find((l) => l.id === bId);
+    if (!aLeg || !bLeg) return;
+    const next = [...effectiveOrder];
+    [next[idx], next[swapIdx]] = [next[swapIdx], next[idx]];
+    withConfirmClear(() => {
+      setLegOrder(next);
+      // Swap dates too, so the itinerary stays chronological — each hotel takes on the other's date range.
+      if (aId === stay.id) {
+        setPrimaryCheckin(bLeg.checkin);
+        setFirstEnd(bLeg.checkout);
+      }
+      if (bId === stay.id) {
+        setPrimaryCheckin(aLeg.checkin);
+        setFirstEnd(aLeg.checkout);
+      }
+      checkAndRequoteLeg(aId, bLeg.checkin, bLeg.checkout);
+      checkAndRequoteLeg(bId, aLeg.checkin, aLeg.checkout);
+    });
+  };
+
   const packTotal = packageStay
     ? packageAddonsTotal({
         meals,
@@ -191,34 +607,23 @@ function CheckoutInner() {
         taxiList,
         mealRates: parseMealRates(stay.mealRates),
         stays: extraStays,
+        insurance: buildPackage && insurance,
+        esimSelections: buildPackage ? esimSelections : {},
       })
     : 0;
   const grand = quote.grand + packTotal;
-  const reviewHotels: ReviewHotel[] = [
-    {
-      id: stay.id,
-      name: stay.name,
-      city: stay.city,
-      checkin: input.checkin,
-      checkout: input.checkout,
-      room: `${quote.room.name} · ${quote.rate.name}`,
-      amount: quote.grand,
-    },
-    ...extraStays.map((s) => ({
-      id: s.listingId,
-      name: s.name,
-      city: s.city,
-      checkin: s.checkin,
-      checkout: s.checkout,
-      room: s.roomName,
-      amount: s.amount,
-    })),
-  ];
-  const mealBill = mealLines(meals, party, quote.nights, parseMealRates(stay.mealRates));
-  const policyHref = `/checkout/policies?stays=${encodeURIComponent([stay.id, ...extraStays.map((s) => s.listingId)].join(","))}`;
+  const reviewHotels: ReviewHotel[] = orderedLegs.map((l) => ({ id: l.id, name: l.name, city: l.city, checkin: l.checkin, checkout: l.checkout, room: l.room, amount: l.amount }));
+  const mealGroups = orderedLegs.map((h) => ({
+    hotel: h,
+    rows: mealLines(parseMealChoice(meals, stayNightDates(h.checkin, h.checkout)), party, nightsBetween(h.checkin, h.checkout), parseMealRates(stay.mealRates)),
+  }));
+  const mealBill = mealGroups.flatMap((g) => g.rows);
+  const policyHref = `/checkout/policies?stays=${encodeURIComponent(orderedLegs.map((l) => l.id).join(","))}`;
   const stepIcons = !packageStay ? STAY_ICONS : buildPackage ? BUILD_ICONS : ZIYARAT_ICONS;
 
   const addExtraStay = (slice: PackageStaySlice) => {
+    // Adding a hotel is purely additive — it appends to the end of the trip and never invalidates
+    // an existing trip/transfer, so this never needs the "clear downstream" confirmation.
     if (slice.checkin > input.checkin && slice.checkin < (firstEnd || input.checkout)) {
       setFirstEnd(slice.checkin);
     }
@@ -226,7 +631,12 @@ function CheckoutInner() {
     setHotelAsk(null);
     setAddingHotel(false);
   };
-
+  const removeExtraStay = (listingId: string) => {
+    withConfirmClear(() => {
+      setExtraStays((rows) => rows.filter((s) => s.listingId !== listingId));
+      setLegOrder((order) => (order ? order.filter((id) => id !== listingId) : order));
+    });
+  };
   const payBlock = (
     <div className="mt-6 space-y-3 rounded-2xl border border-sand/[0.08] bg-ink-2 p-5 shadow-[0_12px_40px_rgba(11,28,52,0.05)]">
       <p className="text-sm text-mist">
@@ -277,25 +687,64 @@ function CheckoutInner() {
       <label className="block text-sm text-mist">
         Promo code
         <input
-          className="mt-2 w-full rounded-xl bg-sand/[0.04] px-3.5 py-2.5 text-sand outline-none ring-1 ring-sand/[0.08] placeholder:text-mist/70 focus:ring-brass/35"
+          className={`mt-2 w-full rounded-xl bg-sand/[0.04] px-3.5 py-2.5 text-sand outline-none ring-1 placeholder:text-mist/70 focus:ring-brass/35 ${
+            promoInvalid ? "ring-rose/60" : "ring-sand/[0.08]"
+          }`}
           placeholder="SERAI10"
           value={promo}
-          onChange={(e) => setPromo(e.target.value)}
+          onChange={(e) => {
+            setPromo(e.target.value);
+            setPromoChecked(false);
+          }}
+          onBlur={() => setPromoChecked(true)}
         />
       </label>
+      {promoInvalid ? (
+        <p className="flex items-center justify-between gap-3 text-sm text-rose">
+          <span>“{promo.trim()}” isn’t a valid promo code.</span>
+          <button
+            type="button"
+            className="shrink-0 underline hover:text-sand"
+            onClick={() => {
+              setPromo("");
+              setPromoChecked(false);
+            }}
+          >
+            Clear
+          </button>
+        </p>
+      ) : null}
     </div>
   );
 
   return (
     <div className="mx-auto grid max-w-7xl gap-8 px-5 py-6 lg:grid-cols-[minmax(0,1fr)_minmax(22rem,26rem)] lg:py-8">
       <LoaderOverlay show={Boolean(overlay)} label={overlay ?? "Updating"} />
+      {confirmDialog ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/70 p-5">
+          <div className="w-full max-w-md rounded-2xl border border-brass/30 bg-ink-2 p-6">
+            <p className="font-display text-xl">Reassign your trip details?</p>
+            <p className="mt-2 text-sm text-mist">{confirmDialog.message}</p>
+            <div className="mt-5 flex flex-wrap gap-3">
+              <button type="button" className="btn-primary rounded-full" onClick={confirmDialog.onConfirm}>
+                Continue and clear them
+              </button>
+              <button type="button" className="btn-ghost rounded-full" onClick={() => setConfirmDialog(null)}>
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
       <div>
-        <p className="text-[11px] uppercase tracking-[0.3em] text-brass">{buildPackage ? "Build a package" : packageStay ? "Ziyarat package" : "Hotel"}</p>
-        <h1 className="font-display mt-1 text-3xl md:text-4xl">{packageStay ? `${stay.name}` : "Confirm your hotel"}</h1>
+        <p className="text-[11px] uppercase tracking-[0.3em] text-brass">{buildPackage ? "Package" : packageStay ? "Ziyarat package" : "Hotel"}</p>
+        <h1 className="font-display mt-1 text-3xl md:text-4xl">
+          {buildPackage && country ? `Preparing ${pilgrimCountryName(country)} Ziyarat package` : packageStay ? `${stay.name}` : "Confirm your hotel"}
+        </h1>
         <p className="mt-1 text-sm text-mist">
           {packageStay && country
             ? `${stay.city}, ${pilgrimCountryName(country)} · ${formatDay(input.checkin)} — ${formatDay(tripEnd)}`
-            : "Room and payment only. Package extras are for Iraq, Iran, and Saudi listings."}
+            : "Room and payment only. Package extras are for Saudi, Iraq, and Iran listings."}
         </p>
         <ol className="mt-5 flex flex-wrap gap-2">
           {steps.map((label, i) => {
@@ -328,23 +777,60 @@ function CheckoutInner() {
             <p className="text-sm text-mist">
               Booking as {session?.user?.name} · {session?.user?.email}
             </p>
-            <p className="text-sm text-sand">
-              {quote.rooms} room{quote.rooms === 1 ? "" : "s"} · {input.adults} adult{input.adults === 1 ? "" : "s"}
-              {input.children ? ` · ${input.children} children` : ""}
-            </p>
+            <div className="space-y-2">
+              <GuestStepper
+                label={buildPackage ? "Rooms (first hotel)" : "Rooms"}
+                value={roomsOv}
+                onChange={setRoomsOv}
+                min={1}
+                max={8}
+                readOnly={buildPackage}
+                hint={buildPackage ? "Each hotel has its own room count — set it in Hotels & trips." : undefined}
+              />
+              <GuestStepper label="Adults" value={adultsOv} onChange={setAdultsOv} min={1} max={16} />
+              <GuestStepper label="Children" value={childrenOv} onChange={setChildrenCount} min={0} max={8} />
+            </div>
+            {childrenOv > 0 && (
+              <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                {childAgesOv.map((age, i) => (
+                  <label key={i} className="text-xs text-mist">
+                    Child {i + 1} age
+                    <select
+                      className="mt-1 w-full rounded-lg bg-ink-2 px-2 py-1.5 text-sand ring-1 ring-sand/10"
+                      value={age}
+                      onChange={(e) => setChildAgesOv((ages) => ages.map((a, idx) => (idx === i ? Number(e.target.value) : a)))}
+                    >
+                      {Array.from({ length: 18 }, (_, n) => n).map((n) => (
+                        <option key={n} value={n}>
+                          {n}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                ))}
+              </div>
+            )}
             <input
               className={`w-full rounded-xl bg-sand/[0.04] px-3.5 py-2.5 outline-none ring-1 focus:ring-brass/35 ${
                 phoneError ? "ring-rose/60" : "ring-sand/[0.08]"
               }`}
-              placeholder="Phone"
+              placeholder="+92 300 1234567"
+              type="tel"
               required
               value={phone}
               onChange={(e) => {
                 setPhone(e.target.value);
-                if (e.target.value) setPhoneError(false);
+                if (isValidPhone(e.target.value)) setPhoneError(false);
+              }}
+              onBlur={() => {
+                if (phone.trim() && !isValidPhone(phone)) setPhoneError(true);
               }}
             />
-            {phoneError && <p className="text-sm text-rose">Phone number is required to continue.</p>}
+            {phoneError && (
+              <p className="text-sm text-rose">
+                {phone.trim() ? "Enter a valid phone number, e.g. +92 300 1234567" : "Phone number is required to continue."}
+              </p>
+            )}
             <textarea
               className="w-full rounded-xl bg-sand/[0.04] px-3.5 py-2.5 outline-none ring-1 ring-sand/[0.08] focus:ring-brass/35"
               rows={2}
@@ -355,7 +841,7 @@ function CheckoutInner() {
           </div>
         )}
 
-        {packageStay && step === 1 && (
+        {packageStay && !buildPackage && step === 1 && (
           <div>
             <p className="mt-5 text-sm text-mist">Hotel rate meals: {MEAL_PLAN_LABEL[quote.rate.meal]}. Extra breakfast / lunch / dinner is the package layer.</p>
             <MealPlanStep
@@ -381,22 +867,6 @@ function CheckoutInner() {
           />
         )}
 
-        {buildPackage && step === 2 && (
-          <AirportTransferStep
-            country={country}
-            city={stay.city}
-            stayName={stay.name}
-            catalog={taxiList}
-            picks={taxiPicks}
-            start={input.checkin}
-            end={input.checkout}
-            onChange={setTaxiPicks}
-            airportLeg="in"
-            title="Airport pick up"
-            blurb={`We pick you up and take you to ${stay.name} in ${stay.city}.`}
-          />
-        )}
-
         {packageStay && !buildPackage && step === 3 && (
           <DayTripsStep
             country={country}
@@ -409,18 +879,25 @@ function CheckoutInner() {
           />
         )}
 
-        {buildPackage && step === 3 && (
+        {buildPackage && step === 1 && (
           <div className="mt-4">
             <p className="text-[11px] uppercase tracking-[0.28em] text-brass">Itinerary</p>
             <h2 className="font-display mt-1 text-3xl">Hotels and day trips</h2>
             <p className="mt-1 max-w-xl text-sm text-mist">
-              Add city-to-city trips from any hotel already in this package. When a trip ends in a new city we ask if you want a hotel there. You can also add another hotel yourself.
+              Add city-to-city trips from any hotel already in this package. When a trip ends in a new city we ask if you want a hotel there. You can also add another hotel, reorder the trip, or edit the first hotel's dates.
             </p>
-            <PackageStayList
-              first={{ name: stay.name, city: stay.city, checkin: input.checkin, checkout: input.checkout }}
-              extras={extraStays}
-              onRemove={(id) => setExtraStays((rows) => rows.filter((s) => s.listingId !== id))}
-            />
+            {orderedLegs.length > 1 ? <p className="mt-3 text-xs text-mist">Use ▲ ▼ to change the order you visit these hotels in. Each hotel checks its own room availability.</p> : null}
+            <div className="mt-3">
+              <TripOrderEditor
+                legs={orderedLegs}
+                money={money}
+                availability={legAvailability}
+                onMove={moveLeg}
+                onRemove={removeExtraStay}
+                onEditDates={onEditLegDates}
+                onRoomsChange={onLegRoomsChange}
+              />
+            </div>
             <DayTripsStep
               country={country}
               city={stay.city}
@@ -489,20 +966,160 @@ function CheckoutInner() {
           </div>
         )}
 
-        {buildPackage && step === 4 && (
+        {buildPackage && step === 2 && (
+          <div className="space-y-8">
+            <p className="mt-5 text-sm text-mist">Hotel rate meals: {MEAL_PLAN_LABEL[quote.rate.meal]}. Extra breakfast / lunch / dinner is the package layer.</p>
+            {orderedLegs.map((h) => {
+              const hotelDates = stayNightDates(h.checkin, h.checkout);
+              return (
+                <div key={h.id}>
+                  {orderedLegs.length > 1 && <p className="mb-2 font-display text-xl">Meals for {h.name}</p>}
+                  <MealPlanStep
+                    meals={meals}
+                    onChange={(next) => setMeals((prev) => mergeMealChoiceScope(prev, next, hotelDates))}
+                    guests={party}
+                    dates={hotelDates}
+                    rates={parseMealRates(stay.mealRates)}
+                  />
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        {buildPackage && step === 3 && (
           <AirportTransferStep
             country={country}
-            city={lastHotel.city}
-            stayName={lastHotel.name}
+            city={stay.city}
+            stayName={stay.name}
             catalog={taxiList}
             picks={taxiPicks}
             start={input.checkin}
-            end={tripEnd}
+            end={input.checkout}
             onChange={setTaxiPicks}
-            airportLeg="out"
-            title="Airport drop off"
-            blurb={`Back to airport from ${lastHotel.name} in ${lastHotel.city}.`}
+            airportLeg="in"
+            title="Airport pick up"
+            blurb={`We pick you up and take you to ${stay.name} in ${stay.city}.`}
           />
+        )}
+
+        {buildPackage && step === 4 && (
+          <div className="mt-4">
+            <AirportTransferStep
+              country={country}
+              city={lastHotel.city}
+              cities={tripCities}
+              stayName={lastHotel.name}
+              catalog={taxiList}
+              picks={taxiPicks}
+              start={input.checkin}
+              end={lastHotel.checkout}
+              onChange={setTaxiPicks}
+              airportLeg="out"
+              title="Airport drop off"
+              blurb={`Back to airport from ${lastHotel.name} in ${lastHotel.city}. Reorder your hotels in "Hotels & trips" if you'd like to depart from a different stay.`}
+            />
+          </div>
+        )}
+
+        {buildPackage && step === 5 && (
+          <div className="mt-6 rounded-2xl border border-sand/[0.08] bg-ink-2 p-5 shadow-[0_12px_40px_rgba(11,28,52,0.05)]">
+            <p className="text-[11px] uppercase tracking-[0.28em] text-brass">Insurance</p>
+            <h2 className="font-display mt-1 text-2xl">Travel insurance</h2>
+            <p className="mt-1 text-sm text-mist">Covers the whole party for this trip. One flat price per guest.</p>
+            <label
+              className={`mt-4 flex cursor-pointer items-center justify-between rounded-2xl px-4 py-3.5 ring-1 transition ${
+                insurance ? "bg-flame/10 ring-brass/35" : "bg-sand/[0.03] ring-sand/[0.08] hover:ring-sand/15"
+              }`}
+            >
+              <span>
+                <span className="font-medium">Add travel insurance</span>
+                <span className="mt-1 block text-xs text-mist">
+                  {money(INSURANCE_RATE_PER_GUEST)} / guest · {party} guest{party === 1 ? "" : "s"} · {money(INSURANCE_RATE_PER_GUEST * Math.max(1, party))} total
+                </span>
+              </span>
+              <input type="checkbox" checked={insurance} onChange={(e) => setInsurance(e.target.checked)} />
+            </label>
+          </div>
+        )}
+
+        {buildPackage && step === 6 && (
+          <div className="mt-6 rounded-2xl border border-sand/[0.08] bg-ink-2 p-5 shadow-[0_12px_40px_rgba(11,28,52,0.05)]">
+            <p className="text-[11px] uppercase tracking-[0.28em] text-brass">eSIM</p>
+            <h2 className="font-display mt-1 text-2xl">Data for your trip</h2>
+            <p className="mt-1 text-sm text-mist">
+              Mix and match plans for different guests — e.g. 1 GB for one person, 5 GB for another. {party} guest{party === 1 ? "" : "s"} in this party.
+            </p>
+            <div className="mt-4 space-y-2">
+              {ESIM_PLANS.map((p) => {
+                const qty = esimSelections[p.id] ?? 0;
+                const max = qty + esimRemaining;
+                return (
+                  <div key={p.id} className={`rounded-2xl px-4 py-3.5 ring-1 transition ${qty ? "bg-flame/10 ring-brass/35" : "bg-sand/[0.03] ring-sand/[0.08]"}`}>
+                    <div className="flex flex-wrap items-center justify-between gap-3">
+                      <div>
+                        <span className="font-medium">{p.label}</span>
+                        <span className="mt-1 block text-xs text-mist">{p.blurb} · {money(p.pricePerGuest)} / eSIM</span>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <button
+                          type="button"
+                          className="grid h-7 w-7 place-items-center rounded-full text-sand ring-1 ring-sand/20 disabled:opacity-30"
+                          disabled={qty <= 0}
+                          onClick={() => adjustEsim(p.id, -1)}
+                        >
+                          −
+                        </button>
+                        <span className="w-5 text-center text-sm text-sand">{qty}</span>
+                        <button
+                          type="button"
+                          className="grid h-7 w-7 place-items-center rounded-full text-sand ring-1 ring-sand/20 disabled:opacity-30"
+                          disabled={qty >= max}
+                          onClick={() => adjustEsim(p.id, 1)}
+                        >
+                          +
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+            <p className="mt-3 text-xs text-mist">
+              {esimTotalQty} of {Math.max(1, party)} eSIM{Math.max(1, party) === 1 ? "" : "s"} selected
+              {esimTotalQty ? ` · ${money(esimSelectionsTotal(esimSelections))} total` : ""}
+            </p>
+            <label className="mt-4 block text-sm text-mist">
+              Promo code
+              <input
+                className={`mt-2 w-full rounded-xl bg-sand/[0.04] px-3.5 py-2.5 text-sand outline-none ring-1 placeholder:text-mist/70 focus:ring-brass/35 ${
+                  promoInvalid ? "ring-rose/60" : "ring-sand/[0.08]"
+                }`}
+                placeholder="SERAI10"
+                value={promo}
+                onChange={(e) => {
+                  setPromo(e.target.value);
+                  setPromoChecked(false);
+                }}
+                onBlur={() => setPromoChecked(true)}
+              />
+            </label>
+            {promoInvalid ? (
+              <p className="mt-2 flex items-center justify-between gap-3 text-sm text-rose">
+                <span>“{promo.trim()}” isn’t a valid promo code.</span>
+                <button
+                  type="button"
+                  className="shrink-0 underline hover:text-sand"
+                  onClick={() => {
+                    setPromo("");
+                    setPromoChecked(false);
+                  }}
+                >
+                  Clear
+                </button>
+              </p>
+            ) : null}
+          </div>
         )}
 
         {step === payStep && payBlock}
@@ -547,16 +1164,60 @@ function CheckoutInner() {
               </section>
             ) : null}
 
-            {packageStay && mealBill.length > 0 ? (
+            {packageStay && mealBill.length > 0
+              ? mealGroups.map((g) =>
+                  g.rows.length ? (
+                    <section key={g.hotel.id} className="pane p-5">
+                      <p className="mb-3 text-[11px] uppercase tracking-[0.16em] text-brass">
+                        Meals{mealGroups.length > 1 ? ` · ${g.hotel.name}` : ""}
+                      </p>
+                      <ul className="space-y-2 text-sm">
+                        {g.rows.map((l) => (
+                          <li key={l.id} className="flex justify-between gap-3">
+                            <span className="text-mist">{l.label}</span>
+                            <span className="shrink-0 text-sand">{money(l.amount)}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </section>
+                  ) : null,
+                )
+              : null}
+
+            {packageStay && quote.discounts.length > 0 ? (
               <section className="pane p-5">
-                <p className="mb-3 text-[11px] uppercase tracking-[0.16em] text-brass">Meals</p>
+                <p className="mb-3 text-[11px] uppercase tracking-[0.16em] text-brass">Discounts</p>
                 <ul className="space-y-2 text-sm">
-                  {mealBill.map((l) => (
+                  {quote.discounts.map((l) => (
                     <li key={l.id} className="flex justify-between gap-3">
                       <span className="text-mist">{l.label}</span>
-                      <span className="shrink-0 text-sand">{money(l.amount)}</span>
+                      <span className="shrink-0 text-sage">{money(l.amount)}</span>
                     </li>
                   ))}
+                </ul>
+              </section>
+            ) : null}
+
+            {buildPackage && (insurance || esimTotalQty) ? (
+              <section className="pane p-5">
+                <p className="mb-3 text-[11px] uppercase tracking-[0.16em] text-brass">Add-ons</p>
+                <ul className="space-y-2 text-sm">
+                  {insurance ? (
+                    <li className="flex justify-between gap-3">
+                      <span className="text-mist">Travel insurance · {party} guest{party === 1 ? "" : "s"}</span>
+                      <span className="shrink-0 text-sand">{money(INSURANCE_RATE_PER_GUEST * Math.max(1, party))}</span>
+                    </li>
+                  ) : null}
+                  {ESIM_PLANS.map((p) => {
+                    const qty = esimSelections[p.id] ?? 0;
+                    if (!qty) return null;
+                    return (
+                      <li key={p.id} className="flex justify-between gap-3">
+                        <span className="text-mist">eSIM · {p.label} × {qty}</span>
+                        <span className="shrink-0 text-sand">{money(esimPlanRate(p.id) * qty)}</span>
+                      </li>
+                    );
+                  })}
                 </ul>
               </section>
             ) : null}
@@ -570,9 +1231,13 @@ function CheckoutInner() {
                 type="button"
                 className="btn-primary w-full py-3.5"
                 onClick={async () => {
-                  if (!phone.trim()) {
+                  if (!isValidPhone(phone)) {
                     setPhoneError(true);
                     setStep(0);
+                    return;
+                  }
+                  if (anyLegUnavailable) {
+                    setError("One of your hotels is no longer available for its dates. Go back to Hotels & trips to fix it.");
                     return;
                   }
                   if (!terms) {
@@ -611,6 +1276,8 @@ function CheckoutInner() {
                             ziyaratIds,
                             taxis: taxiPicks,
                             stays: buildPackage ? extraStays : [],
+                            insurance: buildPackage && insurance,
+                            esimSelections: buildPackage ? esimSelections : {},
                           }
                         : undefined,
                     }),
@@ -639,9 +1306,10 @@ function CheckoutInner() {
           {step < lastStep && (
             <button
               type="button"
-              className="btn-primary"
+              disabled={step === 1 && anyLegUnavailable}
+              className="btn-primary disabled:cursor-not-allowed disabled:opacity-50"
               onClick={() => {
-                if (step === 0 && !phone.trim()) {
+                if (step === 0 && !isValidPhone(phone)) {
                   setPhoneError(true);
                   return;
                 }
@@ -651,6 +1319,9 @@ function CheckoutInner() {
               Continue
             </button>
           )}
+          {step === 1 && anyLegUnavailable ? (
+            <p className="self-center text-sm text-red-600">One of your hotels isn’t available for its current dates — fix the dates or remove it to continue.</p>
+          ) : null}
         </div>
       </div>
       <aside className="paper h-fit lg:sticky lg:top-20">
@@ -658,7 +1329,7 @@ function CheckoutInner() {
         <div className="p-5">
           <p className="text-[11px] uppercase tracking-[0.16em] text-ink/45">{packageStay ? "Package" : "Hotel"}</p>
           <h2 className="font-display mt-1 text-xl leading-tight text-ink">
-            {extraStays.length ? [stay.name, ...extraStays.map((s) => s.name)].join(" · ") : stay.name}
+            {packageStay ? orderedLegs.map((l) => l.name).join(" · ") : stay.name}
           </h2>
           <p className="mt-1 text-sm text-ink/60">
             {packageStay
@@ -678,6 +1349,9 @@ function CheckoutInner() {
                 stayName={stay.name}
                 lastHotelName={lastHotel.name}
                 grand={grand}
+                insurance={buildPackage && insurance}
+                esimSelections={buildPackage ? esimSelections : {}}
+                discounts={quote.discounts}
                 compact
                 showTotal={false}
               />

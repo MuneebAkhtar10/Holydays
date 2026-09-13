@@ -73,21 +73,25 @@ function SearchInner() {
       .catch(() => setLive([]));
   }, [search.checkin, search.checkout, search.rooms, search.adults, search.children, search.childAges]);
 
-  const list = useMemo(() => {
+  const merged = useMemo(() => {
     const catalog = catalogStays(search.checkin, search.checkout, {
       rooms: search.rooms || 1,
       adults: search.adults || 2,
       children: search.children || 0,
       childAges: search.childAges || [],
     });
-    const merged = [...live.filter((s) => !catalog.some((c) => c.id === s.id)), ...catalog];
-    return applyFilters(merged, search, filters, sort);
-  }, [search, filters, sort, live]);
+    return [...live.filter((s) => !catalog.some((c) => c.id === s.id)), ...catalog];
+  }, [search, live]);
+  const list = useMemo(() => applyFilters(merged, search, filters, sort), [merged, search, filters, sort]);
+  const matchesIgnoringGuests = useMemo(
+    () => applyFilters(merged, search, filters, sort, { ignoreCapacity: true }).length > 0,
+    [merged, search, filters, sort],
+  );
 
   const place =
     search.landmark ||
     search.airport ||
-    (search.city ? `${search.city}, ${countryByCode(search.country)?.name ?? search.country}` : countryByCode(search.country)?.name ?? "Iraq");
+    (search.city ? `${search.city}, ${countryByCode(search.country)?.name ?? search.country}` : countryByCode(search.country)?.name ?? "Saudi Arabia, Iraq & Iran");
 
   return (
     <div className="mx-auto max-w-[1440px] px-5 py-8">
@@ -162,9 +166,11 @@ function SearchInner() {
             <div className="rounded-2xl border border-brass/30 bg-ink-2 p-12">
               <p className="font-display text-3xl">No hotels match.</p>
               <p className="mt-2 text-mist">
-                {search.country
-                  ? `No hotels in ${countryByCode(search.country)?.name ?? "this country"} yet. Partners add them from the desk; admin approves.`
-                  : "Widen the price, drop a filter, or pick another city."}
+                {matchesIgnoringGuests
+                  ? `No room here fits ${search.adults + search.children} guest${search.adults + search.children === 1 ? "" : "s"} in ${search.rooms} room${search.rooms === 1 ? "" : "s"}. Try adding another room, or search with fewer guests.`
+                  : search.country
+                    ? `No hotels in ${countryByCode(search.country)?.name ?? "this country"} yet. Partners add them from the desk; admin approves.`
+                    : "Widen the price, drop a filter, or pick another city."}
               </p>
             </div>
           ) : (

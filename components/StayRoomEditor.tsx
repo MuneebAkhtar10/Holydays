@@ -5,6 +5,7 @@ import type { BedKind, RatePlan, Room, StayPricing, MealPlan, PayPolicy, CancelP
 import { BED_LABEL, CANCEL_LABEL, MEAL_PLAN_LABEL, PAY_LABEL, ROOM_FACILITY_OPTIONS, emptyRoom, newItemId, normalizeRate, type BookableRoom } from "@/lib/rooms";
 import { defaultPricing } from "@/lib/pricing";
 import { MoneyInput } from "@/components/MoneyInput";
+import { FieldHint } from "@/components/FieldHint";
 
 function Block({ title, hint, children }: { title: string; hint?: string; children: ReactNode }) {
   return (
@@ -242,12 +243,15 @@ export function StayPricingEditor({ value, onChange }: { value: StayPricing; onC
     "childRate",
     "airportTransfer",
   ]);
-  const field = (key: keyof StayPricing, label: string) =>
+  const field = (key: keyof StayPricing, label: string, hint?: string) =>
     moneyKeys.has(key) ? (
-      <MoneyInput compact label={label} pkr={Number(p[key] ?? 0)} onPkr={(v) => set({ [key]: Number(v) || 0 } as Partial<StayPricing>)} />
+      <MoneyInput compact label={label} hint={hint} pkr={Number(p[key] ?? 0)} onPkr={(v) => set({ [key]: Number(v) || 0 } as Partial<StayPricing>)} />
     ) : (
       <label className="block">
-        <span className="form-label">{label}</span>
+        <span className="form-label">
+          {label}
+          {hint ? <FieldHint text={hint} /> : null}
+        </span>
         <input className="paper-field mt-1.5" type="number" value={Number(p[key] ?? 0)} onChange={(e) => set({ [key]: Number(e.target.value) } as Partial<StayPricing>)} />
       </label>
     );
@@ -255,39 +259,36 @@ export function StayPricingEditor({ value, onChange }: { value: StayPricing; onC
     <div className="space-y-4">
       <Block title="Taxes & hotel fees" hint="Added on top of the room rate at checkout.">
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-          {field("taxPct", "Hotel tax %")}
-          {field("serviceChargePct", "Service charge %")}
-          {field("cityTaxPerNight", "City tax per night")}
-          {field("cleaningFee", "Cleaning fee")}
-          {field("resortFeePerNight", "Resort fee per night")}
+          {field("taxPct", "Hotel tax %", "Government or hotel tax added as a percentage of the room rate, shown to guests at checkout.")}
+          {field("serviceChargePct", "Service charge %", "A percentage service fee added on top of the room rate.")}
+          {field("cityTaxPerNight", "City tax per night", "A flat municipal/city tax charged per room, per night.")}
+          {field("cleaningFee", "Cleaning fee", "A one-time fee added once per stay to cover cleaning, regardless of how many nights are booked.")}
+          {field("resortFeePerNight", "Resort fee per night", "A flat facility or resort fee charged per night, on top of the room rate.")}
         </div>
       </Block>
       <Block title="Extra guests" hint="Charged when the party is larger than the room’s included occupancy.">
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-          {field("extraPerson", "Extra adult per night")}
-          {field("extraBed", "Extra bed per night")}
-          {field("crib", "Baby cot per night")}
-          {field("childFreeMaxAge", "Children stay free under age")}
-          {field("childRateMaxAge", "Child rate applies up to age")}
-          {field("childRate", "Child rate per night")}
+          {field("extraPerson", "Extra adult per night", "Charged per extra adult beyond the room’s included occupancy, for each night of the stay.")}
+          {field("extraBed", "Extra bed per night", "Charged per additional bed added to the room, for each night of the stay.")}
+          {field("crib", "Baby cot per night", "Charged per baby cot added to the room, for each night of the stay.")}
+          {field("childFreeMaxAge", "Children stay free under age", "Children younger than this age stay free and are not charged at all.")}
+          {field("childRateMaxAge", "Child rate applies up to age", "Children up to this age are charged the discounted child rate instead of the full adult rate.")}
+          {field("childRate", "Child rate per night", "The discounted nightly rate charged for a child within the child-rate age range above.")}
         </div>
       </Block>
       <Block title="Discounts" hint="Percent off the stay. Leave at 0 if you do not use that rule.">
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-          {field("weekendPct", "Weekend extra %")}
-          {field("occupancyPct", "Nearly full extra %")}
-          {field("longStayNights", "Long-stay after nights")}
-          {field("longStayPct", "Long-stay % off")}
-          {field("earlyBirdDays", "Early-bird days ahead")}
-          {field("earlyBirdPct", "Early-bird % off")}
-          {field("lastMinuteDays", "Last-minute within days")}
-          {field("lastMinutePct", "Last-minute % off")}
-          {field("memberPct", "Member % off")}
-          {field("mobilePct", "Mobile-only % off")}
+          {field("weekendPct", "Weekend extra %", "Percentage added to the nightly rate for weekend nights (e.g. Friday and Saturday).")}
+          {field("occupancyPct", "Nearly full extra %", "Percentage added to the rate when the hotel is nearly fully booked, to reflect high demand.")}
+          {field("longStayNights", "Long-stay after nights", "The minimum number of nights a booking must include before the long-stay discount below applies.")}
+          {field("longStayPct", "Long-stay % off", "Percentage discount applied once a booking reaches the long-stay night threshold above.")}
+          {field("earlyBirdDays", "Early-bird days ahead", "How many days before check-in a booking must be made to qualify for the early-bird discount below.")}
+          {field("earlyBirdPct", "Early-bird % off", "Percentage discount applied when a guest books far enough in advance, per the days-ahead rule above.")}
+          {field("lastMinuteDays", "Last-minute within days", "The maximum number of days before check-in for a booking to count as last-minute.")}
+          {field("lastMinutePct", "Last-minute % off", "Percentage discount applied to bookings made close to the check-in date, per the rule above.")}
+          {field("memberPct", "Member % off", "Percentage discount applied automatically for signed-in guests booking directly.")}
+          {field("mobilePct", "Mobile-only % off", "Percentage discount applied only when the guest books from the mobile app or mobile site.")}
         </div>
-      </Block>
-      <Block title="Hotel airport transfer" hint="Only if this hotel sells its own transfer. Partner taxis at checkout are separate.">
-        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">{field("airportTransfer", "Transfer price")}</div>
       </Block>
     </div>
   );

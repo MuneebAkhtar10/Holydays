@@ -49,10 +49,16 @@ export type StayListingMeta = {
   hostName: string;
   hostYears: number;
   hostLetter: string;
+  hostPhone: string;
+  hostEmail: string;
+  hostPortrait: string;
+  hostContactHours: string;
   climate: string;
   country: string;
   driver: string;
+  driverPhoto: string;
   vehicle: string;
+  vehiclePhoto: string;
   model: string;
   seats: number;
   vacant: number;
@@ -63,6 +69,7 @@ export type StayListingMeta = {
   privateRate: number;
   itinerary: { time: string; place: string; note: string }[];
   service: "ziyarat" | "airport";
+  closedFrom: string;
 };
 
 export type ListingCard = {
@@ -141,10 +148,16 @@ export function parseListingMeta(raw: unknown): StayListingMeta {
     hostName: String(obj.hostName ?? ""),
     hostYears: Number(obj.hostYears) || 1,
     hostLetter: String(obj.hostLetter ?? ""),
+    hostPhone: String(obj.hostPhone ?? ""),
+    hostEmail: String(obj.hostEmail ?? ""),
+    hostPortrait: String(obj.hostPortrait ?? ""),
+    hostContactHours: String(obj.hostContactHours ?? ""),
     climate: String(obj.climate ?? ""),
     country: String(obj.country ?? ""),
     driver: String(obj.driver ?? ""),
+    driverPhoto: String(obj.driverPhoto ?? ""),
     vehicle: String(obj.vehicle ?? ""),
+    vehiclePhoto: String(obj.vehiclePhoto ?? ""),
     model: String(obj.model ?? ""),
     seats: Number(obj.seats) || 0,
     vacant: Number(obj.vacant) || 0,
@@ -170,6 +183,7 @@ export function parseListingMeta(raw: unknown): StayListingMeta {
           .filter((row): row is { time: string; place: string; note: string } => Boolean(row))
       : [],
     service: obj.service === "airport" ? "airport" : "ziyarat",
+    closedFrom: String(obj.closedFrom ?? ""),
   };
 }
 
@@ -222,10 +236,16 @@ export function defaultStayMeta(partial?: Partial<StayListingMeta> & { city?: st
     hostName: partial?.hostName || "",
     hostYears: partial?.hostYears ?? 1,
     hostLetter: partial?.hostLetter || "Welcome. We keep this house for guests who want a real stay, not a lobby.",
+    hostPhone: partial?.hostPhone || "",
+    hostEmail: partial?.hostEmail || "",
+    hostPortrait: partial?.hostPortrait || "",
+    hostContactHours: partial?.hostContactHours || "",
     climate: partial?.climate || "Best window: Oct–Mar",
     country: country ?? partial?.country ?? "",
     driver: partial?.driver ?? "",
+    driverPhoto: partial?.driverPhoto ?? "",
     vehicle: partial?.vehicle ?? "",
+    vehiclePhoto: partial?.vehiclePhoto ?? "",
     model: partial?.model ?? "",
     seats: partial?.seats ?? 0,
     vacant: partial?.vacant ?? 0,
@@ -286,9 +306,12 @@ export function listingToStay(listing: ListingCard): Stay {
     experienceIds: [],
     host: {
       name: meta.hostName || "Host",
-      portrait: "/images/host-saba.png",
+      portrait: meta.hostPortrait || "",
       years: meta.hostYears || 1,
       letter: meta.hostLetter || "",
+      phone: meta.hostPhone || "",
+      email: meta.hostEmail || "",
+      contactHours: meta.hostContactHours || "",
     },
     description: listing.description,
     address: meta.address,
@@ -390,10 +413,16 @@ export function encodeStayMeta(body: Record<string, unknown>, fallback?: Partial
     hostName: body.hostName !== undefined ? String(body.hostName) : fallback?.hostName,
     hostYears: body.hostYears !== undefined ? Number(body.hostYears) : fallback?.hostYears,
     hostLetter: body.hostLetter !== undefined ? String(body.hostLetter) : fallback?.hostLetter,
+    hostPhone: body.hostPhone !== undefined ? String(body.hostPhone) : fallback?.hostPhone,
+    hostEmail: body.hostEmail !== undefined ? String(body.hostEmail) : fallback?.hostEmail,
+    hostPortrait: body.hostPortrait !== undefined ? String(body.hostPortrait) : fallback?.hostPortrait,
+    hostContactHours: body.hostContactHours !== undefined ? String(body.hostContactHours) : fallback?.hostContactHours,
     climate: body.climate !== undefined ? String(body.climate) : fallback?.climate,
     country: String(body.country ?? fallback?.country ?? ""),
     driver: body.driver !== undefined ? String(body.driver) : fallback?.driver,
+    driverPhoto: body.driverPhoto !== undefined ? String(body.driverPhoto) : fallback?.driverPhoto,
     vehicle: body.vehicle !== undefined ? String(body.vehicle) : fallback?.vehicle,
+    vehiclePhoto: body.vehiclePhoto !== undefined ? String(body.vehiclePhoto) : fallback?.vehiclePhoto,
     model: body.model !== undefined ? String(body.model) : fallback?.model,
     seats: body.seats !== undefined ? Number(body.seats) : fallback?.seats,
     vacant: body.vacant !== undefined ? Number(body.vacant) : fallback?.vacant,

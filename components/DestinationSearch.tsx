@@ -34,6 +34,8 @@ export function DestinationSearch({ compact = false }: { compact?: boolean }) {
   const [typing, setTyping] = useState(false);
   const [recent, setRecent] = useState<Suggestion[]>([]);
   const box = useRef<HTMLDivElement>(null);
+  const typingRef = useRef(false);
+  const queryRef = useRef("");
 
   const shown = typing ? query : search.q || search.city || search.landmark || search.airport || "";
 
@@ -41,12 +43,17 @@ export function DestinationSearch({ compact = false }: { compact?: boolean }) {
     setRecent(readRecent());
     const onDoc = (e: MouseEvent) => {
       if (!box.current?.contains(e.target as Node)) {
+        if (typingRef.current && !queryRef.current.trim()) {
+          // Field was actively being edited and left empty — clear the destination filter.
+          setSearch({ q: "", city: "", country: "", landmark: "", airport: "", mapX: null, mapY: null, mapBounds: null });
+        }
         setOpen(false);
         setTyping(false);
       }
     };
     document.addEventListener("mousedown", onDoc);
     return () => document.removeEventListener("mousedown", onDoc);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const grouped = useMemo(() => {
@@ -66,18 +73,40 @@ export function DestinationSearch({ compact = false }: { compact?: boolean }) {
     setRecent(readRecent());
     setSearch(suggestionPatch(item));
     setQuery(item.label);
+    typingRef.current = false;
+    setTyping(false);
+    setOpen(false);
+  };
+
+  const clear = () => {
+    setSearch({
+      q: "",
+      city: "",
+      country: "",
+      landmark: "",
+      airport: "",
+      mapX: null,
+      mapY: null,
+      mapBounds: null,
+    });
+    setQuery("");
+    queryRef.current = "";
+    typingRef.current = false;
     setTyping(false);
     setOpen(false);
   };
 
   const commitFreeform = () => {
+    const text = query.trim();
+    if (!text) {
+      clear();
+      return;
+    }
     const first = grouped.flatMap(([, list]) => list)[0];
-    if (first && query.trim()) {
+    if (first) {
       pick(first);
       return;
     }
-    const text = query.trim();
-    if (!text) return;
     setSearch({
       q: text,
       city: text,
@@ -87,6 +116,7 @@ export function DestinationSearch({ compact = false }: { compact?: boolean }) {
       mapY: null,
       mapBounds: null,
     });
+    typingRef.current = false;
     setTyping(false);
     setOpen(false);
   };
@@ -100,11 +130,16 @@ export function DestinationSearch({ compact = false }: { compact?: boolean }) {
           placeholder="Najaf, Mashhad, Makkah…"
           value={shown}
           onFocus={() => {
+            const initial = search.q || search.city || search.landmark || search.airport || "";
+            typingRef.current = true;
+            queryRef.current = initial;
             setTyping(true);
-            setQuery(search.q || search.city || search.landmark || search.airport || "");
+            setQuery(initial);
             setOpen(true);
           }}
           onChange={(e) => {
+            typingRef.current = true;
+            queryRef.current = e.target.value;
             setTyping(true);
             setQuery(e.target.value);
             setOpen(true);
@@ -115,11 +150,23 @@ export function DestinationSearch({ compact = false }: { compact?: boolean }) {
               commitFreeform();
             }
             if (e.key === "Escape") {
+              typingRef.current = false;
               setOpen(false);
               setTyping(false);
             }
           }}
         />
+        {shown ? (
+          <button
+            type="button"
+            aria-label="Clear destination"
+            className="shrink-0 rounded-full px-1.5 text-mist hover:text-sand"
+            onMouseDown={(e) => e.preventDefault()}
+            onClick={clear}
+          >
+            ×
+          </button>
+        ) : null}
       </div>
       {open && (
         <div className={`place-panel ${compact ? "max-h-[min(22rem,50vh)]" : "max-h-[min(28rem,70vh)]"} overflow-auto`}>

@@ -20,10 +20,10 @@ export async function GET() {
       rows.map((b) => {
         const past = isPastBooking(String(b.endDate), String(b.startDate));
         const status = String(b.status);
-        const bucket = status === "cancelled" ? "cancelled" : past ? "past" : "upcoming";
+        const bucket = status === "cancelled" || status === "declined" ? "cancelled" : past ? "past" : "upcoming";
         const extra = parseBookingExtras(String(b.extras ?? ""));
         const messages = asMessages(extra);
-        const unread = status === "cancelled" ? 0 : unreadCount(messages, chatReadOf(extra).owner, "guest");
+        const unread = status === "cancelled" || status === "declined" ? 0 : unreadCount(messages, chatReadOf(extra).owner, "guest");
         const last = messages[messages.length - 1];
         return {
           id: b.id,
@@ -33,6 +33,11 @@ export async function GET() {
           phone: b.phone || "",
           total: Number(b.total),
           status,
+          cancelReason: status === "cancel_requested" ? String(extra.cancelReason ?? "") : "",
+          customTaxi: extra.taxiMode === "custom",
+          customHours: Number(extra.hours) || undefined,
+          customNote: String(extra.note ?? ""),
+          packageId: String(extra.packageId ?? "") || b.id,
           payment: b.payment,
           createdAt: b.createdAt,
           bucket,

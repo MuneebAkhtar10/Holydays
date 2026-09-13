@@ -42,9 +42,11 @@ export function SearchFilters({ value, onChange }: { value: FilterState; onChang
       <div>
         <p className="auth-label">Property type</p>
         <div className="mt-2 flex flex-wrap gap-2">
-          {(Object.keys(PROPERTY_LABEL) as PropertyKind[]).map((k) => (
-            <Chip key={k} label={PROPERTY_LABEL[k]} on={value.kinds.includes(k)} onClick={() => set({ kinds: toggle(value.kinds, k) })} />
-          ))}
+          {(Object.keys(PROPERTY_LABEL) as PropertyKind[])
+            .filter((k) => k !== "haveli" && k !== "camp")
+            .map((k) => (
+              <Chip key={k} label={PROPERTY_LABEL[k]} on={value.kinds.includes(k)} onClick={() => set({ kinds: toggle(value.kinds, k) })} />
+            ))}
         </div>
       </div>
 

@@ -96,7 +96,7 @@ async function main() {
     await upsertListing(item, owner.id);
   }
 
-  console.log("Seeded Serai (Iraq, Iran, Saudi). Demo password: serai123");
+  console.log("Seeded Serai (Saudi, Iraq, Iran). Demo password: serai123");
 }
 
 main()

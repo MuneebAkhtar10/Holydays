@@ -427,7 +427,7 @@ export function suggest(query: string): Suggestion[] {
   return all.filter((s) => `${s.label} ${s.sub} ${s.city}`.toLowerCase().includes(needle));
 }
 
-export function applyFilters(list: SearchStay[], query: SearchQuery, filters: FilterState, sort: SortKey) {
+export function applyFilters(list: SearchStay[], query: SearchQuery, filters: FilterState, sort: SortKey, opts?: { ignoreCapacity?: boolean }) {
   const needle = query.q.trim().toLowerCase();
   let out = list.filter((s) => {
     const stayCountry = pilgrimCountryForPlace(s.city, s.region);
@@ -451,7 +451,7 @@ export function applyFilters(list: SearchStay[], query: SearchQuery, filters: Fi
     if (filters.meals.length && !filters.meals.some((m) => s.meals.includes(m))) return false;
     if (filters.facilities.length && !filters.facilities.every((f) => s.facilities.includes(f))) return false;
     const need = query.adults + query.children;
-    if (need && s.rooms.length && !s.rooms.some((r) => r.sleeps * query.rooms >= need)) return false;
+    if (!opts?.ignoreCapacity && need && s.rooms.length && !s.rooms.some((r) => r.sleeps * query.rooms >= need)) return false;
     if (query.mapBounds && !inBounds(s.pin, query.mapBounds, 1.5)) return false;
     return true;
   });

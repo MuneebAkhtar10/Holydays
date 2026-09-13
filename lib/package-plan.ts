@@ -1,4 +1,4 @@
-import { formatPKR, formatDay, clampIsoDate, stayNightDates } from "@/lib/format";
+import { formatPKR, formatDay, clampIsoDate, nightsBetween, stayNightDates } from "@/lib/format";
 import { airportForCity, cityNamedIn, pilgrimAirports, pilgrimCountryForPlace, type PilgrimCountry } from "@/lib/pilgrim";
 
 export type { PilgrimCountry };
@@ -17,6 +17,33 @@ export type MealRates = {
   lunch: number;
   dinner: number;
 };
+
+export type EsimTier = "" | "1gb" | "5gb" | "10gb";
+export type EsimPlanId = Exclude<EsimTier, "">;
+/** How many eSIMs of each plan to buy, e.g. { "1gb": 2, "5gb": 1 } for a mixed family. */
+export type EsimSelections = Partial<Record<EsimPlanId, number>>;
+
+export const INSURANCE_RATE_PER_GUEST = 2200;
+
+export const ESIM_PLANS: { id: EsimPlanId; label: string; blurb: string; pricePerGuest: number }[] = [
+  { id: "1gb", label: "1 GB", blurb: "Light use — messaging and maps", pricePerGuest: 1200 },
+  { id: "5gb", label: "5 GB", blurb: "Everyday use — social, calls, navigation", pricePerGuest: 2800 },
+  { id: "10gb", label: "10 GB", blurb: "Heavy use — streaming and hotspot", pricePerGuest: 4500 },
+];
+
+export function esimPlanRate(tier: EsimTier | string | undefined) {
+  return ESIM_PLANS.find((p) => p.id === tier)?.pricePerGuest ?? 0;
+}
+
+export function esimSelectionsTotal(selections: EsimSelections | undefined) {
+  if (!selections) return 0;
+  return ESIM_PLANS.reduce((sum, p) => sum + Math.max(0, Number(selections[p.id]) || 0) * p.pricePerGuest, 0);
+}
+
+export function esimSelectionsCount(selections: EsimSelections | undefined) {
+  if (!selections) return 0;
+  return ESIM_PLANS.reduce((sum, p) => sum + Math.max(0, Number(selections[p.id]) || 0), 0);
+}
 
 export const MEAL_RATE: MealRates = {
   breakfast: 2500,
@@ -61,6 +88,13 @@ export function parseMealChoice(raw: unknown, stayDates: string[] = []): MealCho
   };
 }
 
+/** Replace only the days that fall within `scope` (one hotel's date range), keeping every other hotel's picks untouched. */
+export function mergeMealChoiceScope(prev: MealChoice, next: MealChoice, scope: string[]): MealChoice {
+  const scopeSet = new Set(scope);
+  const mergeKind = (key: MealKind) => [...prev[key].filter((d) => !scopeSet.has(d)), ...next[key]];
+  return { breakfast: mergeKind("breakfast"), lunch: mergeKind("lunch"), dinner: mergeKind("dinner") };
+}
+
 export type ZiyaratStop = {
   id: string;
   country: PilgrimCountry;
@@ -86,7 +120,9 @@ export type PackageTaxi = {
   origin: string;
   destination: string;
   driver: string;
+  driverPhoto: string;
   vehicle: string;
+  vehiclePhoto: string;
   model: string;
   seats: number;
   vacant: number;
@@ -201,7 +237,9 @@ export function listingToTaxi(row: PackageListing): PackageTaxi {
     origin: air ? air.label : origin,
     destination: air ? "Guest hotel" : destination,
     driver: String(meta.driver || row.name),
+    driverPhoto: String(meta.driverPhoto || ""),
     vehicle: String(meta.vehicle || row.name),
+    vehiclePhoto: String(meta.vehiclePhoto || ""),
     model: String(meta.model || ""),
     seats,
     vacant: Number(meta.vacant) || seats,
@@ -252,44 +290,44 @@ export function mealTotal(meals: MealChoice, guests: number, nights: number, rat
   );
 }
 
-export function mealLines(meals: MealChoice, guests: number, nights: number, rates: MealRates = MEAL_RATE) {
+export function mealLines(meals: MealChoice, guests: number, nights: number, rates: MealRates = MEAL_RATE, hotelName?: string) {
   const heads = Math.max(1, guests);
-  const count = (days: string[] | number) => (Array.isArray(days) ? days.length : mealDays(days, nights));
+  const days = (value: string[] | number) => (Array.isArray(value) ? [...value].sort() : []);
   const lines: { id: string; label: string; amount: number }[] = [];
-  const row = (id: string, label: string, d: number, rate: number) => {
-    if (d <= 0 || rate <= 0) return;
+  const row = (id: string, label: string, picked: string[], rate: number) => {
+    if (picked.length <= 0 || rate <= 0) return;
+    const dayList = picked.map((d) => formatDay(d)).join(", ");
     lines.push({
-      id,
-      label: `${label} · ${d} day${d === 1 ? "" : "s"} × ${heads} guest${heads === 1 ? "" : "s"}`,
-      amount: rate * d * heads,
+      id: hotelName ? `${id}-${hotelName}` : id,
+      label: `${label}${hotelName ? ` · ${hotelName}` : ""} · ${dayList} · ${heads} guest${heads === 1 ? "" : "s"}`,
+      amount: rate * picked.length * heads,
     });
   };
-  row("bfast", "Breakfast", count(meals.breakfast), rates.breakfast);
-  row("lunch", "Lunch", count(meals.lunch), rates.lunch);
-  row("dinner", "Dinner", count(meals.dinner), rates.dinner);
+  row("bfast", "Breakfast", days(meals.breakfast), rates.breakfast);
+  row("lunch", "Lunch", days(meals.lunch), rates.lunch);
+  row("dinner", "Dinner", days(meals.dinner), rates.dinner);
   return lines;
 }
 
-export function packageLineItems(input: {
-  meals: MealChoice;
+export type PrimaryStaySummary = { name: string; city: string; checkin: string; checkout: string; amount: number };
+
+function transferAndZiyaratLines(input: {
   guests: number;
-  nights: number;
   ziyaratIds: string[];
   taxis: TaxiPick[];
   ziyarat: ZiyaratStop[];
   taxiList: PackageTaxi[];
-  mealRates?: MealRates;
   stayName?: string;
-  stays?: PackageStaySlice[];
+  insurance?: boolean;
+  esimSelections?: EsimSelections;
 }) {
-  const rates = parseMealRates(input.mealRates ?? MEAL_RATE);
-  const lines: { id: string; label: string; amount: number }[] = [
-    ...mealLines(input.meals, input.guests, input.nights, rates),
+  const lines: { id: string; label: string; amount: number }[] = [];
+  lines.push(
     ...input.ziyaratIds
       .map((id) => input.ziyarat.find((z) => z.id === id))
       .filter((z): z is ZiyaratStop => Boolean(z))
       .map((z) => ({ id: z.id, label: `Ziyarat · ${z.name}`, amount: z.price * Math.max(1, input.guests) })),
-  ];
+  );
   for (const p of input.taxis) {
     const t = input.taxiList.find((x) => x.id === p.id);
     if (!t) continue;
@@ -309,14 +347,91 @@ export function packageLineItems(input: {
       amount: taxiPickCost(t, p, input.guests),
     });
   }
-  for (const stay of input.stays ?? []) {
+  if (input.insurance) {
+    const heads = Math.max(1, input.guests);
     lines.push({
-      id: `stay-${stay.listingId}-${stay.checkin}`,
-      label: `Hotel · ${stay.name} · ${stay.city} · ${formatDay(stay.checkin)} — ${formatDay(stay.checkout)}`,
-      amount: stay.amount,
+      id: "insurance",
+      label: `Travel insurance · ${heads} guest${heads === 1 ? "" : "s"}`,
+      amount: INSURANCE_RATE_PER_GUEST * heads,
+    });
+  }
+  for (const plan of ESIM_PLANS) {
+    const qty = Math.max(0, Number(input.esimSelections?.[plan.id]) || 0);
+    if (qty <= 0) continue;
+    lines.push({
+      id: `esim-${plan.id}`,
+      label: `eSIM ${plan.label} · ${qty} guest${qty === 1 ? "" : "s"}`,
+      amount: plan.pricePerGuest * qty,
     });
   }
   return lines;
+}
+
+export type InvoiceLine = { id: string; label: string; amount: number };
+export type InvoiceHotelGroup = {
+  id: string;
+  name: string;
+  city: string;
+  checkin: string;
+  checkout: string;
+  roomAmount: number;
+  mealLines: InvoiceLine[];
+  subtotal: number;
+};
+
+/** A structured, hotel-grouped view of a package's charges — each hotel with its own meals nested under it, and
+ *  everything else (transfers, ziyarat) kept as a separate flat list — for a clearer invoice/receipt layout. */
+export function packageInvoiceBreakdown(input: {
+  meals: MealChoice;
+  guests: number;
+  ziyaratIds: string[];
+  taxis: TaxiPick[];
+  ziyarat: ZiyaratStop[];
+  taxiList: PackageTaxi[];
+  mealRates?: MealRates;
+  stayName?: string;
+  stays?: PackageStaySlice[];
+  primaryStay?: PrimaryStaySummary;
+  insurance?: boolean;
+  esimSelections?: EsimSelections;
+}): { hotels: InvoiceHotelGroup[]; extras: InvoiceLine[]; hotelsSubtotal: number; extrasSubtotal: number; total: number } {
+  const rates = parseMealRates(input.mealRates ?? MEAL_RATE);
+  const hotelLegs = [
+    ...(input.primaryStay ? [{ ...input.primaryStay, listingId: "primary" }] : []),
+    ...(input.stays ?? []),
+  ].sort((a, b) => a.checkin.localeCompare(b.checkin));
+
+  const hotels: InvoiceHotelGroup[] = hotelLegs.map((leg) => {
+    const legMeals = parseMealChoice(input.meals, stayNightDates(leg.checkin, leg.checkout));
+    const meals = mealLines(legMeals, input.guests, nightsBetween(leg.checkin, leg.checkout), rates);
+    return {
+      id: leg.listingId,
+      name: leg.name,
+      city: leg.city,
+      checkin: leg.checkin,
+      checkout: leg.checkout,
+      roomAmount: leg.amount,
+      mealLines: meals,
+      subtotal: leg.amount + meals.reduce((s, m) => s + m.amount, 0),
+    };
+  });
+
+  const extras = transferAndZiyaratLines(input);
+  const hotelsSubtotal = hotels.reduce((s, h) => s + h.subtotal, 0);
+  const extrasSubtotal = extras.reduce((s, l) => s + l.amount, 0);
+  return { hotels, extras, hotelsSubtotal, extrasSubtotal, total: hotelsSubtotal + extrasSubtotal };
+}
+
+/** The primary (first-booked) hotel's own room cost, derived back out of the stored booking total. */
+export function packagePrimaryAmount(bookingTotal: number, pack: Pick<StayPackage, "total" | "stays">) {
+  const extraStaySum = (pack.stays ?? []).reduce((s, row) => s + (Number(row.amount) || 0), 0);
+  return bookingTotal - pack.total + extraStaySum;
+}
+
+/** The true full cost of everything in the package — every hotel plus every add-on — since the stored booking total excludes extra hotels (they're billed as their own Booking rows). */
+export function packageGrandTotal(bookingTotal: number, pack: Pick<StayPackage, "stays">) {
+  const extraStaySum = (pack.stays ?? []).reduce((s, row) => s + (Number(row.amount) || 0), 0);
+  return bookingTotal + extraStaySum;
 }
 
 export type TaxiMode = "shared" | "private";
@@ -342,6 +457,7 @@ export type PackageStaySlice = {
   roomName?: string;
   amount: number;
   cancellation?: "free" | "partial" | "strict";
+  rooms: number;
 };
 
 export function airportLabelOf(t: PackageTaxi) {
@@ -369,6 +485,8 @@ export function packageAddonsTotal(input: {
   taxiList: PackageTaxi[];
   mealRates?: MealRates;
   stays?: PackageStaySlice[];
+  insurance?: boolean;
+  esimSelections?: EsimSelections;
 }) {
   const ziyarat = input.ziyaratIds
     .map((id) => input.ziyarat.find((z) => z.id === id))
@@ -379,7 +497,9 @@ export function packageAddonsTotal(input: {
     return s + (t ? taxiPickCost(t, pick, input.guests) : 0);
   }, 0);
   const extraHotels = (input.stays ?? []).reduce((s, stay) => s + (Number(stay.amount) || 0), 0);
-  return mealTotal(input.meals, input.guests, input.nights, input.mealRates ?? MEAL_RATE) + ziyarat + taxis + extraHotels;
+  const insurance = input.insurance ? INSURANCE_RATE_PER_GUEST * Math.max(1, input.guests) : 0;
+  const esim = esimSelectionsTotal(input.esimSelections);
+  return mealTotal(input.meals, input.guests, input.nights, input.mealRates ?? MEAL_RATE) + ziyarat + taxis + extraHotels + insurance + esim;
 }
 
 export function taxiLabel(t: PackageTaxi) {
@@ -405,6 +525,8 @@ export type StayPackage = {
   ziyaratIds: string[];
   taxis: TaxiPick[];
   stays: PackageStaySlice[];
+  insurance: boolean;
+  esimSelections: EsimSelections;
   total: number;
 };
 
@@ -430,6 +552,7 @@ function parseStaySlices(raw: unknown): PackageStaySlice[] {
       roomName: r.roomName ? String(r.roomName) : undefined,
       amount: Number(r.amount) || 0,
       cancellation: r.cancellation === "free" || r.cancellation === "partial" || r.cancellation === "strict" ? r.cancellation : undefined,
+      rooms: Math.max(1, Number(r.rooms) || 1),
     });
   }
   return out;
@@ -475,6 +598,18 @@ export function sanitizePackage(
     });
   }
   const flow = body.flow === "package" ? "package" : "ziyarat";
+  const insurance = Boolean(body.insurance);
+  const rawEsim = body.esimSelections && typeof body.esimSelections === "object" ? (body.esimSelections as Record<string, unknown>) : {};
+  const esimSelections: EsimSelections = {};
+  let esimUsed = 0;
+  for (const p of ESIM_PLANS) {
+    const qty = Math.max(0, Math.floor(Number(rawEsim[p.id]) || 0));
+    if (qty <= 0) continue;
+    const capped = Math.min(qty, Math.max(0, Math.max(1, guests) - esimUsed));
+    if (capped <= 0) continue;
+    esimSelections[p.id] = capped;
+    esimUsed += capped;
+  }
   return {
     flow,
     meals,
@@ -482,6 +617,8 @@ export function sanitizePackage(
     ziyaratIds,
     taxis,
     stays,
-    total: packageAddonsTotal({ meals, guests, nights, ziyaratIds, taxis, ziyarat, taxiList, mealRates: rates, stays }),
+    insurance,
+    esimSelections,
+    total: packageAddonsTotal({ meals, guests, nights, ziyaratIds, taxis, ziyarat, taxiList, mealRates: rates, stays, insurance, esimSelections }),
   };
 }

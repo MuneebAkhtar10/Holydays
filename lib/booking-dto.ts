@@ -35,6 +35,11 @@ export type BookingDTO = {
     address: string;
     checkIn: string;
     checkOut: string;
+    hostName: string;
+    hostPhone: string;
+    hostEmail: string;
+    hostContactHours: string;
+    hostContactRevealed: boolean;
   };
   myReview?: { id: string; rating: number; body: string } | null;
 };
@@ -67,6 +72,7 @@ export function toBookingDTO(row: {
   const messages = asMessages(extra);
   const contact = listingContact(row.listing.meta);
   const kind = row.listing.kind as ListingKind;
+  const hostContactRevealed = row.status === "confirmed";
   return {
     id: row.id,
     number: bookingNumber(row.id),
@@ -100,6 +106,11 @@ export function toBookingDTO(row: {
       address: contact.address,
       checkIn: contact.checkIn,
       checkOut: contact.checkOut,
+      hostName: contact.hostName,
+      hostPhone: hostContactRevealed ? contact.hostPhone : "",
+      hostEmail: hostContactRevealed ? contact.hostEmail : "",
+      hostContactHours: contact.hostContactHours,
+      hostContactRevealed,
     },
     myReview: row.myReview ?? null,
   };
