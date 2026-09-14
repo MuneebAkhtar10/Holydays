@@ -267,6 +267,25 @@ html[data-theme="dark"] .inset-card {
   box-shadow: 0 0 0 4px color-mix(in srgb, var(--serai-brass) 16%, transparent);
 }
 
+/* Native date inputs that sit on cream/white chips — keep dark glyphs in both themes. */
+.date-chip {
+  color-scheme: light;
+  background: #ffffff;
+  color: #0b1c34;
+  border-radius: 0.5rem;
+  padding: 0.25rem 0.5rem;
+  outline: none;
+  box-shadow: inset 0 0 0 1px rgba(11, 28, 52, 0.12);
+}
+.date-chip:focus {
+  box-shadow: inset 0 0 0 1px rgba(11, 28, 52, 0.28), 0 0 0 3px rgba(197, 164, 106, 0.28);
+}
+.date-chip::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+  opacity: 0.75;
+  filter: none;
+}
+
 .auth-btn {
   width: 100%;
   border-radius: 0.9rem;

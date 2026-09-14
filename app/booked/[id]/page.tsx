@@ -14,16 +14,27 @@ import { PackageSnapshot } from "@/components/PackageSteps";
 import { packageGrandTotal, packagePrimaryAmount, type StayPackage } from "@/lib/package-plan";
 
 export default function BookedPage() {
-  const { money } = useSerai();
+  const { money, currency } = useSerai();
   const { id } = useParams<{ id: string }>();
   const [booking, setBooking] = useState<BookingDTO | null>(null);
   const [ready, setReady] = useState(false);
   const [origin, setOrigin] = useState("");
+  const [payError, setPayError] = useState("");
+  const [paying, setPaying] = useState(false);
 
   useEffect(() => {
     setOrigin(window.location.origin);
     let cancelled = false;
     const run = async () => {
+      const q = new URLSearchParams(window.location.search);
+      const sessionId = q.get("session_id");
+      if (sessionId) {
+        await fetch("/api/stripe/confirm", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ sessionId }),
+        });
+      }
       const direct = await fetch(`/api/bookings/${id}`).then((r) => readJson<BookingDTO & { error?: string }>(r));
       if (!cancelled && direct && !direct.error && direct.id) {
         setBooking(direct);
@@ -61,6 +72,7 @@ export default function BookedPage() {
   const customHours = Number(booking.extra.hours) || undefined;
   const customNote = String(booking.extra.note ?? "").trim();
   const isPendingDriver = booking.status === "pending_driver";
+  const isPendingPay = booking.status === "pending_payment";
   const isDeclined = booking.status === "declined";
   const pack = booking.extra.package as StayPackage | undefined;
   const extraHotels = pack?.stays ?? [];
@@ -88,16 +100,24 @@ export default function BookedPage() {
           className={`inline-flex rounded-full border px-3 py-1 text-[11px] uppercase tracking-[0.18em] ${
             isDeclined
               ? "border-mist/40 text-mist"
-              : isPendingDriver
+              : isPendingDriver || isPendingPay
                 ? "border-brass/50 text-brass"
                 : "border-sage/50 text-sage"
           }`}
         >
-          {isDeclined ? "Declined" : isPendingDriver ? "Awaiting driver" : "Confirmed"}
+          {isDeclined ? "Declined" : isPendingPay ? "Awaiting payment" : isPendingDriver ? "Awaiting driver" : "Confirmed"}
         </p>
         <p className="mt-4 font-mono text-sm tracking-[0.2em] text-brass">{booking.number}</p>
         <h1 className="font-display mt-3 text-5xl">
-          {isDeclined ? "Driver couldn't take this trip." : isPendingDriver ? "Your request is in." : isCustomTaxi ? "Trip confirmed." : "You are booked."}
+          {isDeclined
+            ? "Driver couldn't take this trip."
+            : isPendingPay
+              ? "Finish paying to confirm."
+              : isPendingDriver
+                ? "Your request is in."
+                : isCustomTaxi
+                  ? "Trip confirmed."
+                  : "You are booked."}
         </h1>
         {isCustomTaxi ? (
           <>
@@ -148,6 +168,35 @@ export default function BookedPage() {
         <div className="mt-8">
           <BookingNotifyStrip booking={booking} />
         </div>
+        {isPendingPay ? (
+          <div className="mt-6 space-y-3">
+            <p className="text-sm text-brass">Your dates are held. Complete the Stripe payment to confirm the reservation.</p>
+            {payError ? <p className="text-sm text-rose">{payError}</p> : null}
+            <button
+              type="button"
+              className="btn-primary"
+              disabled={paying}
+              onClick={async () => {
+                setPayError("");
+                setPaying(true);
+                const res = await fetch("/api/stripe/checkout", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ bookingId: booking.id, currency }),
+                });
+                const data = await readJson<{ url?: string; error?: string }>(res);
+                setPaying(false);
+                if (!res.ok || !data?.url) {
+                  setPayError(data?.error || "Could not restart card payment");
+                  return;
+                }
+                window.location.assign(data.url);
+              }}
+            >
+              {paying ? "Opening Stripe…" : "Pay with card"}
+            </button>
+          </div>
+        ) : null}
         <div className="mt-6">
           <BookingActions booking={booking} origin={origin} />
         </div>

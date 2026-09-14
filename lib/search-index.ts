@@ -120,7 +120,7 @@ export function suggestionPatch(item: Suggestion): Partial<SearchQuery> {
   return {
     q: item.kind === "property" ? item.label : city,
     city: item.kind === "airport" || item.kind === "landmark" ? item.city : city,
-    country: item.country || "IQ",
+    country: item.country || "",
     landmark: item.kind === "landmark" ? item.label : "",
     airport: item.kind === "airport" ? item.label : "",
     mapX: null,
@@ -173,7 +173,7 @@ export const defaultFilters = (): FilterState => ({
   stars: [],
   guestMin: 0,
   centerMax: 50,
-  airportMax: 80,
+  airportMax: 120,
   freeCancel: false,
   payAtProperty: false,
   meals: [],
@@ -432,7 +432,8 @@ export function applyFilters(list: SearchStay[], query: SearchQuery, filters: Fi
   let out = list.filter((s) => {
     const stayCountry = pilgrimCountryForPlace(s.city, s.region);
     if (!stayCountry) return false;
-    if (query.country && query.country !== stayCountry) return false;
+    const hasPlace = Boolean(query.city || query.q.trim() || query.landmark || query.airport);
+    if (hasPlace && query.country && query.country !== stayCountry) return false;
     const hay = `${s.name} ${s.city} ${s.region} ${s.landmark} ${s.airport} ${s.type}`.toLowerCase();
     if (query.city) {
       const c = query.city.toLowerCase();
@@ -445,7 +446,7 @@ export function applyFilters(list: SearchStay[], query: SearchQuery, filters: Fi
     if (filters.kinds.length && !filters.kinds.includes(s.kind)) return false;
     if (filters.stars.length && !filters.stars.includes(s.stars)) return false;
     if (filters.guestMin && s.reviewAvg < filters.guestMin) return false;
-    if (s.airportKm > filters.airportMax) return false;
+    if (filters.airportMax < 120 && s.airportKm > filters.airportMax) return false;
     if (filters.freeCancel && s.cancellation !== "free") return false;
     if (filters.payAtProperty && !s.payAtProperty) return false;
     if (filters.meals.length && !filters.meals.some((m) => s.meals.includes(m))) return false;

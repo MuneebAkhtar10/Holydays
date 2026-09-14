@@ -187,7 +187,11 @@ export function BookingPrint({ kind }: { kind: "invoice" | "receipt" | "voucher"
             ) : null}
             <p className="mt-3 font-display text-2xl">{money(grandTotal)}</p>
             <p className="mt-1 text-sm text-ink/50">
-              {booking.payment === "property" ? "Collect at check-in. This is not a card capture." : `Marked paid on ${APP_NAME}.`}
+              {booking.payment === "property"
+                ? "Collect at check-in. This is not a card capture."
+                : booking.payment === "card" || booking.payment === "stripe"
+                  ? `Paid by card on ${APP_NAME}.`
+                  : `Marked paid on ${APP_NAME}.`}
             </p>
           </div>
         )}

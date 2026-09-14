@@ -13,6 +13,8 @@ import { listingToTaxi, listingToZiyarat, parseMealRates, sanitizePackage, type 
 import { pilgrimCountryForPlace } from "@/lib/pilgrim";
 import { parseListingMeta } from "@/lib/listing-meta";
 import { roomsLeftFor } from "@/lib/availability";
+import { createStripeCheckoutUrl, isCardPayment, packageBookingIds } from "@/lib/stripe-booking";
+import { displayCurrencyFromRequest } from "@/lib/stripe-money";
 
 export async function GET() {
   const session = await getServerSession(authOptions);
@@ -80,7 +82,7 @@ async function createBooking(req: Request) {
   }
 
   const existing = await prisma.booking.findMany({
-    where: { userId: session.user.id, listingId: listing.id, status: "confirmed" },
+    where: { userId: session.user.id, listingId: listing.id, status: { in: ["confirmed", "pending_payment"] } },
   });
   const clash = existing.find((b) => datesOverlap(startDate, endDate, b.startDate, b.endDate));
   if (clash) {
@@ -183,6 +185,8 @@ async function createBooking(req: Request) {
   }
 
   const customTaxi = listing.kind === "TAXI" && Boolean(body.customTaxi);
+  const method = String(body.payment ?? "property");
+  const wantsCard = isCardPayment(method) && !customTaxi;
   const booking = await prisma.booking.create({
     data: {
       userId: session.user.id,
@@ -191,29 +195,31 @@ async function createBooking(req: Request) {
       endDate,
       guests: Number(body.guests) || Number(body.adults) || 1,
       extras,
-      payment: String(body.payment ?? "property"),
+      payment: wantsCard ? "card" : method,
       phone: String(body.phone ?? ""),
       total,
-      status: customTaxi ? "pending_driver" : "confirmed",
+      status: customTaxi ? "pending_driver" : wantsCard ? "pending_payment" : "confirmed",
     },
     include: { listing: { include: { owner: true } }, user: true },
   });
 
   const origin = process.env.NEXTAUTH_URL || new URL(req.url).origin;
   const guestEmail = booking.user?.email || session.user.email || "";
-  const notice = await notifyBookingCreated({
-    email: guestEmail,
-    phone: booking.phone,
-    name: booking.user?.name || session.user.name || "Guest",
-    listing: booking.listing.name,
-    id: booking.id,
-    startDate: booking.startDate,
-    endDate: booking.endDate,
-    total: booking.total,
-    origin,
-    ownerEmail: booking.listing.owner?.email,
-    pending: customTaxi,
-  });
+  const notice = wantsCard
+    ? { channels: { email: false, sms: false, whatsapp: false, push: false }, waLink: "", number: "" }
+    : await notifyBookingCreated({
+        email: guestEmail,
+        phone: booking.phone,
+        name: booking.user?.name || session.user.name || "Guest",
+        listing: booking.listing.name,
+        id: booking.id,
+        startDate: booking.startDate,
+        endDate: booking.endDate,
+        total: booking.total,
+        origin,
+        ownerEmail: booking.listing.owner?.email,
+        pending: customTaxi,
+      });
   const extraObj = parseBookingExtras(booking.extras);
   extraObj.packageId = booking.id;
   extraObj.notify = notice.channels;
@@ -253,9 +259,10 @@ async function createBooking(req: Request) {
           quote: { start: extraQuote.start, total: extraQuote.total, taxes: extraQuote.taxes, grand: extraQuote.grand, rules: extraQuote.rulesApplied },
           package: extraObj.package,
         }),
-        payment: String(body.payment ?? "property"),
+        payment: wantsCard ? "card" : method,
         phone: String(body.phone ?? ""),
         total: extraQuote.grand,
+        status: wantsCard ? "pending_payment" : "confirmed",
       },
     });
   }
@@ -264,6 +271,30 @@ async function createBooking(req: Request) {
     data: { extras: JSON.stringify(extraObj) },
     include: { listing: true },
   });
+
+  if (wantsCard) {
+    try {
+      const payUrl = await createStripeCheckoutUrl({
+        bookingId: saved.id,
+        origin,
+        currency: displayCurrencyFromRequest(req, body),
+        customerEmail: guestEmail || undefined,
+      });
+      return NextResponse.json({
+        ...toBookingDTO(saved),
+        payUrl,
+      });
+    } catch (err) {
+      await prisma.booking.updateMany({
+        where: { id: { in: await packageBookingIds(saved.id) } },
+        data: { status: "cancelled" },
+      });
+      return NextResponse.json(
+        { error: err instanceof Error ? err.message : "Could not start card payment" },
+        { status: 503 },
+      );
+    }
+  }
 
   return NextResponse.json({
     ...toBookingDTO(saved),

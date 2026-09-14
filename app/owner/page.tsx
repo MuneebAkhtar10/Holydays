@@ -746,6 +746,9 @@ function initials(name: string) {
 
 function payLabel(payment: string) {
   if (payment === "property") return "Pay at property";
+  if (payment === "card" || payment === "stripe") return "Card (Stripe)";
+  if (payment === "jazz") return "JazzCash";
+  if (payment === "easy") return "EasyPaisa";
   if (!payment) return "—";
   return payment.replace(/[_-]+/g, " ");
 }
@@ -753,6 +756,7 @@ function payLabel(payment: string) {
 function statusTone(b: OwnerBooking) {
   if (b.status === "cancelled" || b.status === "declined") return "bg-sand/10 text-mist";
   if (b.status === "cancel_requested") return "bg-rose/15 text-rose";
+  if (b.status === "pending_payment") return "bg-brass/15 text-brass";
   if (b.status === "pending_driver") return "bg-brass/15 text-brass";
   if (b.bucket === "past") return "bg-brass/15 text-brass";
   return "bg-sage/15 text-sage";
@@ -762,6 +766,7 @@ function statusLabel(b: OwnerBooking) {
   if (b.status === "cancelled") return "Cancelled";
   if (b.status === "declined") return "Declined";
   if (b.status === "cancel_requested") return "Cancellation requested";
+  if (b.status === "pending_payment") return "Awaiting card payment";
   if (b.status === "pending_driver") return "Awaiting your response";
   if (b.bucket === "past") return "Completed";
   return "Upcoming";

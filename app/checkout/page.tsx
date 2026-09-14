@@ -166,16 +166,14 @@ function TripOrderEditor({
                   <span>{leg.city}</span>
                   <input
                     type="date"
-                    style={{ colorScheme: "light" }}
-                    className="rounded-lg bg-white px-2 py-1 text-ink ring-1 ring-sand/10"
+                    className="date-chip text-xs"
                     value={leg.checkin}
                     onChange={(e) => onEditDates(leg.id, e.target.value, leg.checkout)}
                   />
                   <span>–</span>
                   <input
                     type="date"
-                    style={{ colorScheme: "light" }}
-                    className="rounded-lg bg-white px-2 py-1 text-ink ring-1 ring-sand/10"
+                    className="date-chip text-xs"
                     value={leg.checkout}
                     onChange={(e) => onEditDates(leg.id, leg.checkin, e.target.value)}
                   />
@@ -229,7 +227,7 @@ function TripOrderEditor({
 }
 
 function CheckoutInner() {
-  const { money } = useSerai();
+  const { money, currency } = useSerai();
   const params = useSearchParams();
   const router = useRouter();
   const { data: session, status } = useSession();
@@ -349,18 +347,13 @@ function CheckoutInner() {
   );
 
   const quote = stay ? quoteStay(stay, input) : null;
-  const methods =
-    quote?.rate.payment === "now"
-      ? [
-          { id: "jazz", label: "JazzCash" },
-          { id: "easy", label: "EasyPaisa" },
-        ]
-      : [
-          { id: "jazz", label: "JazzCash" },
-          { id: "easy", label: "EasyPaisa" },
-          { id: "property", label: "Pay at the door" },
-        ];
-  const [method, setMethod] = useState(quote?.rate.payment === "property" ? "property" : "jazz");
+  const methods = [
+    { id: "card", label: "Card · Visa, Mastercard, Amex" },
+    { id: "jazz", label: "JazzCash" },
+    { id: "easy", label: "EasyPaisa" },
+    ...(quote?.rate.payment === "now" ? [] : [{ id: "property", label: "Pay at the door" }]),
+  ];
+  const [method, setMethod] = useState("card");
 
   useEffect(() => {
     if (!buildPackage) return;
@@ -658,6 +651,13 @@ function CheckoutInner() {
           </span>
         </label>
       ))}
+      {method === "card" ? (
+        <p className="text-xs text-mist">You will pay securely on Stripe. The booking is confirmed after the charge succeeds.</p>
+      ) : method === "property" ? (
+        <p className="text-xs text-mist">Pay the property at check-in. No card is charged now.</p>
+      ) : (
+        <p className="text-xs text-mist">JazzCash and EasyPaisa are recorded as your method. Wallet collection is not live yet — use card for an immediate charge.</p>
+      )}
       {!packageStay && (
       <label className="flex items-center justify-between rounded-2xl bg-sand/[0.03] px-4 py-3.5 ring-1 ring-sand/[0.08]">
         <span>
@@ -1245,7 +1245,7 @@ function CheckoutInner() {
                     return;
                   }
                   setError("");
-                  setOverlay("Confirming booking");
+                  setOverlay(method === "card" ? "Opening card payment" : "Confirming booking");
                   const res = await fetch("/api/bookings", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
@@ -1268,6 +1268,7 @@ function CheckoutInner() {
                       member: Boolean(session?.user?.id),
                       specialRequests,
                       payment: method,
+                      currency,
                       phone,
                       package: packageStay
                         ? {
@@ -1282,16 +1283,20 @@ function CheckoutInner() {
                         : undefined,
                     }),
                   });
-                  const data = await readJson<{ error?: string; id?: string }>(res);
+                  const data = await readJson<{ error?: string; id?: string; payUrl?: string }>(res);
                   if (!res.ok) {
                     setOverlay(null);
                     setError(data?.error || "Could not place reservation");
                     return;
                   }
+                  if (data?.payUrl) {
+                    window.location.assign(data.payUrl);
+                    return;
+                  }
                   router.push(`/booked/${data?.id ?? stay.id}`);
                 }}
               >
-                {packageStay ? "Confirm package" : "Confirm booking"} · {money(grand)}
+                {method === "card" ? "Pay with card" : packageStay ? "Confirm package" : "Confirm booking"} · {money(grand)}
               </button>
             </div>
           </div>

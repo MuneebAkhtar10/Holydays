@@ -29,6 +29,7 @@ export async function GET(_req: Request, { params }: Ctx) {
     }
 
     const reviews = await fetchListingReviews(listing.id);
+    const metaParsed = parseListingMeta(listing.meta);
     const myBookings = session?.user?.id
       ? await prisma.booking.findMany({
           where: { userId: session.user.id, listingId: listing.id, status: "confirmed" },
@@ -37,6 +38,23 @@ export async function GET(_req: Request, { params }: Ctx) {
       : [];
 
     const stats = withReviewStats({ reviews });
+    const imported = metaParsed.guestReviews.map((r, i) => ({
+      id: `booking-${listing.slug}-${i}`,
+      rating: r.rating,
+      body: r.body,
+      createdAt: r.createdAt,
+      name: r.name,
+    }));
+    const live = reviews.map((r) => ({
+      id: r.id,
+      rating: Number(r.rating),
+      body: String(r.body ?? ""),
+      createdAt: typeof r.createdAt === "string" ? r.createdAt : new Date(r.createdAt).toISOString(),
+      name: String(r.name ?? "Guest"),
+    }));
+    const reviewsOut = [...live, ...imported];
+    const reviewCount = stats.reviewCount || metaParsed.externalRating.count || reviewsOut.length;
+    const reviewAvg = stats.reviewAvg || metaParsed.externalRating.score || 0;
     const guest = session?.user?.role === "TRAVELER";
     const alreadyReviewed = session?.user?.id ? await userHasReview(listing.id, session.user.id) : false;
     const finishedStay = myBookings.some((b) => isPastBooking(b.endDate, b.startDate));
@@ -57,18 +75,12 @@ export async function GET(_req: Request, { params }: Ctx) {
       status: listing.status,
       rejectReason: listing.rejectReason ?? "",
       published: Boolean(listing.published),
-      reviewCount: stats.reviewCount,
-      reviewAvg: stats.reviewAvg,
-      reviews: reviews.map((r) => ({
-        id: r.id,
-        rating: Number(r.rating),
-        body: String(r.body ?? ""),
-        createdAt: typeof r.createdAt === "string" ? r.createdAt : new Date(r.createdAt).toISOString(),
-        name: String(r.name ?? "Guest"),
-      })),
+      reviewCount,
+      reviewAvg,
+      reviews: reviewsOut,
       myBookings,
       canReview,
-      meta: parseListingMeta(listing.meta),
+      meta: metaParsed,
     });
   } catch (err) {
     console.error(err);

@@ -1,0 +1,291 @@
+import { PrismaClient } from "@prisma/client";
+
+const prisma = new PrismaClient();
+const n9 = (total) => Math.round(total / 9);
+const p = (dir, ids) => ids.map((id) => `/uploads/${dir}/${id}.jpg`);
+
+function reviews(rows) {
+  return rows.map((r, i) => ({
+    name: r.name,
+    body: r.body,
+    rating: r.rating,
+    createdAt: `2026-08-${String(28 - i).padStart(2, "0")}T12:00:00.000Z`,
+  }));
+}
+
+const hotels = [
+  {
+    slug: "voco-makkah-by-ihg",
+    name: "voco Makkah by IHG",
+    nastaliq: "فوكو مكة",
+    city: "Makkah",
+    cover: "/uploads/voco-makkah/427975173.jpg",
+    price: n9(192071),
+    description:
+      "A 4-star IHG hotel on Ibrahim Al Khalil Street in Al Mesfalah, about 1.3 km from Masjid al-Haram. Rooms have city views, air conditioning, and ensuite bathrooms. The hotel has three restaurants, a 24-hour front desk, a prayer space, and private parking.",
+    lat: 21.407781713251456,
+    lng: 39.818490415344286,
+    stars: 4,
+    address: "Ibrahim Al Khalil Street, Al Mesfalah, 21955 Makkah, Saudi Arabia",
+    checkIn: "17:00",
+    checkOut: "12:00",
+    facilities: ["wifi", "parking", "restaurant", "room_service", "ac", "family", "accessible", "nonsmoking", "laundry"],
+    amenities: ["24-hour front desk", "Three restaurants", "Prayer room", "Tea/coffee maker", "Private parking", "Shuttle area to the Haram"],
+    mealRates: { breakfast: 4429, lunch: 0, dinner: 8000 },
+    landmark: "Masjid al-Haram",
+    landmarkKm: 1.3,
+    centerKm: 1.3,
+    airport: "Jeddah Airport (JED)",
+    airportKm: 88,
+    galleries: {
+      property: p("voco-makkah", ["427975173", "480212728", "480212515", "426352043"]),
+      room: p("voco-makkah", ["481687770", "481687878", "481687548", "481686691", "481687206"]),
+      bathroom: p("voco-makkah", ["427126225", "427126274"]),
+      facilities: p("voco-makkah", ["427104484", "468466704", "445584612", "513752456"]),
+    },
+    rooms: [
+      { id: "deluxe-king", name: "Deluxe King Room", sleeps: 2, price: n9(192071), sizeSqm: 30, beds: [{ kind: "king", count: 1 }], note: "City view · 30 m²", images: p("voco-makkah", ["481687770", "481687878"]) },
+      { id: "deluxe-twin", name: "Single Deluxe Room", sleeps: 2, price: n9(192071), sizeSqm: 30, beds: [{ kind: "twin", count: 2 }], note: "Two single beds · city view", images: p("voco-makkah", ["481687206"]) },
+      { id: "deluxe-triple", name: "Deluxe Room with Three Single Beds", sleeps: 3, price: n9(270871), sizeSqm: 30, beds: [{ kind: "single", count: 3 }], note: "Three single beds · 30 m²" },
+      { id: "deluxe-quad", name: "Deluxe Quadruple", sleeps: 4, price: n9(192071), sizeSqm: 30, beds: [{ kind: "single", count: 4 }], note: "Four single beds · 30 m²" },
+    ],
+    externalRating: { source: "Booking.com", score: 8.7, count: 16917, url: "https://www.booking.com/hotel/sa/voco-makkah.en-gb.html#tab-reviews" },
+    guestReviews: reviews([
+      { name: "Muhammad, Ireland", rating: 10, body: "Amazing location and brilliant service. Cleanliness is top notch — a 5-star experience." },
+      { name: "Emad, United Arab Emirates", rating: 10, body: "I liked everything from A-Z, from the first moment of arriving till we left. The reception team welcomed us and assisted us with the rooms." },
+      { name: "Tanveer, United Arab Emirates", rating: 9, body: "I like Mr Sohail, a Saudi man on reception in building no 4. This man is very helpful and cooperative." },
+      { name: "Mohammed, United Kingdom", rating: 9, body: "I enjoyed the overall experience at the hotel. The property has a modern feel and a calm, comfortable atmosphere, which made it a pleasant place to stay." },
+      { name: "Bukky, United Kingdom", rating: 10, body: "Everything — I am a returnee customer and I do not regret going back." },
+      { name: "Ali, Qatar", rating: 10, body: "The staff was super professional. Mr. Faisal at the reception assisted me and was a total gentleman." },
+      { name: "Hassan, Pakistan", rating: 9, body: "It is calm and peaceful near Haram. The rooms are good, cleaning is excellent, and the customer service is amazing." },
+      { name: "Hassen, Qatar", rating: 10, body: "Excellent hotel with a very good price. Super breakfast and great staff starting from the reception." },
+      { name: "Abdul, Pakistan", rating: 10, body: "I had a wonderful stay at voco Hotel Makkah. Everything was excellent from check-in to check-out. The location is very convenient, with frequent transport toward the Haram." },
+      { name: "Muaazh, United Kingdom", rating: 10, body: "Exceptional staff who are always willing to help. The hotel is clean and well kept. Breakfast was great, with all staff including the manager looking after guests." },
+    ]),
+  },
+  {
+    slug: "courtyard-by-marriott-makkah",
+    name: "Courtyard by Marriott Makkah",
+    nastaliq: "كورتيارد مكة",
+    city: "Makkah",
+    cover: "/uploads/courtyard-makkah/643493601.jpg",
+    price: n9(148519),
+    description:
+      "A 4-star Marriott hotel on Ajyad Street in Al Rawabi. Rooms are modern with private bathrooms and minibars. The hotel runs a frequent shuttle toward Masjid al-Haram, has three restaurants, a fitness centre, and private parking.",
+    lat: 21.404346572629965,
+    lng: 39.83053923677062,
+    stars: 4,
+    address: "Ajyad Street, Al Rawabi District, 24234 Makkah, Saudi Arabia",
+    checkIn: "16:00",
+    checkOut: "12:00",
+    facilities: ["wifi", "parking", "restaurant", "room_service", "gym", "ac", "family", "accessible", "nonsmoking", "airport_shuttle", "balcony"],
+    amenities: ["Haram shuttle about every 30 minutes", "Fitness centre", "Three restaurants", "24-hour front desk", "Private parking"],
+    mealRates: { breakfast: 6367, lunch: 0, dinner: 9000 },
+    landmark: "Masjid al-Haram",
+    landmarkKm: 2,
+    centerKm: 2,
+    airport: "Jeddah Airport (JED)",
+    airportKm: 88,
+    galleries: {
+      property: p("courtyard-makkah", ["643493601", "643493632", "643493635", "620780180"]),
+      room: p("courtyard-makkah", ["673345280", "643493646", "643493650", "643493614"]),
+      bathroom: p("courtyard-makkah", ["643493653", "643809537"]),
+      facilities: p("courtyard-makkah", ["620780180", "626001134", "681561002", "620781177"]),
+    },
+    rooms: [
+      { id: "deluxe-twin", name: "Deluxe Twin Room", sleeps: 2, price: n9(148519), sizeSqm: 26, beds: [{ kind: "twin", count: 2 }], note: "Two single beds · 26 m²", images: p("courtyard-makkah", ["673345280"]) },
+      { id: "deluxe-king", name: "Deluxe King Room", sleeps: 2, price: n9(148519), sizeSqm: 30, beds: [{ kind: "king", count: 1 }], note: "King bed · 30 m²", images: p("courtyard-makkah", ["643493646"]) },
+      { id: "premium-triple", name: "Premium Triple Room", sleeps: 3, price: n9(161806), sizeSqm: 28, beds: [{ kind: "single", count: 3 }], note: "Three twin beds · 28 m²" },
+      { id: "premium-quad", name: "Premium Quadruple Room", sleeps: 4, price: n9(175093), sizeSqm: 28, beds: [{ kind: "single", count: 4 }], note: "Four twin beds · 28 m²" },
+    ],
+    externalRating: { source: "Booking.com", score: 8.5, count: 4761, url: "https://www.booking.com/hotel/sa/courtyard-by-marriott-makkah.en-gb.html#tab-reviews" },
+    guestReviews: reviews([
+      { name: "Achraf, Morocco", rating: 9, body: "I had a very pleasant stay at Courtyard by Marriott Makkah. The hotel was clean, comfortable, and the staff were very welcoming and helpful." },
+      { name: "Hakim, United Kingdom", rating: 10, body: "It was the best ever. Everyone was happy and nice — may Allah bless them and their families." },
+      { name: "Normahayan, Malaysia", rating: 9, body: "Nice hotel and valued for money. Front desk staff were great and we got free parking as an upgrade. Mr Mohamad Khayyat is great and helpful." },
+      { name: "Muhammad, Pakistan", rating: 9, body: "Stay was excellent and services rendered were marvellous." },
+      { name: "Sheikh, Saudi Arabia", rating: 10, body: "Best breakfast options ever. Staff very friendly and helpful. Location is great. Clean, comfortable, and new." },
+      { name: "Feras, United Arab Emirates", rating: 9, body: "It was close to Haram and convenient grocery stores. Transport was on time and consistent. Staff were friendly and some nice food options." },
+      { name: "Younes, United Kingdom", rating: 9, body: "The room was clean and spacious and the hotel is located about 5 minutes from the Haram by taxi. What I loved most was the staff — very attentive." },
+      { name: "Oluwatosin, United Kingdom", rating: 10, body: "We had a wonderful stay. The hotel was comfortable, and the shuttle to the Haram every 30 minutes was very convenient." },
+      { name: "Iqbalneo, Pakistan", rating: 9, body: "Breakfast was excellent; Mediterranean, Saudi, and Continental options were available." },
+      { name: "Faheem, Bahrain", rating: 9, body: "Great service and great comfort. The hotel is in close proximity to Haram and there are buses from the hotel very frequently." },
+    ]),
+  },
+  {
+    slug: "valy-al-madinah-hotel",
+    name: "VALY Al-Madinah Hotel",
+    nastaliq: "فندق فالي المدينة",
+    city: "Madinah",
+    cover: "/uploads/valy-madinah/844848393.jpg",
+    price: n9(232332),
+    description:
+      "A 3-star hotel in central Madinah on Abdullah bin Haram Street, a short walk from Masjid an-Nabawi. Family rooms have city views, air conditioning, and private bathrooms. There is a restaurant with buffet breakfast, a fitness centre, and paid on-site parking.",
+    lat: 24.463807,
+    lng: 39.613109,
+    stars: 3,
+    address: "Abdullah bin Haram Street, 42311 Al Madinah, Saudi Arabia",
+    checkIn: "16:00",
+    checkOut: "12:00",
+    facilities: ["wifi", "parking", "restaurant", "room_service", "gym", "ac", "family", "accessible", "nonsmoking"],
+    amenities: ["Fitness centre", "Buffet breakfast", "24-hour front desk", "Concierge", "Daily housekeeping", "Soundproof rooms"],
+    mealRates: { breakfast: 3691, lunch: 0, dinner: 0 },
+    landmark: "Masjid an-Nabawi",
+    landmarkKm: 0.4,
+    centerKm: 0.5,
+    airport: "Prince Mohammad bin Abdulaziz International Airport (MED)",
+    airportKm: 20,
+    galleries: {
+      property: p("valy-madinah", ["844848393", "802982739", "820614034"]),
+      room: p("valy-madinah", ["802982723", "802982666", "802982715", "802982686", "802982694", "802982689"]),
+      bathroom: p("valy-madinah", ["472063758", "472064084"]),
+      facilities: p("valy-madinah", ["802982768", "569224755", "569223102", "802982594"]),
+    },
+    rooms: [
+      { id: "deluxe-double", name: "Deluxe Double Room", sleeps: 2, price: n9(232332), sizeSqm: 29, beds: [{ kind: "twin", count: 2 }], note: "Two single beds · 29 m² · city view", images: p("valy-madinah", ["802982666", "802982723"]) },
+      { id: "classic-triple", name: "Classic Triple Room", sleeps: 3, price: n9(260510), sizeSqm: 32, beds: [{ kind: "single", count: 3 }], note: "Three single beds · 32 m²", images: p("valy-madinah", ["802982723"]) },
+      { id: "classic-quad", name: "Classic Quadruple Room", sleeps: 4, price: n9(288688), sizeSqm: 36, beds: [{ kind: "single", count: 4 }], note: "Four single beds · 36 m²" },
+    ],
+    externalRating: { source: "Booking.com", score: 9.0, count: 4627, url: "https://www.booking.com/hotel/sa/vallee.en-gb.html#tab-reviews" },
+    guestReviews: reviews([
+      { name: "Yusuf, Canada", rating: 10, body: "The property is very beautiful and rooms are very clean and spacious. The staff are incredibly friendly and it was a pleasure dealing with Anis. He accommodated all the requests I had." },
+      { name: "Nour, United Arab Emirates", rating: 10, body: "The staff are friendly, the food deserves a special compliment and it was really superb." },
+      { name: "Noorie, Mauritius", rating: 10, body: "Property is very clean at all times with modern infrastructure. Very near to Masjid Nabawi. Staff were exceptional in showing hospitality." },
+      { name: "Syed, Canada", rating: 10, body: "Excellent hotel with a perfect location and outstanding service. It is within just a few minutes’ walking distance of Masjid Nabawi." },
+      { name: "Abubakar, Nigeria", rating: 10, body: "Very fine hotel, close to Masjid Nabawi. Very satisfied, Alhamdulillah. Special thanks to Shahidul Islam for helping throughout the stay." },
+      { name: "Faruk, Nigeria", rating: 9, body: "The cleanliness, the breakfast and the courteous staff." },
+      { name: "Muhammad, Ireland", rating: 9, body: "Breakfast was good and great location to Masjid Nabawi." },
+      { name: "Iddrisu, Germany", rating: 10, body: "Very clean, very close to the Haram, the breakfast was great. The room I got with my husband was very spacious. We will book it again." },
+      { name: "Sahidali, India", rating: 10, body: "Had a really pleasant and memorable stay. The room was clean, comfortable, and well-maintained. The staff were very friendly, welcoming, and professional." },
+      { name: "Naheed, United Kingdom", rating: 9, body: "The room service team are very good, especially Masud and Mokarrom. Special thanks to restaurant staff Tawakul Islam." },
+    ]),
+  },
+  {
+    slug: "makarem-burj-al-madinah",
+    name: "Makarem Burj Al Madinah",
+    nastaliq: "أبراج مكارم المدينة",
+    city: "Madinah",
+    cover: "/uploads/makarem-burj/770177318.jpg",
+    price: n9(696311),
+    description:
+      "A 4-star Makarem hotel in central Madinah on Musab bin Umair Street, close to Masjid an-Nabawi. Rooms include deluxe king and twin options plus suites, with air conditioning, minibars, and private bathrooms. Breakfast is included on typical rates. The hotel has a restaurant, fitness centre, and free private parking.",
+    lat: 24.4720300979104,
+    lng: 39.6103373984956,
+    stars: 4,
+    address: "2779 Musab bin Umair, 42311 Al Madinah, Saudi Arabia",
+    checkIn: "16:00",
+    checkOut: "12:00",
+    facilities: ["wifi", "parking", "restaurant", "room_service", "gym", "ac", "family", "accessible", "nonsmoking", "business"],
+    amenities: ["Very good breakfast", "Fitness centre", "24-hour front desk", "Free private parking", "Business area", "Concierge"],
+    mealRates: { breakfast: 5000, lunch: 0, dinner: 0 },
+    landmark: "Masjid an-Nabawi",
+    landmarkKm: 0.3,
+    centerKm: 0.3,
+    airport: "Prince Mohammad bin Abdulaziz International Airport (MED)",
+    airportKm: 13,
+    galleries: {
+      property: p("makarem-burj", ["770177318", "770178401", "770178369", "770178421"]),
+      room: p("makarem-burj", ["860007745", "755800355", "755800352", "755800350", "755800442"]),
+      bathroom: p("makarem-burj", ["755800808", "755800894"]),
+      facilities: p("makarem-burj", ["755800349", "755800373", "755800366", "755800490"]),
+    },
+    rooms: [
+      { id: "deluxe-king", name: "Deluxe Room King Bed", sleeps: 2, price: n9(696311), sizeSqm: 30, beds: [{ kind: "king", count: 1 }], note: "Breakfast included on typical rates · 30 m²", images: p("makarem-burj", ["860007745"]) },
+      { id: "deluxe-twin", name: "Deluxe Room Twin Beds", sleeps: 2, price: n9(726207), sizeSqm: 30, beds: [{ kind: "twin", count: 2 }], note: "Two single beds · breakfast included · 30 m²" },
+      { id: "premium-king", name: "Premium King Room", sleeps: 2, price: n9(721261), sizeSqm: 30, beds: [{ kind: "king", count: 1 }], note: "Bath · minibar · 30 m²" },
+      { id: "one-bedroom-suite", name: "One Bedroom Suite", sleeps: 3, price: n9(996006), sizeSqm: 47, beds: [{ kind: "king", count: 1 }, { kind: "sofa", count: 1 }], note: "Private suite · 47 m²", images: p("makarem-burj", ["755800355"]) },
+    ],
+    externalRating: { source: "Booking.com", score: 9.3, count: 1802, url: "https://www.booking.com/hotel/sa/makarem-burj-al-madinah.en-gb.html#tab-reviews" },
+    guestReviews: reviews([
+      { name: "Wesam, Israel", rating: 10, body: "Great service and location. Perfect rooms. Wonderful breakfast." },
+      { name: "Prof, Nigeria", rating: 10, body: "The location is extremely good. The environment is clean and quiet. The staff are humble, hospitable and very polite." },
+      { name: "Maimoonah, United Kingdom", rating: 10, body: "It was very close to Masjid Nabawi and especially good for us as it was closer for the women to get to their allocated gate." },
+      { name: "Aadill, South Africa", rating: 10, body: "Very clean and neat. All staff gave excellent service." },
+      { name: "Kathija, South Africa", rating: 10, body: "Excellent staff. Haroon was so friendly at the executive lounge. Housekeeping was accommodating and very helpful." },
+      { name: "Mohammed, South Africa", rating: 10, body: "Service was excellent. Ally the manager made my experience very comfortable. The hospitality from all the staff was amazing." },
+      { name: "Ahsan, United Kingdom", rating: 9, body: "Close to Masjid an-Nabawi, very modern and clean." },
+      { name: "Abul, United Kingdom", rating: 9, body: "The staff are always very helpful. The location is very close without being in front of the crowded areas. Facilities in the hotel are very good." },
+      { name: "Magda, Saudi Arabia", rating: 10, body: "Great thanks for Makarem Al Madinah towers. I was so happy and really had a pleasant visit. Special dedication to Ms Renad on reception." },
+      { name: "Yahalabsi, Saudi Arabia", rating: 10, body: "The cleanliness, the quietness, and a convenient location. A late checkout was provided. Welcome amenities such as water and soft drinks were appreciated." },
+    ]),
+  },
+];
+
+function metaFor(hotel) {
+  const gallery = [...hotel.galleries.property, ...hotel.galleries.room, ...hotel.galleries.bathroom, ...hotel.galleries.facilities];
+  return JSON.stringify({
+    gallery,
+    galleries: hotel.galleries,
+    propertyKind: "hotel",
+    stars: hotel.stars,
+    address: hotel.address,
+    checkIn: hotel.checkIn,
+    checkOut: hotel.checkOut,
+    reception: "24 hours",
+    phone: "",
+    email: "",
+    policies: ["Government ID at check-in.", "Quiet hours after 22:00.", "Non-smoking rooms throughout."],
+    facilities: hotel.facilities,
+    meals: ["breakfast"],
+    mealRates: hotel.mealRates,
+    amenities: hotel.amenities,
+    rooms: hotel.rooms.map((r) => ({
+      ...r,
+      smoking: false,
+      facilities: ["Wi-Fi", "Private bathroom", "Air conditioning", "TV"],
+      available: 6,
+      extraBedAllowed: true,
+      cribAllowed: true,
+      includedGuests: r.sleeps,
+    })),
+    cancellation: "partial",
+    payAtProperty: true,
+    landmark: hotel.landmark,
+    airport: hotel.airport,
+    centerKm: hotel.centerKm,
+    airportKm: hotel.airportKm,
+    landmarkKm: hotel.landmarkKm,
+    lat: hotel.lat,
+    lng: hotel.lng,
+    hostName: "Saba Stay",
+    hostYears: 4,
+    hostLetter: `Welcome to ${hotel.name}. We keep these rooms ready for Umrah and ziyarat guests.`,
+    hostEmail: "stay.owner@serai.pk",
+    climate: "Best window: Oct–Mar",
+    country: "SA",
+    externalRating: hotel.externalRating,
+    guestReviews: hotel.guestReviews,
+  });
+}
+
+const owner = await prisma.user.findUniqueOrThrow({ where: { email: "stay.owner@serai.pk" } });
+
+for (const hotel of hotels) {
+  const data = {
+    slug: hotel.slug,
+    kind: "STAY",
+    ownerId: owner.id,
+    name: hotel.name,
+    nastaliq: hotel.nastaliq,
+    city: hotel.city,
+    region: "Saudi Arabia",
+    cover: hotel.cover,
+    description: hotel.description,
+    price: hotel.price,
+    priceUnit: "night",
+    meta: metaFor(hotel),
+    published: true,
+    status: "approved",
+    rejectReason: "",
+  };
+  const existing = await prisma.listing.findUnique({ where: { slug: hotel.slug } });
+  if (existing) {
+    await prisma.listing.update({ where: { slug: hotel.slug }, data });
+    console.log("updated", hotel.slug, "price", hotel.price);
+  } else {
+    await prisma.listing.create({ data });
+    console.log("created", hotel.slug, "price", hotel.price);
+  }
+}
+
+await prisma.$disconnect();

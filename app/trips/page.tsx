@@ -47,6 +47,10 @@ function TripStatusBadge({ status, bucket }: { status: string; bucket: BookingBu
     tone = "bg-rose/15 text-rose";
     dot = "bg-rose";
     label = "Cancellation requested";
+  } else if (status === "pending_payment") {
+    tone = "bg-brass/15 text-brass";
+    dot = "bg-brass";
+    label = "Awaiting payment";
   } else if (status === "pending_driver") {
     tone = "bg-brass/15 text-brass";
     dot = "bg-brass";

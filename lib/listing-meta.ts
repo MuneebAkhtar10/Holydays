@@ -70,7 +70,28 @@ export type StayListingMeta = {
   itinerary: { time: string; place: string; note: string }[];
   service: "ziyarat" | "airport";
   closedFrom: string;
+  externalRating: { source: string; score: number; count: number; url: string };
+  guestReviews: { name: string; body: string; rating: number; createdAt: string }[];
 };
+
+function asGuestReviews(value: unknown): StayListingMeta["guestReviews"] {
+  if (!Array.isArray(value)) return [];
+  return value
+    .map((row) => {
+      if (!row || typeof row !== "object") return null;
+      const r = row as { name?: unknown; body?: unknown; rating?: unknown; createdAt?: unknown };
+      const body = String(r.body ?? "").trim();
+      const name = String(r.name ?? "").trim();
+      if (!body || !name) return null;
+      return {
+        name,
+        body,
+        rating: Number(r.rating) || 0,
+        createdAt: String(r.createdAt ?? ""),
+      };
+    })
+    .filter((row): row is StayListingMeta["guestReviews"][number] => Boolean(row));
+}
 
 export type ListingCard = {
   id: string;
@@ -184,6 +205,13 @@ export function parseListingMeta(raw: unknown): StayListingMeta {
       : [],
     service: obj.service === "airport" ? "airport" : "ziyarat",
     closedFrom: String(obj.closedFrom ?? ""),
+    externalRating: {
+      source: String(obj.externalRating?.source ?? ""),
+      score: Number(obj.externalRating?.score) || 0,
+      count: Number(obj.externalRating?.count) || 0,
+      url: String((obj.externalRating as { url?: string } | undefined)?.url ?? ""),
+    },
+    guestReviews: asGuestReviews(obj.guestReviews),
   };
 }
 
@@ -256,6 +284,8 @@ export function defaultStayMeta(partial?: Partial<StayListingMeta> & { city?: st
     privateRate: partial?.privateRate ?? 0,
     itinerary: partial?.itinerary ?? [],
     service: partial?.service === "airport" ? "airport" : "ziyarat",
+    externalRating: partial?.externalRating,
+    guestReviews: partial?.guestReviews,
   });
 }
 
@@ -320,10 +350,12 @@ export function listingToStay(listing: ListingCard): Stay {
 
 export function listingOffer(listing: ListingCard): StayOffer {
   const meta = parseListingMeta(listing.meta);
+  const reviewAvg = listing.reviewAvg || meta.externalRating.score || 0;
+  const reviewCount = listing.reviewCount || meta.externalRating.count || meta.guestReviews.length || 0;
   return {
     stars: meta.stars,
-    reviewAvg: listing.reviewAvg ?? 0,
-    reviewCount: listing.reviewCount ?? 0,
+    reviewAvg,
+    reviewCount,
     centerKm: meta.centerKm,
     airportKm: meta.airportKm,
     landmark: meta.landmark || listing.city,
@@ -439,6 +471,8 @@ export function encodeStayMeta(body: Record<string, unknown>, fallback?: Partial
       ? body.itinerary
       : fallback?.itinerary,
     service: body.service === "airport" || fallback?.service === "airport" ? "airport" : "ziyarat",
+    externalRating: (body.externalRating as StayListingMeta["externalRating"]) || fallback?.externalRating,
+    guestReviews: Array.isArray(body.guestReviews) ? asGuestReviews(body.guestReviews) : fallback?.guestReviews,
     lat: body.lat !== undefined ? Number(body.lat) : fallback?.lat,
     lng: body.lng !== undefined ? Number(body.lng) : fallback?.lng,
     pin: pinForCity(String(body.city ?? fallback?.city ?? "")),

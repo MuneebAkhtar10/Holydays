@@ -41,11 +41,11 @@ export function SearchPass({ compact = false, stayCity }: { compact?: boolean; s
         label: search.q || search.city,
         sub: "Recent search",
         city: search.city,
-        country: search.country || "IQ",
+        country: search.country || "",
       });
     }
     const p = new URLSearchParams();
-    p.set("country", search.country || "");
+    if (search.country && (search.city || search.q || search.landmark || search.airport)) p.set("country", search.country);
     if (search.city) p.set("city", search.city);
     if (search.q) p.set("q", search.q);
     else if (search.city) p.set("q", search.city);

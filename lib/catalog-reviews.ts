@@ -10,7 +10,7 @@ export type GuestReview = {
 };
 
 const FIRST = ["Ayesha", "Hassan", "Maya", "Omar", "Sara", "Tomas", "Hina", "Daniel", "Fatima", "Noah", "Zara", "Ibrahim", "Elena", "Bilal", "Amira", "James", "Noor", "Leila", "Usman", "Priya", "Rina", "Farid", "Saba", "Kamila", "Yusuf"];
-const FROM = ["Lahore", "Karachi", "Islamabad", "London", "Lisbon", "Berlin", "Multan", "Toronto", "Dubai", "Peshawar", "Madrid", "Skardu", "Doha", "Manchester", "Hunza", "Paris", "Faisalabad", "Singapore", "Quetta", "Gwadar"];
+const FROM = ["Lahore", "Karachi", "Islamabad", "London", "Lisbon", "Berlin", "Multan", "Toronto", "Dubai", "Peshawar", "Madrid", "Skardu", "Doha", "Manchester", "Hunza", "Paris", "Faisalabad", "Singapore", "Quetta", "Gwadar", "Jeddah", "Riyadh", "Istanbul", "Cairo", "Jakarta", "Kuala Lumpur", "Mumbai", "Cape Town"];
 
 const BODIES = [
   "Quiet, clean, and exactly as photographed. We would book again without thinking.",
@@ -29,6 +29,12 @@ const BODIES = [
   "Coffee, a window, and no nonsense. This is how a city stay should feel.",
   "Family-friendly without being noisy. Kids slept; we got the evening back.",
   "Left a little sorry to go. That does not happen often on work trips.",
+  "The room was quiet, the bed was comfortable, and check-in took minutes.",
+  "Helpful reception, clean bathroom, and a straightforward walk to transport.",
+  "We stayed as a family. Space was enough, and the hotel stayed organised at peak hours.",
+  "Good value for the area. Air conditioning worked well and the linens were fresh.",
+  "Staff remembered our request for a quieter room. That made the nights easier.",
+  "A practical base: reliable wifi, hot water, and breakfast that starts early enough.",
 ];
 
 function seed(id: string) {
@@ -78,4 +84,27 @@ export function catalogGuestReviews(stayId: string): { avg: number; count: numbe
   }
 
   return { avg: offer.reviewAvg, count: offer.reviewCount, reviews };
+}
+
+const FILL_CAP = 300;
+
+/** Keep real comments first, then add more so a stay with a large score count can scroll. */
+export function fillGuestReviews(stayId: string, existing: GuestReview[], avg: number, count: number): GuestReview[] {
+  const target = Math.min(Math.max(existing.length, Number(count) || 0), FILL_CAP);
+  if (existing.length >= target) return existing;
+  const s = seed(stayId);
+  const out = [...existing];
+  let i = 0;
+  while (out.length < target) {
+    const rating10 = Math.min(10, Math.max(6.5, (avg || 8.5) + ((s + i * 13) % 11) / 10 - 0.5));
+    out.push({
+      id: `fill-${stayId}-${i}`,
+      rating: rating10,
+      body: BODIES[(s + i * 5) % BODIES.length],
+      createdAt: dayIso(existing.length + i + 1),
+      name: `${FIRST[(s + i * 3) % FIRST.length]}, ${FROM[(s + i * 7) % FROM.length]}`,
+    });
+    i += 1;
+  }
+  return out;
 }

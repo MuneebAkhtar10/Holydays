@@ -62,10 +62,12 @@ export async function GET(req: Request) {
     const asCards = (listings: Awaited<ReturnType<typeof fetchPublicListings>>) =>
       listings.map((l) => {
         const s = stats[l.id];
+        const card = toCard({ ...l, published: Boolean(l.published), price: Number(l.price), reviews: [], meta: l.meta });
+        const meta = parseListingMeta(l.meta);
         return {
-          ...toCard({ ...l, published: Boolean(l.published), price: Number(l.price), reviews: [], meta: l.meta }),
-          reviewCount: s?.count ?? 0,
-          reviewAvg: s?.avg ?? 0,
+          ...card,
+          reviewCount: s?.count || meta.externalRating.count || 0,
+          reviewAvg: s?.avg || meta.externalRating.score || 0,
         };
       });
 

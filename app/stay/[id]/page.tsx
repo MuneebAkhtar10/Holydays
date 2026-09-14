@@ -88,6 +88,7 @@ function StayInner() {
   const [partnerStay, setPartnerStay] = useState<Stay | null>(null);
   const [partnerOffer, setPartnerOffer] = useState<StayOffer | null>(null);
   const [partnerFacts, setPartnerFacts] = useState<PropertyFacts | null>(null);
+  const [partnerExternalRating, setPartnerExternalRating] = useState<{ source: string; score: number; count: number; url?: string } | null>(null);
   const [partnerStatus, setPartnerStatus] = useState<string | null>(null);
   const [partnerRejectReason, setPartnerRejectReason] = useState("");
   const [partnerOwnerId, setPartnerOwnerId] = useState<string | undefined>(undefined);
@@ -132,6 +133,7 @@ function StayInner() {
           email: meta.email,
           policies: meta.policies,
         });
+        setPartnerExternalRating(meta.externalRating?.source ? meta.externalRating : null);
         setRoomId(mapped.rooms[0]?.id ?? "");
         setRatePlanId(mapped.rooms[0]?.rates?.[0]?.id ?? "");
         setLiveReady(true);
@@ -497,7 +499,7 @@ function StayInner() {
           </section>
 
           <div id="reviews" className="mt-10">
-            <ListingReviewsLoader slug={stay.id} />
+            <ListingReviewsLoader slug={stay.id} externalRating={catalog ? undefined : partnerExternalRating ?? undefined} />
           </div>
 
           {stay.stories.length > 0 ? (
@@ -575,8 +577,7 @@ function StayInner() {
                 Arrive
                 <input
                   type="date"
-                  style={{ colorScheme: "light" }}
-                  className="paper-light mt-1 w-full rounded-xl border border-ink/10 bg-white px-2 py-2 text-sm text-ink outline-none"
+                  className="date-chip mt-1 w-full rounded-xl px-2 py-2 text-sm"
                   value={checkin}
                   onChange={(e) => setSearch({ checkin: e.target.value })}
                 />
@@ -585,8 +586,7 @@ function StayInner() {
                 Depart
                 <input
                   type="date"
-                  style={{ colorScheme: "light" }}
-                  className="paper-light mt-1 w-full rounded-xl border border-ink/10 bg-white px-2 py-2 text-sm text-ink outline-none"
+                  className="date-chip mt-1 w-full rounded-xl px-2 py-2 text-sm"
                   value={checkout}
                   onChange={(e) => setSearch({ checkout: e.target.value })}
                 />

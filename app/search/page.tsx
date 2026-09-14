@@ -42,7 +42,7 @@ function SearchInner() {
     const patch: Parameters<typeof setSearch>[0] = {
       q: params.get("q") ?? "",
       city: params.get("city") ?? "",
-      country: params.get("country") ?? "IQ",
+      country: params.get("country") ?? "",
       vibe: params.get("vibe") ?? "",
       landmark: params.get("landmark") ?? "",
       airport: params.get("airport") ?? "",
@@ -88,10 +88,15 @@ function SearchInner() {
     [merged, search, filters, sort],
   );
 
+  const hasPlace = Boolean(search.city || search.q || search.landmark || search.airport);
   const place =
     search.landmark ||
     search.airport ||
-    (search.city ? `${search.city}, ${countryByCode(search.country)?.name ?? search.country}` : countryByCode(search.country)?.name ?? "Saudi Arabia, Iraq & Iran");
+    (search.city
+      ? `${search.city}, ${countryByCode(search.country)?.name ?? search.country}`
+      : hasPlace
+        ? search.q || countryByCode(search.country)?.name || "Saudi Arabia, Iraq & Iran"
+        : "Saudi Arabia, Iraq & Iran");
 
   return (
     <div className="mx-auto max-w-[1440px] px-5 py-8">

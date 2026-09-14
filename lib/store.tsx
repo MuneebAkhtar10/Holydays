@@ -82,7 +82,7 @@ export function Providers({ children }: { children: ReactNode }) {
   const [reservation, setReservation] = useState<Reservation | null>(null);
   const [search, setSearchState] = useState<Search>({
     q: "",
-    country: "IQ",
+    country: "",
     city: "",
     checkin: dates.checkin,
     checkout: dates.checkout,

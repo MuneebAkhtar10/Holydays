@@ -7,12 +7,15 @@ import type { BookingDTO } from "@/lib/booking-dto";
 import { formatDay } from "@/lib/format";
 import { useSerai } from "@/lib/store";
 import { shareText } from "@/lib/booking-view";
+import { readJson } from "@/lib/readJson";
 import { bookingInvoiceBreakdown, bookingPackageGrandTotal, bookingPackageHotelNames } from "@/lib/booking-invoice";
 
 const payLabel: Record<string, string> = {
   jazz: "JazzCash",
   easy: "EasyPaisa",
   property: "Pay at property",
+  card: "Card (Stripe)",
+  stripe: "Card (Stripe)",
 };
 
 export function BookingActions({ booking, origin }: { booking: BookingDTO; origin: string }) {
@@ -112,16 +115,46 @@ export function BookingNotifyStrip({ booking }: { booking: BookingDTO }) {
 }
 
 export function PaymentBlock({ booking }: { booking: BookingDTO }) {
-  const { money } = useSerai();
+  const { money, currency } = useSerai();
   const quote = booking.extra.quote as { grand?: number; taxes?: number; total?: number } | undefined;
   const isPackage = Boolean(booking.extra.package);
   const breakdown = isPackage ? bookingInvoiceBreakdown(booking) : null;
   const grandTotal = bookingPackageGrandTotal(booking);
+  const [paying, setPaying] = useState(false);
+  const [payError, setPayError] = useState("");
   return (
     <div className="rounded-2xl border border-brass/25 p-5">
       <p className="text-[11px] uppercase tracking-[0.16em] text-brass">Payment</p>
       <p className="mt-2 font-display text-2xl">{money(grandTotal)}</p>
       <p className="mt-1 text-sm text-mist">{payLabel[booking.payment] || booking.payment}</p>
+      {booking.status === "pending_payment" ? (
+        <div className="mt-4 space-y-2">
+          {payError ? <p className="text-sm text-rose">{payError}</p> : null}
+          <button
+            type="button"
+            className="btn-primary"
+            disabled={paying}
+            onClick={async () => {
+              setPayError("");
+              setPaying(true);
+              const res = await fetch("/api/stripe/checkout", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ bookingId: booking.id, currency }),
+              });
+              const data = await readJson<{ url?: string; error?: string }>(res);
+              setPaying(false);
+              if (!res.ok || !data?.url) {
+                setPayError(data?.error || "Could not restart card payment");
+                return;
+              }
+              window.location.assign(data.url);
+            }}
+          >
+            {paying ? "Opening Stripe…" : "Pay with card"}
+          </button>
+        </div>
+      ) : null}
 
       {breakdown ? (
         <div className="mt-4 space-y-3">

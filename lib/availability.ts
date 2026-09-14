@@ -15,7 +15,7 @@ export async function roomsLeftFor(
   const bookings = await prisma.booking.findMany({
     where: {
       listingId,
-      status: "confirmed",
+      status: { in: ["confirmed", "pending_payment"] },
       ...(excludeBookingId ? { NOT: { id: excludeBookingId } } : {}),
     },
     select: { startDate: true, endDate: true },
