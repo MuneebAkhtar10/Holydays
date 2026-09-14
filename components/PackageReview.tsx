@@ -3,13 +3,14 @@
 import type { ReactNode } from "react";
 import { formatDay, nightsBetween, stayNightDates } from "@/lib/format";
 import { useSerai } from "@/lib/store";
+import { TaxiPhotos } from "@/components/TaxiPhotos";
 import {
   airportPickupTitle,
   ESIM_PLANS,
   esimPlanRate,
   mealLines,
   parseMealChoice,
-  parseMealRates,
+  packageMealRates,
   taxiPickCost,
   tripTitle,
   INSURANCE_RATE_PER_GUEST,
@@ -119,11 +120,22 @@ export function TransferTimeline({
             {kindLabel(r.kind)} · {formatDay(r.p.date)}
           </p>
           <div className="mt-1 flex items-start justify-between gap-3">
-            <div className="min-w-0">
-              <p className="font-display text-lg leading-tight">{r.title}</p>
-              <p className="text-sm text-mist">
-                {r.t.driver} · {r.t.vehicle}
-              </p>
+            <div className="flex min-w-0 items-start gap-3">
+              <TaxiPhotos
+                driver={r.t.driver}
+                driverPhoto={r.t.driverPhoto}
+                vehicle={r.t.vehicle}
+                vehiclePhoto={r.t.vehiclePhoto}
+                vehiclePhotos={r.t.vehiclePhotos}
+                cover={r.t.cover}
+                size="sm"
+              />
+              <div className="min-w-0">
+                <p className="font-display text-lg leading-tight">{r.title}</p>
+                <p className="text-sm text-mist">
+                  {r.t.driver} · {r.t.vehicle}
+                </p>
+              </div>
             </div>
             <p className="shrink-0 text-sm text-sand">{money(r.amount)}</p>
           </div>
@@ -203,7 +215,7 @@ export function PackageBill({
   discounts?: { id: string; label: string; amount: number }[];
 }) {
   const { money } = useSerai();
-  const rates = parseMealRates(mealRates);
+  const rates = packageMealRates(mealRates);
   const mealGroups = hotels.map((h) => ({
     hotel: h,
     rows: mealLines(parseMealChoice(meals, stayNightDates(h.checkin, h.checkout)), guests, nightsBetween(h.checkin, h.checkout), rates),

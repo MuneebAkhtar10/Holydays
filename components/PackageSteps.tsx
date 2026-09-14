@@ -6,7 +6,7 @@ import {
   packageGrandTotal,
   packageInvoiceBreakdown,
   parseMealChoice,
-  parseMealRates,
+  packageMealRates,
   type EsimSelections,
   type MealChoice,
   type MealKind,
@@ -41,7 +41,7 @@ export function MealPlanStep({
   rates?: MealRates;
 }) {
   const { money } = useSerai();
-  const price = parseMealRates(rates);
+  const price = packageMealRates(rates);
   const picked = parseMealChoice(meals, dates);
   const heads = Math.max(1, guests);
 

@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { addDaysIso, nightsBetween } from "@/lib/format";
 import { listingToStay, type ListingCard } from "@/lib/listing-meta";
-import { quoteStay, stayRooms } from "@/lib/pricing";
+import { quoteStay, stayRooms, roomPicksTotal, type RoomPick } from "@/lib/pricing";
 import { citiesForCountry, type PilgrimCountry } from "@/lib/pilgrim";
 import type { PackageStaySlice } from "@/lib/package-plan";
 import { HotelStrip, type ReviewHotel } from "@/components/PackageReview";
@@ -48,11 +48,7 @@ export function PackageHotelPicker({
   const [rows, setRows] = useState<StayCard[]>([]);
   const [picked, setPicked] = useState<string | null>(null);
   const [ready, setReady] = useState(false);
-  const [roomId, setRoomId] = useState("");
-  const [ratePlanId, setRatePlanId] = useState("");
-  const [extraBeds, setExtraBeds] = useState(0);
-  const [cribs, setCribs] = useState(0);
-  const [roomsCount, setRoomsCount] = useState(Math.max(1, rooms));
+  const [picks, setPicks] = useState<RoomPick[]>([]);
 
   useEffect(() => {
     setPlace(city || cityOptions[0] || "");
@@ -86,16 +82,14 @@ export function PackageHotelPicker({
   const selected = hotels.find((h) => (h.slug || h.id) === picked) ?? null;
   const stay = selected ? listingToStay(selected) : null;
   const stayRoomList = stay ? stayRooms(stay) : [];
-  const room = stayRoomList.find((r) => r.id === roomId) ?? stayRoomList[0];
+  const activePicks = picks.filter((p) => p.rooms > 0);
+  const roomsCount = roomPicksTotal(activePicks);
   const totalCapacity = stayRoomList.reduce((sum, r) => sum + r.available, 0);
 
   useEffect(() => {
     if (!stay) return;
-    const list = stayRooms(stay);
-    setRoomId(list[0]?.id ?? "");
-    setRatePlanId(list[0]?.rates?.[0]?.id ?? "");
-    setExtraBeds(0);
-    setCribs(0);
+    const first = stayRooms(stay)[0];
+    setPicks(first ? [{ roomId: first.id, ratePlanId: first.rates[0]?.id, rooms: Math.max(1, rooms), extraBeds: 0, cribs: 0 }] : []);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [picked]);
 
@@ -123,7 +117,7 @@ export function PackageHotelPicker({
   const roomsLeft = overlapBookings === null ? null : Math.max(0, totalCapacity - overlapBookings);
 
   const quote =
-    stay && room && checkin && checkout && checkout > checkin
+    stay && activePicks.length && checkin && checkout && checkout > checkin
       ? quoteStay(stay, {
           checkin,
           checkout,
@@ -131,10 +125,7 @@ export function PackageHotelPicker({
           adults,
           children,
           childAges,
-          roomId: room.id,
-          ratePlanId: ratePlanId || room.rates[0]?.id,
-          extraBeds,
-          cribs,
+          picks: activePicks,
         })
       : null;
 
@@ -218,34 +209,22 @@ export function PackageHotelPicker({
           </p>
           <RoomPicker
             stay={stay}
-            input={{ checkin, checkout, rooms: roomsCount, adults, children, childAges, roomId: room?.id, ratePlanId, extraBeds, cribs }}
-            roomId={room?.id ?? ""}
-            ratePlanId={ratePlanId || room?.rates[0]?.id || ""}
-            extraBeds={extraBeds}
-            cribs={cribs}
+            input={{ checkin, checkout, rooms: Math.max(1, roomsCount), adults, children, childAges, picks: activePicks }}
+            picks={picks}
+            onChangePicks={setPicks}
             roomsLeft={roomsLeft}
-            onRoom={(id) => {
-              setRoomId(id);
-              const next = stayRooms(stay).find((r) => r.id === id);
-              setRatePlanId(next?.rates[0]?.id ?? "");
-            }}
-            onRate={setRatePlanId}
-            onRooms={setRoomsCount}
-            onExtraBeds={setExtraBeds}
-            onCribs={setCribs}
             roomShots={gallerySets(stay).room}
           />
           <div className="mt-4 rounded-xl bg-ink/30 px-3 py-3 text-sm">
             <p className="text-sand">
-              {room?.name} · {CANCEL_LABEL[quote.rate.cancellation]}
+              {quote.roomLabel} · {CANCEL_LABEL[quote.cancelPolicy]}
             </p>
             <p className="mt-1 font-display text-xl">{money(quote.grand)}</p>
             <button
               type="button"
-              disabled={roomsLeft === 0}
+              disabled={roomsLeft === 0 || roomsCount < 1}
               className="btn-primary mt-3 rounded-full disabled:cursor-not-allowed disabled:opacity-50"
               onClick={() =>
-                room &&
                 onAdd({
                   listingId: stay.id,
                   name: stay.name,
@@ -253,11 +232,12 @@ export function PackageHotelPicker({
                   cover: stay.cover,
                   checkin,
                   checkout,
-                  roomId: room.id,
+                  roomId: quote.room.id,
                   ratePlanId: quote.rate.id,
-                  roomName: room.name,
+                  picks: activePicks,
+                  roomName: quote.roomLabel,
                   amount: quote.grand,
-                  cancellation: quote.rate.cancellation,
+                  cancellation: quote.cancelPolicy,
                   rooms: roomsCount,
                 })
               }

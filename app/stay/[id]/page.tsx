@@ -19,12 +19,19 @@ import { useSession } from "next-auth/react";
 import { gallerySets, propertyFacts, propertyKindLabel, propertyMeta, type PropertyFacts } from "@/lib/property-details";
 import { FACILITY_LABEL, MEAL_LABEL, SHOWCASE_FACILITIES, hydrateCatalogStay, type FacilityKey, type StayOffer } from "@/lib/search-index";
 import { listingOffer, listingToStay, parseListingMeta } from "@/lib/listing-meta";
-import { quoteStay, stayRooms, type QuoteInput } from "@/lib/pricing";
+import { quoteStay, stayRooms, roomPicksTotal, type QuoteInput, type RoomPick } from "@/lib/pricing";
+import { encodeRoomPicks } from "@/lib/room-picks";
 import { RoomPicker } from "@/components/RoomPicker";
 import { PriceBreakdown } from "@/components/PriceBreakdown";
 import { readJson } from "@/lib/readJson";
 import type { Stay } from "@/lib/types";
 import { pilgrimCountryForPlace } from "@/lib/pilgrim";
+
+function seedRoomPicks(stay: Stay | null | undefined, rooms: number): RoomPick[] {
+  const first = stay ? stayRooms(stay)[0] : undefined;
+  if (!first) return [];
+  return [{ roomId: first.id, ratePlanId: first.rates[0]?.id, rooms: Math.max(1, rooms), extraBeds: 0, cribs: 0 }];
+}
 
 function initials(name: string) {
   return (
@@ -101,11 +108,7 @@ function StayInner() {
   const params = useSearchParams();
   const { search, setSearch, toggleWish, wishlist, money } = useSerai();
   const { status, data: session } = useSession();
-  const [roomId, setRoomId] = useState(stay?.rooms[0]?.id ?? "");
-  const [ratePlanId, setRatePlanId] = useState(stay?.rooms[0]?.rates?.[0]?.id ?? "");
-  const [roomCount, setRoomCount] = useState(Number(params.get("rooms") || search.rooms || 1));
-  const [extraBeds, setExtraBeds] = useState(0);
-  const [cribs, setCribs] = useState(0);
+  const [picks, setPicks] = useState<RoomPick[]>(() => seedRoomPicks(stay, Number(params.get("rooms") || search.rooms || 1)));
   const [extras, setExtras] = useState<string[]>([]);
 
   const loadListing = () => {
@@ -134,8 +137,7 @@ function StayInner() {
           policies: meta.policies,
         });
         setPartnerExternalRating(meta.externalRating?.source ? meta.externalRating : null);
-        setRoomId(mapped.rooms[0]?.id ?? "");
-        setRatePlanId(mapped.rooms[0]?.rates?.[0]?.id ?? "");
+        setPicks(seedRoomPicks(mapped, Number(params.get("rooms") || search.rooms || 1)));
         setLiveReady(true);
       })
       .catch(() => setLiveReady(true));
@@ -169,7 +171,8 @@ function StayInner() {
   }, [stay?.city]);
   const nights = nightsBetween(checkin, checkout);
   const roomsList = stay ? stayRooms(stay) : [];
-  const room = roomsList.find((r) => r.id === roomId) ?? roomsList[0];
+  const activePicks = picks.filter((p) => p.rooms > 0);
+  const roomCount = roomPicksTotal(activePicks);
   const totalCapacity = roomsList.reduce((sum, r) => sum + r.available, 0);
 
   const [overlapBookings, setOverlapBookings] = useState<number | null>(null);
@@ -190,29 +193,40 @@ function StayInner() {
     };
   }, [id, checkin, checkout]);
   const roomsLeft = overlapBookings === null ? null : Math.max(0, totalCapacity - overlapBookings);
-  const roomCap = room ? (roomsLeft == null ? room.available : Math.max(0, Math.min(room.available, roomsLeft))) : null;
 
   useEffect(() => {
-    if (roomCap != null && roomCap > 0 && roomCount > roomCap) setRoomCount(roomCap);
-  }, [roomCap, roomCount]);
+    if (roomsLeft == null) return;
+    setPicks((current) => {
+      let changed = false;
+      const next = current.map((p) => {
+        const room = roomsList.find((r) => r.id === p.roomId);
+        if (!room) return p;
+        const others = current.filter((x) => x.roomId !== p.roomId).reduce((s, x) => s + x.rooms, 0);
+        const cap = Math.max(0, Math.min(room.available, Math.max(0, roomsLeft - others)));
+        if (p.rooms > cap) {
+          changed = true;
+          return { ...p, rooms: cap };
+        }
+        return p;
+      }).filter((p) => p.rooms > 0);
+      return changed ? next : current;
+    });
+  }, [roomsLeft, stay?.id]);
 
   const quoteInput: QuoteInput = {
     checkin,
     checkout,
-    rooms: roomCount,
+    rooms: Math.max(1, roomCount),
     adults,
     children,
     childAges: childAges.length ? childAges : search.childAges,
-    roomId: room?.id,
-    ratePlanId,
-    extraBeds,
-    cribs,
+    picks: activePicks,
     extras,
   };
-  const quote = stay && room ? quoteStay(stay, quoteInput) : null;
+  const quote = stay && activePicks.length ? quoteStay(stay, quoteInput) : null;
 
   if (!liveReady) return <PageLoader label="Opening the house" />;
-  if (!stay || !room) return <ListingBook fallbackSlug={id} />;
+  if (!stay || !roomsList[0]) return <ListingBook fallbackSlug={id} />;
 
   const offer = catalog ? propertyMeta(stay) : partnerOffer ?? undefined;
   const facts = catalog ? propertyFacts(stay) : partnerFacts ?? propertyFacts(stay);
@@ -425,24 +439,13 @@ function StayInner() {
 
           <section id="rooms" className="mt-10">
             <h2 className="font-display text-3xl">Choose a room</h2>
-            <p className="mt-1 text-sm text-mist">Pick a room and rate. Extra beds and cots sit with the room you select.</p>
+            <p className="mt-1 text-sm text-mist">You can mix room types — for example one 1-bedroom and one 2-bedroom. Double-click a selected rate to remove that type.</p>
             <div className="mt-5">
               <RoomPicker
                 stay={stay}
                 input={quoteInput}
-                roomId={room.id}
-                ratePlanId={ratePlanId || room.rates[0]?.id}
-                extraBeds={extraBeds}
-                cribs={cribs}
-                onRoom={(id) => {
-                  setRoomId(id);
-                  const next = stayRooms(stay).find((r) => r.id === id);
-                  setRatePlanId(next?.rates[0]?.id ?? "");
-                }}
-                onRate={setRatePlanId}
-                onRooms={setRoomCount}
-                onExtraBeds={setExtraBeds}
-                onCribs={setCribs}
+                picks={picks}
+                onChangePicks={setPicks}
                 roomsLeft={roomsLeft}
                 roomShots={roomsGallery}
               />
@@ -564,7 +567,7 @@ function StayInner() {
           </div>
           <div className="p-5">
             <p className="font-display text-3xl leading-none text-ink">
-              {money(quote?.start ?? room.price)}
+              {money(quote?.start ?? roomsList[0].price)}
               <span className="ml-1 text-sm font-sans font-normal text-ink/50">/ night</span>
             </p>
             {offer && (
@@ -604,8 +607,9 @@ function StayInner() {
                   : "✗ Not available for these dates"}
             </p>
             <p className="mt-2 text-xs leading-relaxed text-ink/55">
-              {formatDay(checkin)} — {formatDay(checkout)} · {nights} night{nights > 1 ? "s" : ""} · {guests} guests · {roomCount} room
+              {formatDay(checkin)} — {formatDay(checkout)} · {nights} night{nights > 1 ? "s" : ""} · {guests} guests · {roomCount || 0} room
               {roomCount === 1 ? "" : "s"}
+              {quote?.roomLabel ? ` · ${quote.roomLabel}` : ""}
             </p>
             <p className="mt-1 text-xs text-ink/45">
               In {facts.checkIn} · out {facts.checkOut}
@@ -615,20 +619,22 @@ function StayInner() {
               <p className="mt-3 text-xs text-ink/55">Build ziyarat keeps today&apos;s flow. Build a package adds airport pick up, extra hotels, and drop off.</p>
             ) : null}
             {(() => {
+              const first = activePicks[0];
               const p = new URLSearchParams({
                 stay: stay.id,
-                room: room.id,
-                rate: ratePlanId || room.rates[0]?.id || "",
+                room: first?.roomId || roomsList[0].id,
+                rate: first?.ratePlanId || roomsList[0].rates[0]?.id || "",
                 checkin,
                 checkout,
                 guests: String(guests),
-                rooms: String(roomCount),
+                rooms: String(Math.max(1, roomCount)),
                 adults: String(adults),
                 children: String(children),
                 ages: (childAges.length ? childAges : search.childAges).join(","),
                 extras: extras.join(","),
-                extraBeds: String(extraBeds),
-                cribs: String(cribs),
+                extraBeds: String(first?.extraBeds ?? 0),
+                cribs: String(first?.cribs ?? 0),
+                picks: encodeRoomPicks(activePicks),
               });
               const go = (flow?: "package") => {
                 const nextParams = new URLSearchParams(p);
@@ -641,7 +647,8 @@ function StayInner() {
                 }
                 router.push(next);
               };
-              const soldOut = roomsLeft === 0;
+              const soldOut = roomsLeft === 0 || roomCount < 1 || (roomsLeft != null && roomCount > roomsLeft);
+              const blockedLabel = roomCount < 1 ? "Select a room" : "Not available for these dates";
               if (pendingPreview) {
                 return (
                   <p className="mt-4 rounded-xl bg-ink/5 px-4 py-3 text-sm text-ink/55">
@@ -652,21 +659,21 @@ function StayInner() {
               if (status !== "authenticated") {
                 return (
                   <button type="button" disabled={soldOut} className="btn-primary mt-4 w-full py-3 disabled:cursor-not-allowed disabled:opacity-50" onClick={() => go()}>
-                    {soldOut ? "Not available for these dates" : "Sign in to book"}
+                    {soldOut ? blockedLabel : "Sign in to book"}
                   </button>
                 );
               }
               if (!pilgrimStay) {
                 return (
                   <button type="button" disabled={soldOut} className="btn-primary mt-4 w-full py-3 disabled:cursor-not-allowed disabled:opacity-50" onClick={() => go()}>
-                    {soldOut ? "Not available for these dates" : "Continue to guest details"}
+                    {soldOut ? blockedLabel : "Continue to guest details"}
                   </button>
                 );
               }
               return (
                 <div className="mt-4 space-y-2">
                   <button type="button" disabled={soldOut} className="btn-primary w-full py-3 disabled:cursor-not-allowed disabled:opacity-50" onClick={() => go()}>
-                    {soldOut ? "Not available for these dates" : "Book Now"}
+                    {soldOut ? blockedLabel : "Book Now"}
                   </button>
                   <button type="button" disabled={soldOut} className="btn-ghost w-full py-3 disabled:cursor-not-allowed disabled:opacity-50" onClick={() => go("package")}>
                     Build a package

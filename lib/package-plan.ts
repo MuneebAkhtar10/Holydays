@@ -1,4 +1,6 @@
 import { formatPKR, formatDay, clampIsoDate, nightsBetween, stayNightDates } from "@/lib/format";
+import { parseRoomPicksBody } from "@/lib/room-picks";
+import type { RoomPick } from "@/lib/pricing";
 import { airportForCity, cityNamedIn, pilgrimAirports, pilgrimCountryForPlace, type PilgrimCountry } from "@/lib/pilgrim";
 
 export type { PilgrimCountry };
@@ -59,6 +61,16 @@ export function parseMealRates(raw: unknown): MealRates {
     return Number.isFinite(v) && v >= 0 ? v : MEAL_RATE[key];
   };
   return { breakfast: n("breakfast"), lunch: n("lunch"), dinner: n("dinner") };
+}
+
+/** Extra package meals: if a hotel left a rate at 0, sell that meal at the HolyDays default instead of hiding it. */
+export function packageMealRates(raw: unknown): MealRates {
+  const parsed = parseMealRates(raw);
+  return {
+    breakfast: parsed.breakfast > 0 ? parsed.breakfast : MEAL_RATE.breakfast,
+    lunch: parsed.lunch > 0 ? parsed.lunch : MEAL_RATE.lunch,
+    dinner: parsed.dinner > 0 ? parsed.dinner : MEAL_RATE.dinner,
+  };
 }
 
 export function mealDays(value: unknown, nights: number): number {
@@ -123,6 +135,7 @@ export type PackageTaxi = {
   driverPhoto: string;
   vehicle: string;
   vehiclePhoto: string;
+  vehiclePhotos?: string[];
   model: string;
   seats: number;
   vacant: number;
@@ -230,6 +243,19 @@ export function listingToTaxi(row: PackageListing): PackageTaxi {
     service === "airport" && air
       ? Array.from(new Set([air.city, row.city, origin, ...cities].filter(Boolean)))
       : cities;
+  const driverPhoto = String(meta.driverPhoto || "");
+  const vehiclePhoto = String(meta.vehiclePhoto || "");
+  const galleryBag = meta.galleries && typeof meta.galleries === "object" ? (meta.galleries as Record<string, unknown>) : {};
+  const galleryUrls = [
+    ...(Array.isArray(meta.gallery) ? meta.gallery : []),
+    ...(Array.isArray(galleryBag.property) ? galleryBag.property : []),
+    ...(Array.isArray(galleryBag.room) ? galleryBag.room : []),
+    ...(Array.isArray(galleryBag.bathroom) ? galleryBag.bathroom : []),
+    ...(Array.isArray(galleryBag.facilities) ? galleryBag.facilities : []),
+  ]
+    .map((u) => String(u || "").trim())
+    .filter(Boolean);
+  const vehiclePhotos = [...new Set([vehiclePhoto, ...galleryUrls, row.cover].filter(Boolean))].filter((u) => u !== driverPhoto);
   return {
     id: row.slug,
     country,
@@ -237,9 +263,10 @@ export function listingToTaxi(row: PackageListing): PackageTaxi {
     origin: air ? air.label : origin,
     destination: air ? "Guest hotel" : destination,
     driver: String(meta.driver || row.name),
-    driverPhoto: String(meta.driverPhoto || ""),
+    driverPhoto,
     vehicle: String(meta.vehicle || row.name),
-    vehiclePhoto: String(meta.vehiclePhoto || ""),
+    vehiclePhoto,
+    vehiclePhotos,
     model: String(meta.model || ""),
     seats,
     vacant: Number(meta.vacant) || seats,
@@ -454,6 +481,7 @@ export type PackageStaySlice = {
   checkout: string;
   roomId?: string;
   ratePlanId?: string;
+  picks?: RoomPick[];
   roomName?: string;
   amount: number;
   cancellation?: "free" | "partial" | "strict";
@@ -549,6 +577,7 @@ function parseStaySlices(raw: unknown): PackageStaySlice[] {
       checkout,
       roomId: r.roomId ? String(r.roomId) : undefined,
       ratePlanId: r.ratePlanId ? String(r.ratePlanId) : undefined,
+      picks: parseRoomPicksBody(r.picks),
       roomName: r.roomName ? String(r.roomName) : undefined,
       amount: Number(r.amount) || 0,
       cancellation: r.cancellation === "free" || r.cancellation === "partial" || r.cancellation === "strict" ? r.cancellation : undefined,

@@ -12,7 +12,8 @@ import { LoaderOverlay, PageLoader } from "@/components/PageLoader";
 import { PriceBreakdown } from "@/components/PriceBreakdown";
 import { readJson } from "@/lib/readJson";
 import { listingToStay } from "@/lib/listing-meta";
-import { quoteStay, stayRooms, type QuoteInput } from "@/lib/pricing";
+import { quoteStay, stayRooms, roomPicksTotal, type QuoteInput, type RoomPick } from "@/lib/pricing";
+import { decodeRoomPicks, fallbackPicks } from "@/lib/room-picks";
 import { CANCEL_LABEL, MEAL_PLAN_LABEL, PAY_LABEL } from "@/lib/rooms";
 import { experienceById } from "@/lib/experiences";
 import type { Stay } from "@/lib/types";
@@ -30,7 +31,7 @@ import {
   mergeMealChoiceScope,
   parseMealChoice,
   packageAddonsTotal,
-  parseMealRates,
+  packageMealRates,
   pilgrimCountryForPlace,
   tripDestinationCity,
   type EsimSelections,
@@ -108,7 +109,7 @@ function GuestStepper({
   );
 }
 
-type TripLeg = { id: string; name: string; city: string; cover?: string; checkin: string; checkout: string; room?: string; amount: number; isPrimary: boolean; rooms: number };
+type TripLeg = { id: string; name: string; city: string; cover?: string; checkin: string; checkout: string; room?: string; amount: number; isPrimary: boolean; rooms: number; mixed?: boolean };
 type LegAvailability = { checking: boolean; roomsLeft: number | null; error?: string };
 
 function TripOrderEditor({
@@ -187,6 +188,10 @@ function TripOrderEditor({
               ) : null}
             </div>
             <div className="mt-2 flex items-center gap-2 text-xs text-mist">
+              {leg.mixed ? (
+                <span>{leg.room || `${leg.rooms} rooms`}</span>
+              ) : (
+                <>
               <span>Rooms</span>
               <div className="flex items-center gap-2">
                 <button
@@ -207,6 +212,8 @@ function TripOrderEditor({
                   +
                 </button>
               </div>
+                </>
+              )}
             </div>
             {status ? (
               <p className={`mt-2 text-xs font-medium ${status.checking ? "text-mist" : unavailable ? "text-red-600" : "text-emerald-600"}`}>
@@ -249,7 +256,22 @@ function CheckoutInner() {
   const [specialRequests, setSpecialRequests] = useState(params.get("requests") ?? "");
   const [promo, setPromo] = useState(params.get("promo") ?? "");
   const [promoChecked, setPromoChecked] = useState(false);
-  const [roomsOv, setRoomsOv] = useState(() => Number(params.get("rooms") || 1));
+  const [roomsOv, setRoomsOv] = useState(() => {
+    const decoded = decodeRoomPicks(params.get("picks"));
+    if (decoded.length) return roomPicksTotal(decoded);
+    return Number(params.get("rooms") || 1);
+  });
+  const [picksOv, setPicksOv] = useState<RoomPick[]>(() => {
+    const decoded = decodeRoomPicks(params.get("picks"));
+    if (decoded.length) return decoded;
+    return fallbackPicks({
+      roomId: params.get("room"),
+      ratePlanId: params.get("rate"),
+      rooms: Number(params.get("rooms") || 1),
+      extraBeds: Number(params.get("extraBeds") || 0),
+      cribs: Number(params.get("cribs") || 0),
+    });
+  });
   const [adultsOv, setAdultsOv] = useState(() => Number(params.get("adults") || params.get("guests") || 2));
   const [childrenOv, setChildrenOv] = useState(() => Number(params.get("children") || 0));
   const [childAgesOv, setChildAgesOv] = useState<number[]>(() => {
@@ -330,20 +352,21 @@ function CheckoutInner() {
     () => ({
       checkin: (buildPackage && primaryCheckin) || (params.get("checkin") ?? ""),
       checkout: buildPackage ? firstEnd || (params.get("checkout") ?? "") : params.get("checkout") ?? "",
-      rooms: roomsOv,
+      rooms: roomPicksTotal(picksOv) || roomsOv,
       adults: adultsOv,
       children: childrenOv,
       childAges: childAgesOv,
-      roomId: params.get("room") ?? undefined,
-      ratePlanId: params.get("rate") ?? undefined,
-      extraBeds: Number(params.get("extraBeds") || 0),
-      cribs: Number(params.get("cribs") || 0),
+      roomId: picksOv[0]?.roomId ?? params.get("room") ?? undefined,
+      ratePlanId: picksOv[0]?.ratePlanId ?? params.get("rate") ?? undefined,
+      extraBeds: picksOv[0]?.extraBeds ?? Number(params.get("extraBeds") || 0),
+      cribs: picksOv[0]?.cribs ?? Number(params.get("cribs") || 0),
+      picks: picksOv,
       extras,
       airportTransfer: packageStay ? false : airport,
       promo,
       member: Boolean(session?.user?.id),
     }),
-    [params, extras, airport, promo, session?.user?.id, packageStay, buildPackage, firstEnd, primaryCheckin, roomsOv, adultsOv, childrenOv, childAgesOv],
+    [params, extras, airport, promo, session?.user?.id, packageStay, buildPackage, firstEnd, primaryCheckin, roomsOv, adultsOv, childrenOv, childAgesOv, picksOv],
   );
 
   const quote = stay ? quoteStay(stay, input) : null;
@@ -351,7 +374,7 @@ function CheckoutInner() {
     { id: "card", label: "Card · Visa, Mastercard, Amex" },
     { id: "jazz", label: "JazzCash" },
     { id: "easy", label: "EasyPaisa" },
-    ...(quote?.rate.payment === "now" ? [] : [{ id: "property", label: "Pay at the door" }]),
+    ...(quote?.payPolicy === "now" ? [] : [{ id: "property", label: "Pay at the door" }]),
   ];
   const [method, setMethod] = useState("card");
 
@@ -443,15 +466,16 @@ function CheckoutInner() {
           cover: stay.cover,
           checkin: input.checkin,
           checkout: input.checkout,
-          room: `${quote.room.name} · ${quote.rate.name}`,
+          room: quote.roomLabel || `${quote.room.name} · ${quote.rate.name}`,
           amount: quote.grand,
           isPrimary: true,
-          rooms: roomsOv,
+          rooms: quote.rooms,
+          mixed: quote.picks.length > 1,
         };
       }
       const s = extraStays.find((x) => x.listingId === id);
       return s
-        ? { id: s.listingId, name: s.name, city: s.city, cover: s.cover, checkin: s.checkin, checkout: s.checkout, room: s.roomName, amount: s.amount, isPrimary: false, rooms: s.rooms }
+        ? { id: s.listingId, name: s.name, city: s.city, cover: s.cover, checkin: s.checkin, checkout: s.checkout, room: s.roomName, amount: s.amount, isPrimary: false, rooms: s.rooms, mixed: Boolean(s.picks && s.picks.length > 1) }
         : null;
     })
     .filter((l): l is TripLeg => Boolean(l));
@@ -528,11 +552,26 @@ function CheckoutInner() {
           childAges: input.childAges,
           roomId: room?.id,
           ratePlanId: slice?.ratePlanId || room?.rates[0]?.id,
+          picks:
+            slice?.picks && slice.picks.length
+              ? roomsOverride && slice.picks.length === 1
+                ? [{ ...slice.picks[0], rooms: roomsOverride }]
+                : slice.picks
+              : undefined,
         });
         setExtraStays((rows) =>
           rows.map((s) =>
             s.listingId === id
-              ? { ...s, checkin, checkout, amount: q.grand, cancellation: q.rate.cancellation, rooms: roomsOverride ?? s.rooms }
+              ? {
+                  ...s,
+                  checkin,
+                  checkout,
+                  amount: q.grand,
+                  cancellation: q.cancelPolicy,
+                  rooms: roomsOverride ?? s.rooms,
+                  roomName: q.roomLabel,
+                  picks: q.picks.map((p) => ({ roomId: p.room.id, ratePlanId: p.rate.id, rooms: p.rooms })),
+                }
               : s,
           ),
         );
@@ -545,10 +584,18 @@ function CheckoutInner() {
   const onLegRoomsChange = (id: string, rooms: number) => {
     if (id === stay.id) {
       setRoomsOv(rooms);
+      setPicksOv((ps) => (ps.length <= 1 ? [{ ...(ps[0] ?? { roomId: input.roomId || "", rooms: 1 }), rooms }] : ps));
       return;
     }
     const slice = extraStays.find((s) => s.listingId === id);
-    setExtraStays((rows) => rows.map((s) => (s.listingId === id ? { ...s, rooms } : s)));
+    if (slice?.picks && slice.picks.length > 1) return;
+    setExtraStays((rows) =>
+      rows.map((s) =>
+        s.listingId === id
+          ? { ...s, rooms, picks: s.picks?.length === 1 ? [{ ...s.picks[0], rooms }] : s.picks }
+          : s,
+      ),
+    );
     if (slice) checkAndRequoteLeg(id, slice.checkin, slice.checkout, rooms);
   };
 
@@ -598,7 +645,7 @@ function CheckoutInner() {
         taxis: taxiPicks,
         ziyarat,
         taxiList,
-        mealRates: parseMealRates(stay.mealRates),
+        mealRates: packageMealRates(stay.mealRates),
         stays: extraStays,
         insurance: buildPackage && insurance,
         esimSelections: buildPackage ? esimSelections : {},
@@ -608,7 +655,7 @@ function CheckoutInner() {
   const reviewHotels: ReviewHotel[] = orderedLegs.map((l) => ({ id: l.id, name: l.name, city: l.city, checkin: l.checkin, checkout: l.checkout, room: l.room, amount: l.amount }));
   const mealGroups = orderedLegs.map((h) => ({
     hotel: h,
-    rows: mealLines(parseMealChoice(meals, stayNightDates(h.checkin, h.checkout)), party, nightsBetween(h.checkin, h.checkout), parseMealRates(stay.mealRates)),
+    rows: mealLines(parseMealChoice(meals, stayNightDates(h.checkin, h.checkout)), party, nightsBetween(h.checkin, h.checkout), packageMealRates(stay.mealRates)),
   }));
   const mealBill = mealGroups.flatMap((g) => g.rows);
   const policyHref = `/checkout/policies?stays=${encodeURIComponent(orderedLegs.map((l) => l.id).join(","))}`;
@@ -633,7 +680,7 @@ function CheckoutInner() {
   const payBlock = (
     <div className="mt-6 space-y-3 rounded-2xl border border-sand/[0.08] bg-ink-2 p-5 shadow-[0_12px_40px_rgba(11,28,52,0.05)]">
       <p className="text-sm text-mist">
-        {PAY_LABEL[quote.rate.payment]} · {CANCEL_LABEL[quote.rate.cancellation]}
+        {PAY_LABEL[quote.payPolicy]} · {CANCEL_LABEL[quote.cancelPolicy]}
       </p>
       {methods.map((m) => (
         <label
@@ -781,11 +828,20 @@ function CheckoutInner() {
               <GuestStepper
                 label={buildPackage ? "Rooms (first hotel)" : "Rooms"}
                 value={roomsOv}
-                onChange={setRoomsOv}
+                onChange={(n) => {
+                  setRoomsOv(n);
+                  setPicksOv((ps) => (ps.length <= 1 ? [{ ...(ps[0] ?? { roomId: params.get("room") || "", rooms: 1 }), rooms: n }] : ps));
+                }}
                 min={1}
                 max={8}
-                readOnly={buildPackage}
-                hint={buildPackage ? "Each hotel has its own room count — set it in Hotels & trips." : undefined}
+                readOnly={buildPackage || picksOv.length > 1}
+                hint={
+                  picksOv.length > 1
+                    ? "You mixed room types. Change the mix on the hotel page."
+                    : buildPackage
+                      ? "Each hotel has its own room count — set it in Hotels & trips."
+                      : undefined
+                }
               />
               <GuestStepper label="Adults" value={adultsOv} onChange={setAdultsOv} min={1} max={16} />
               <GuestStepper label="Children" value={childrenOv} onChange={setChildrenCount} min={0} max={8} />
@@ -849,7 +905,7 @@ function CheckoutInner() {
               onChange={setMeals}
               guests={party}
               dates={stayNightDates(input.checkin, input.checkout)}
-              rates={parseMealRates(stay.mealRates)}
+              rates={packageMealRates(stay.mealRates)}
             />
           </div>
         )}
@@ -979,7 +1035,7 @@ function CheckoutInner() {
                     onChange={(next) => setMeals((prev) => mergeMealChoiceScope(prev, next, hotelDates))}
                     guests={party}
                     dates={hotelDates}
-                    rates={parseMealRates(stay.mealRates)}
+                    rates={packageMealRates(stay.mealRates)}
                   />
                 </div>
               );
@@ -1130,7 +1186,7 @@ function CheckoutInner() {
               <p className="text-[11px] uppercase tracking-[0.18em] text-brass">Review & confirm</p>
               <h2 className="font-display mt-1 text-3xl leading-tight">{buildPackage ? "Your package" : stay.name}</h2>
               <p className="mt-1 text-sm text-mist">
-                {formatDay(input.checkin)} — {formatDay(tripEnd)} · {party} guests · {PAY_LABEL[quote.rate.payment]} · {methods.find((m) => m.id === method)?.label ?? method}
+                {formatDay(input.checkin)} — {formatDay(tripEnd)} · {party} guests · {PAY_LABEL[quote.payPolicy]} · {methods.find((m) => m.id === method)?.label ?? method}
               </p>
             </div>
 
@@ -1143,7 +1199,7 @@ function CheckoutInner() {
               <div className="pane p-5">
                 <p className="font-display text-2xl leading-tight">{stay.name}</p>
                 <p className="mt-1 text-sm text-mist">
-                  {quote.room.name} · {quote.rate.name} · {CANCEL_LABEL[quote.rate.cancellation]}
+                  {quote.roomLabel} · {CANCEL_LABEL[quote.cancelPolicy]}
                 </p>
                 <p className="mt-1 text-sm text-sand">
                   {formatDay(input.checkin)} — {formatDay(input.checkout)} · {quote.nights} night{quote.nights === 1 ? "" : "s"}
@@ -1225,7 +1281,7 @@ function CheckoutInner() {
             {specialRequests ? <p className="text-sm text-mist">Requests: {specialRequests}</p> : null}
 
             <div className="pane space-y-4 p-5">
-              <PoliciesConsent href={policyHref} cancelLabel={CANCEL_LABEL[quote.rate.cancellation]} checked={terms} onChange={setTerms} />
+              <PoliciesConsent href={policyHref} cancelLabel={CANCEL_LABEL[quote.cancelPolicy]} checked={terms} onChange={setTerms} />
               {error && <p className="text-sm text-rose">{error}</p>}
               <button
                 type="button"
@@ -1262,6 +1318,7 @@ function CheckoutInner() {
                       ratePlanId: quote.rate.id,
                       extraBeds: input.extraBeds,
                       cribs: input.cribs,
+                      picks: picksOv,
                       extraIds: extras,
                       airportTransfer: packageStay ? false : airport,
                       promo,
@@ -1339,7 +1396,7 @@ function CheckoutInner() {
           <p className="mt-1 text-sm text-ink/60">
             {packageStay
               ? `${formatDay(input.checkin)} — ${formatDay(tripEnd)} · ${party} guests`
-              : `${quote.room.name} · ${formatDay(input.checkin)} — ${formatDay(input.checkout)} · ${quote.nights} nights${stay.city ? ` · ${stay.city}` : ""}`}
+              : `${quote.roomLabel} · ${formatDay(input.checkin)} — ${formatDay(input.checkout)} · ${quote.nights} nights${stay.city ? ` · ${stay.city}` : ""}`}
           </p>
           {packageStay ? (
             <div className="mt-4">
@@ -1348,7 +1405,7 @@ function CheckoutInner() {
                 meals={meals}
                 guests={party}
                 nights={quote.nights}
-                mealRates={parseMealRates(stay.mealRates)}
+                mealRates={packageMealRates(stay.mealRates)}
                 taxis={taxiPicks}
                 taxiList={taxiList}
                 stayName={stay.name}

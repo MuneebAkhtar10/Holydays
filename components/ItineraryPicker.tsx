@@ -8,6 +8,8 @@ import { useSerai } from "@/lib/store";
 import { airportLabelOf, airportPickupTitle, taxisFor, tripTitle, type PackageTaxi, type PilgrimCountry, type TaxiPick } from "@/lib/package-plan";
 import { airportForCity } from "@/lib/pilgrim";
 import { ChevronIcon } from "@/components/icons";
+import { ZoomableImage } from "@/components/ZoomableImage";
+import { TaxiPhotos, taxiCarPhotos } from "@/components/TaxiPhotos";
 
 function routeKey(t: PackageTaxi) {
   return `${t.origin.trim().toLowerCase()}→${t.destination.trim().toLowerCase()}`;
@@ -229,9 +231,15 @@ function TripComposer({
             if (!t) return null;
             return (
               <li key={p.slotId} className={`${card} flex items-center gap-3 p-3`}>
-                <div className="relative h-14 w-16 shrink-0 overflow-hidden rounded-xl">
-                  <Image src={t.cover} alt="" fill className="object-cover" />
-                </div>
+                <TaxiPhotos
+                  driver={t.driver}
+                  driverPhoto={t.driverPhoto}
+                  vehicle={t.vehicle}
+                  vehiclePhoto={t.vehiclePhoto}
+                  vehiclePhotos={t.vehiclePhotos}
+                  cover={t.cover}
+                  size="sm"
+                />
                 <div className="min-w-0 flex-1">
                   <p className="font-display truncate text-lg leading-tight">
                     {airport && stayName ? airportPickupTitle(t, stayName, p.leg === "out" ? "out" : "in") : tripTitle(t)}
@@ -263,10 +271,22 @@ function TripComposer({
               <p className="text-sm text-mist">Choose one trip. You will pick a date and vehicle next.</p>
               {routes.map((r) => (
                 <article key={r.key} className={nest}>
-                  <div className="flex gap-3">
-                    <div className="relative h-[72px] w-[88px] shrink-0 overflow-hidden rounded-xl">
-                      <Image src={r.cover} alt="" fill className="object-cover" />
-                    </div>
+                  <div className="flex flex-wrap gap-3">
+                    {r.drivers[0] ? (
+                      <TaxiPhotos
+                        driver={r.drivers[0].driver}
+                        driverPhoto={r.drivers[0].driverPhoto}
+                        vehicle={r.drivers[0].vehicle}
+                        vehiclePhoto={r.drivers[0].vehiclePhoto}
+                        vehiclePhotos={r.drivers[0].vehiclePhotos}
+                        cover={r.cover}
+                        size="lg"
+                      />
+                    ) : (
+                      <div className="relative h-[72px] w-[88px] shrink-0 overflow-hidden rounded-xl">
+                        <Image src={r.cover} alt="" fill className="object-cover" />
+                      </div>
+                    )}
                     <div className="min-w-0 flex-1">
                       <p className="font-display text-lg leading-tight">{r.title}</p>
                       <p className="mt-1 text-sm text-mist">
@@ -373,10 +393,16 @@ function TripComposer({
               <div className="mt-3 space-y-3">
                 {route.drivers.map((t) => (
                   <article key={t.id} className={nest}>
-                    <div className="flex gap-3">
-                      <div className="relative h-[72px] w-[88px] shrink-0 overflow-hidden rounded-xl">
-                        <Image src={t.cover} alt="" fill className="object-cover" />
-                      </div>
+                    <div className="flex flex-wrap gap-3">
+                      <TaxiPhotos
+                        driver={t.driver}
+                        driverPhoto={t.driverPhoto}
+                        vehicle={t.vehicle}
+                        vehiclePhoto={t.vehiclePhoto}
+                        vehiclePhotos={t.vehiclePhotos}
+                        cover={t.cover}
+                        size="lg"
+                      />
                       <div className="min-w-0 flex-1">
                         <p className="font-medium">{t.driver}</p>
                         <p className="text-sm text-mist">
@@ -390,6 +416,20 @@ function TripComposer({
                               {t.seats} seats · {t.hours || "Full day"}
                             </p>
                             <p className="mt-1">{t.itinerary.map((s) => s.place).join(" → ") || t.blurb}</p>
+                            {taxiCarPhotos(t).slice(2).length ? (
+                              <div className="mt-3 flex flex-wrap gap-2">
+                                {taxiCarPhotos(t)
+                                  .slice(2)
+                                  .map((src) => (
+                                    <ZoomableImage
+                                      key={src}
+                                      src={src}
+                                      alt={t.vehicle}
+                                      className="h-14 w-[5.5rem] overflow-hidden rounded-xl border border-brass/25 bg-ink/40"
+                                    />
+                                  ))}
+                              </div>
+                            ) : null}
                           </MoreInfo>
                           <Link href={`/taxis/${t.id}`} target="_blank" rel="noopener noreferrer" className="text-xs text-mist underline hover:text-sand">
                             View details

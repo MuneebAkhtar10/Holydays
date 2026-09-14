@@ -15,7 +15,7 @@ import { ListingReviews, type ReviewItem } from "@/components/ListingReviews";
 import { StarIcon } from "@/components/StarIcon";
 import { readJson } from "@/lib/readJson";
 import { CancelBookingModal } from "@/components/CancelBookingModal";
-import { ZoomableImage } from "@/components/ZoomableImage";
+import { TaxiPhotos } from "@/components/TaxiPhotos";
 
 type Booking = {
   id: string;
@@ -69,32 +69,21 @@ function TaxiItinerary({ listing }: { listing: Listing }) {
         {taxi.vehicle}
         {taxi.model ? ` · ${taxi.model}` : ""} · {taxi.hours} · {taxi.vacant} of {taxi.seats} seats open
       </p>
-      {(taxi.driverPhoto || taxi.vehiclePhoto) && (
-        <div className="mt-4 flex items-center gap-3 rounded-2xl border border-brass/20 bg-ink-2 px-3 py-2.5">
-          {taxi.driverPhoto ? (
-            <ZoomableImage
-              src={taxi.driverPhoto}
-              alt={taxi.driver}
-              className="h-12 w-12 shrink-0 overflow-hidden rounded-full border border-brass/20 bg-ink/40"
-            />
-          ) : (
-            <div className="h-12 w-12 shrink-0 overflow-hidden rounded-full border border-brass/20 bg-ink/40" />
-          )}
-          {taxi.vehiclePhoto ? (
-            <ZoomableImage
-              src={taxi.vehiclePhoto}
-              alt={taxi.vehicle}
-              className="h-12 w-20 shrink-0 overflow-hidden rounded-lg border border-brass/20 bg-ink/40"
-            />
-          ) : (
-            <div className="h-12 w-20 shrink-0 overflow-hidden rounded-lg border border-brass/20 bg-ink/40" />
-          )}
-          <div className="min-w-0">
-            <p className="truncate text-sm font-medium text-sand">{taxi.driver}</p>
-            <p className="truncate text-xs text-mist">{taxi.vehicle}</p>
-          </div>
+      <div className="mt-4 flex items-center gap-3 rounded-2xl border border-brass/20 bg-ink-2 px-3 py-3">
+        <TaxiPhotos
+          driver={taxi.driver}
+          driverPhoto={taxi.driverPhoto}
+          vehicle={taxi.vehicle}
+          vehiclePhoto={taxi.vehiclePhoto}
+          vehiclePhotos={taxi.vehiclePhotos}
+          cover={taxi.cover}
+          size="lg"
+        />
+        <div className="min-w-0">
+          <p className="truncate text-sm font-medium text-sand">{taxi.driver}</p>
+          <p className="truncate text-xs text-mist">{taxi.vehicle}</p>
         </div>
-      )}
+      </div>
       <ol className="mt-5 space-y-2 border-l border-brass/30 pl-4">
         {taxi.itinerary.map((stop, i) => (
           <li key={`${stop.place}-${i}`}>
@@ -409,6 +398,23 @@ export function ListingBook({ fallbackSlug }: { fallbackSlug?: string }) {
               </span>
             </p>
           )}
+          {taxi ? (
+            <div className="mt-4 flex items-center gap-3 rounded-xl border border-brass/20 bg-ink/25 px-3 py-2.5">
+              <TaxiPhotos
+                driver={taxi.driver}
+                driverPhoto={taxi.driverPhoto}
+                vehicle={taxi.vehicle}
+                vehiclePhoto={taxi.vehiclePhoto}
+                vehiclePhotos={taxi.vehiclePhotos}
+                cover={taxi.cover}
+                size="md"
+              />
+              <div className="min-w-0">
+                <p className="truncate text-sm font-medium text-sand">{taxi.driver}</p>
+                <p className="truncate text-xs text-mist">{taxi.vehicle}</p>
+              </div>
+            </div>
+          ) : null}
           {listing.status && listing.status !== "approved" ? (
             <p className="mt-4 rounded-xl bg-ink/30 px-4 py-3 text-sm text-mist">
               Booking opens once this listing is approved and live.

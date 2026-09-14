@@ -10,7 +10,7 @@ import { pilgrimCountries, pilgrimCountryForPlace, type PilgrimCountry } from "@
 import { PageLoader } from "@/components/PageLoader";
 import { StarIcon } from "@/components/StarIcon";
 import { readJson } from "@/lib/readJson";
-import { ZoomableImage } from "@/components/ZoomableImage";
+import { TaxiPhotos } from "@/components/TaxiPhotos";
 
 type Listing = {
   id: string;
@@ -197,30 +197,15 @@ function TaxiCard({
         </p>
 
         <div className="mt-3 flex items-center gap-2 rounded-xl bg-ink/25 px-2.5 py-2">
-          {taxi.driverPhoto ? (
-            <ZoomableImage
-              src={taxi.driverPhoto}
-              alt={taxi.driver}
-              className="h-9 w-9 shrink-0 overflow-hidden rounded-full border border-brass/20 bg-ink/40"
-            />
-          ) : (
-            <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full border border-brass/20 bg-ink/40 text-[10px] text-mist">
-              {taxi.driver
-                ?.split(" ")
-                .slice(0, 2)
-                .map((p) => p[0]?.toUpperCase())
-                .join("") || "?"}
-            </span>
-          )}
-          {taxi.vehiclePhoto ? (
-            <ZoomableImage
-              src={taxi.vehiclePhoto}
-              alt={taxi.vehicle}
-              className="h-9 w-14 shrink-0 overflow-hidden rounded-lg border border-brass/20 bg-ink/40"
-            />
-          ) : (
-            <div className="h-9 w-14 shrink-0 overflow-hidden rounded-lg border border-brass/20 bg-ink/40" />
-          )}
+          <TaxiPhotos
+            driver={taxi.driver}
+            driverPhoto={taxi.driverPhoto}
+            vehicle={taxi.vehicle}
+            vehiclePhoto={taxi.vehiclePhoto}
+            vehiclePhotos={taxi.vehiclePhotos}
+            cover={taxi.cover}
+            size="sm"
+          />
           <div className="min-w-0">
             <p className="truncate text-xs font-medium text-sand">{taxi.driver}</p>
             <p className="truncate text-[11px] text-mist">{taxi.vehicle}</p>

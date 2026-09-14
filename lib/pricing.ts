@@ -1,7 +1,15 @@
 import { nightsBetween, todayIso } from "@/lib/format";
 import { experienceById } from "@/lib/experiences";
-import type { Occupancy, RatePlan, Stay, StayPricing } from "@/lib/types";
+import type { CancelPolicy, Occupancy, PayPolicy, RatePlan, Stay, StayPricing } from "@/lib/types";
 import { defaultRates, normalizeRooms, type BookableRoom } from "@/lib/rooms";
+
+export type RoomPick = {
+  roomId: string;
+  ratePlanId?: string;
+  rooms: number;
+  extraBeds?: number;
+  cribs?: number;
+};
 
 export type QuoteInput = Occupancy & {
   checkin: string;
@@ -10,6 +18,8 @@ export type QuoteInput = Occupancy & {
   ratePlanId?: string;
   extraBeds?: number;
   cribs?: number;
+  /** Independent quantities per room category. When set, `roomId` / `rooms` are the fallback. */
+  picks?: RoomPick[];
   extras?: string[];
   airportTransfer?: boolean;
   promo?: string;
@@ -21,9 +31,15 @@ export type PriceLine = { id: string; label: string; amount: number; note?: stri
 
 export type NightRate = { date: string; amount: number; tags: string[] };
 
+export type QuotedPick = { room: BookableRoom; rate: RatePlan; rooms: number };
+
 export type PriceQuote = {
   room: BookableRoom;
   rate: RatePlan;
+  picks: QuotedPick[];
+  roomLabel: string;
+  payPolicy: PayPolicy;
+  cancelPolicy: CancelPolicy;
   nights: number;
   rooms: number;
   nightly: NightRate[];
@@ -142,21 +158,10 @@ function roomById(rooms: BookableRoom[], id?: string) {
   return rooms.find((r) => r.id === id) ?? rooms[0];
 }
 
-/**
- * Search, property, and checkout all call this with the same occupancy and dates.
- * Optional extras, promo, extra beds, crib, member, and mobile change the quote
- * only when those flags are set — that is the defined-rule exception.
- */
-export function quoteStay(stay: Stay, input: QuoteInput): PriceQuote {
-  const rooms = stayRooms(stay);
-  const pricing = stayPricingOf(stay);
-  const room = roomById(rooms, input.roomId);
-  const rate = rateById(room, input.ratePlanId);
-  const roomQty = Math.max(1, Math.min(input.rooms || 1, room.available));
-  const nights = eachNight(input.checkin, input.checkout);
-  const nightCount = Math.max(1, nights.length);
-  const rulesApplied: string[] = ["base_room_price"];
-  const nightly: NightRate[] = nights.map((date) => {
+const CANCEL_RANK: Record<CancelPolicy, number> = { free: 0, partial: 1, strict: 2 };
+
+function nightlyFor(room: BookableRoom, rate: RatePlan, nights: string[], pricing: StayPricing, rulesApplied: string[]): NightRate[] {
+  return nights.map((date) => {
     let amount = room.price;
     const tags: string[] = ["base"];
     const season = inSeason(date, pricing.seasons);
@@ -182,17 +187,101 @@ export function quoteStay(stay: Stay, input: QuoteInput): PriceQuote {
     }
     return { date, amount: Math.max(0, Math.round(amount)), tags };
   });
+}
 
-  const roomSubtotal = nightly.reduce((s, n) => s + n.amount, 0) * roomQty;
-  const start = Math.round(roomSubtotal / nightCount / roomQty);
-  const lines: PriceLine[] = [
-    { id: "room", label: `${room.name} · ${rate.name} · ${nightCount} night${nightCount === 1 ? "" : "s"} · ${roomQty} room${roomQty === 1 ? "" : "s"}`, amount: roomSubtotal },
+export function normalizeRoomPicks(stay: Stay, input: QuoteInput): RoomPick[] {
+  const catalog = stayRooms(stay);
+  const fromPicks: RoomPick[] = [];
+  for (const p of input.picks ?? []) {
+    const room = catalog.find((r) => r.id === p.roomId);
+    if (!room) continue;
+    const qty = Math.max(0, Math.min(Number(p.rooms) || 0, room.available));
+    if (qty < 1) continue;
+    fromPicks.push({
+      roomId: room.id,
+      ratePlanId: p.ratePlanId,
+      rooms: qty,
+      extraBeds: Math.max(0, Number(p.extraBeds) || 0),
+      cribs: Math.max(0, Number(p.cribs) || 0),
+    });
+  }
+  if (fromPicks.length) return fromPicks;
+  const room = roomById(catalog, input.roomId);
+  if (!room) return [];
+  const qty = Math.max(1, Math.min(input.rooms || 1, room.available));
+  return [
+    {
+      roomId: room.id,
+      ratePlanId: input.ratePlanId,
+      rooms: qty,
+      extraBeds: Math.max(0, input.extraBeds || 0),
+      cribs: Math.max(0, input.cribs || 0),
+    },
   ];
+}
+
+export function roomPicksTotal(picks: RoomPick[]): number {
+  return picks.reduce((s, p) => s + Math.max(0, p.rooms || 0), 0);
+}
+
+/**
+ * Search, property, and checkout all call this with the same occupancy and dates.
+ * Optional extras, promo, extra beds, crib, member, and mobile change the quote
+ * only when those flags are set — that is the defined-rule exception.
+ */
+export function quoteStay(stay: Stay, input: QuoteInput): PriceQuote {
+  const catalog = stayRooms(stay);
+  const pricing = stayPricingOf(stay);
+  const picks = normalizeRoomPicks(stay, input);
+  const nights = eachNight(input.checkin, input.checkout);
+  const nightCount = Math.max(1, nights.length);
+  const rulesApplied: string[] = ["base_room_price"];
+  const quoted: QuotedPick[] = [];
+  const lines: PriceLine[] = [];
+  let roomSubtotal = 0;
+  let nightly: NightRate[] = [];
+  let included = 0;
+  let sleepCap = 0;
+  let totalQty = 0;
+
+  for (const pick of picks) {
+    const room = roomById(catalog, pick.roomId);
+    const rate = rateById(room, pick.ratePlanId);
+    const roomQty = Math.max(1, Math.min(pick.rooms, room.available));
+    const roomNightly = nightlyFor(room, rate, nights, pricing, rulesApplied);
+    if (!nightly.length) nightly = roomNightly;
+    const sub = roomNightly.reduce((s, n) => s + n.amount, 0) * roomQty;
+    roomSubtotal += sub;
+    totalQty += roomQty;
+    included += room.includedGuests * roomQty;
+    sleepCap += room.sleeps * roomQty;
+    quoted.push({ room, rate, rooms: roomQty });
+    lines.push({
+      id: `room:${room.id}`,
+      label: `${room.name} · ${rate.name} · ${nightCount} night${nightCount === 1 ? "" : "s"} · ${roomQty} room${roomQty === 1 ? "" : "s"}`,
+      amount: sub,
+    });
+    const extraBeds = Math.max(0, pick.extraBeds || 0);
+    const cribs = Math.max(0, pick.cribs || 0);
+    if (extraBeds && room.extraBedAllowed) {
+      const amt = extraBeds * pricing.extraBed * nightCount;
+      lines.push({ id: `extra-bed:${room.id}`, label: `Extra bed × ${extraBeds} · ${room.name}`, amount: amt });
+      rulesApplied.push("extra_bed_pricing");
+    }
+    if (cribs && room.cribAllowed && pricing.crib) {
+      const amt = cribs * pricing.crib * nightCount;
+      lines.push({ id: `crib:${room.id}`, label: `Baby cot × ${cribs} · ${room.name}`, amount: amt });
+    }
+  }
+
+  const room = quoted[0]?.room ?? catalog[0];
+  const rate = quoted[0]?.rate ?? rateById(room, input.ratePlanId);
+  const roomQty = Math.max(1, totalQty);
+  const start = Math.round(roomSubtotal / nightCount / roomQty);
 
   const adults = Math.max(1, input.adults || 1);
   const childAges = (input.childAges || []).slice(0, input.children || 0);
   while (childAges.length < (input.children || 0)) childAges.push(8);
-  const included = room.includedGuests * roomQty;
   const adultLikeKids = childAges.filter((age) => age > pricing.childRateMaxAge).length;
   const payingChildren = childAges.filter((age) => age > pricing.childFreeMaxAge && age <= pricing.childRateMaxAge).length;
   const extraAdults = Math.max(0, adults + adultLikeKids - included);
@@ -206,22 +295,10 @@ export function quoteStay(stay: Stay, input: QuoteInput): PriceQuote {
     lines.push({ id: "child", label: `Child rate × ${payingChildren}`, amount: childFees });
     rulesApplied.push("child_pricing");
   }
-  if (pricing.occupancyPct && adults + childAges.length >= room.sleeps * roomQty) {
+  if (pricing.occupancyPct && adults + childAges.length >= sleepCap) {
     const amt = pct(roomSubtotal, pricing.occupancyPct);
     lines.push({ id: "full-occ", label: "Full occupancy", amount: amt });
     rulesApplied.push("occupancy_based_pricing");
-  }
-
-  const extraBeds = Math.max(0, input.extraBeds || 0);
-  const cribs = Math.max(0, input.cribs || 0);
-  if (extraBeds && room.extraBedAllowed) {
-    const amt = extraBeds * pricing.extraBed * nightCount;
-    lines.push({ id: "extra-bed", label: `Extra bed × ${extraBeds}`, amount: amt });
-    rulesApplied.push("extra_bed_pricing");
-  }
-  if (cribs && room.cribAllowed && pricing.crib) {
-    const amt = cribs * pricing.crib * nightCount;
-    lines.push({ id: "crib", label: `Baby cot × ${cribs}`, amount: amt });
   }
 
   const lodgings = lines.reduce((s, l) => s + l.amount, 0);
@@ -278,10 +355,21 @@ export function quoteStay(stay: Stay, input: QuoteInput): PriceQuote {
   if (taxes) rulesApplied.push("taxes", "service_charges");
   const total = afterDisc;
   const grand = afterDisc + feeSum + extraSum + taxes;
-  const payLater = rate.payment !== "now";
+  const payLater = quoted.length ? quoted.every((p) => p.rate.payment !== "now") : rate.payment !== "now";
+  const payPolicy: PayPolicy = quoted.some((p) => p.rate.payment === "now")
+    ? "now"
+    : quoted.some((p) => p.rate.payment === "later")
+      ? "later"
+      : quoted[0]?.rate.payment ?? rate.payment;
+  const cancelPolicy = quoted.reduce<CancelPolicy>((worst, p) => (CANCEL_RANK[p.rate.cancellation] > CANCEL_RANK[worst] ? p.rate.cancellation : worst), quoted[0]?.rate.cancellation ?? rate.cancellation);
+  const roomLabel = quoted.map((p) => (p.rooms > 1 ? `${p.rooms}× ${p.room.name}` : p.room.name)).join(" + ");
   return {
     room,
     rate,
+    picks: quoted,
+    roomLabel: roomLabel || room.name,
+    payPolicy,
+    cancelPolicy,
     nights: nightCount,
     rooms: roomQty,
     nightly,
@@ -321,5 +409,6 @@ export function searchQuote(stay: Stay, checkin: string, checkout: string, occup
 }
 
 export function quoteFingerprint(q: PriceQuote) {
-  return [q.room.id, q.rate.id, q.nights, q.rooms, q.start, q.total, q.taxes, q.grand].join(":");
+  const mix = q.picks.map((p) => `${p.room.id}:${p.rate.id}:${p.rooms}`).join("|");
+  return [mix, q.nights, q.rooms, q.start, q.total, q.taxes, q.grand].join(":");
 }

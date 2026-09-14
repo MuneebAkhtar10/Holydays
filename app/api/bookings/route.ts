@@ -5,11 +5,12 @@ import { prisma } from "@/lib/prisma";
 import { datesOverlap } from "@/lib/format";
 import { fetchListingByKey, fetchPublicListings, isPublishedLive } from "@/lib/listing-query";
 import { loadBookableStay } from "@/lib/bookable-stay";
-import { quoteStay, type QuoteInput } from "@/lib/pricing";
+import { quoteStay, roomPicksTotal, type QuoteInput } from "@/lib/pricing";
+import { parseRoomPicksBody } from "@/lib/room-picks";
 import { toBookingDTO } from "@/lib/booking-dto";
 import { notifyBookingCreated } from "@/lib/booking-notify";
 import { parseBookingExtras } from "@/lib/booking-view";
-import { listingToTaxi, listingToZiyarat, parseMealRates, sanitizePackage, type PackageStaySlice } from "@/lib/package-plan";
+import { listingToTaxi, listingToZiyarat, packageMealRates, sanitizePackage, type PackageStaySlice } from "@/lib/package-plan";
 import { pilgrimCountryForPlace } from "@/lib/pilgrim";
 import { parseListingMeta } from "@/lib/listing-meta";
 import { roomsLeftFor } from "@/lib/availability";
@@ -101,10 +102,11 @@ async function createBooking(req: Request) {
   if (listing.kind === "STAY") {
     const stay = await loadBookableStay(listing.slug);
     if (stay) {
+      const picks = parseRoomPicksBody(body.picks);
       const input: QuoteInput = {
         checkin: startDate,
         checkout: endDate,
-        rooms: Number(body.rooms) || 1,
+        rooms: picks ? roomPicksTotal(picks) : Number(body.rooms) || 1,
         adults: Number(body.adults) || Number(body.guests) || 1,
         children: Number(body.children) || 0,
         childAges: Array.isArray(body.childAges) ? body.childAges.map(Number) : [],
@@ -112,6 +114,7 @@ async function createBooking(req: Request) {
         ratePlanId: String(body.ratePlanId ?? ""),
         extraBeds: Number(body.extraBeds) || 0,
         cribs: Number(body.cribs) || 0,
+        picks,
         extras: Array.isArray(body.extraIds) ? body.extraIds.map(String) : String(body.extras ?? "").split(",").filter(Boolean),
         airportTransfer: Boolean(body.airportTransfer),
         promo: String(body.promo ?? ""),
@@ -138,7 +141,7 @@ async function createBooking(req: Request) {
           quote.nights,
           ziyarat,
           taxiList,
-          parseMealRates(stay.mealRates),
+          packageMealRates(stay.mealRates),
           startDate,
           endDate,
         );
@@ -171,6 +174,8 @@ async function createBooking(req: Request) {
         roomId: quote.room.id,
         ratePlanId: quote.rate.id,
         rooms: quote.rooms,
+        picks: quote.picks.map((p) => ({ roomId: p.room.id, ratePlanId: p.rate.id, rooms: p.rooms })),
+        roomLabel: quote.roomLabel,
         specialRequests: String(body.specialRequests ?? ""),
         terms: true,
         quote: { start: quote.start, total: quote.total, taxes: quote.taxes, grand: quote.grand, rules: quote.rulesApplied },
@@ -240,6 +245,7 @@ async function createBooking(req: Request) {
       rooms: slice.rooms,
       roomId: slice.roomId,
       ratePlanId: slice.ratePlanId,
+      picks: slice.picks,
       airportTransfer: false,
     });
     await prisma.booking.create({
@@ -254,6 +260,8 @@ async function createBooking(req: Request) {
           roomId: extraQuote.room.id,
           ratePlanId: extraQuote.rate.id,
           rooms: extraQuote.rooms,
+          picks: extraQuote.picks.map((p) => ({ roomId: p.room.id, ratePlanId: p.rate.id, rooms: p.rooms })),
+          roomLabel: extraQuote.roomLabel,
           specialRequests: String(body.specialRequests ?? ""),
           terms: true,
           quote: { start: extraQuote.start, total: extraQuote.total, taxes: extraQuote.taxes, grand: extraQuote.grand, rules: extraQuote.rulesApplied },

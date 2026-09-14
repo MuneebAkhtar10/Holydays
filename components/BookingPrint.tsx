@@ -7,7 +7,7 @@ import { BrandLogo } from "@/components/BrandLogo";
 import { PageLoader } from "@/components/PageLoader";
 import { readJson } from "@/lib/readJson";
 import type { BookingDTO } from "@/lib/booking-dto";
-import { bookingInvoiceBreakdown, bookingPackageGrandTotal, bookingPackageHotelNames } from "@/lib/booking-invoice";
+import { bookingInvoiceBreakdown, bookingIsPaid, bookingPackageGrandTotal, bookingPackageHotelNames } from "@/lib/booking-invoice";
 import { APP_NAME } from "@/lib/brand";
 import { formatDay } from "@/lib/format";
 import { useSerai } from "@/lib/store";
@@ -40,6 +40,16 @@ export function BookingPrint({ kind }: { kind: "invoice" | "receipt" | "voucher"
   const grandTotal = bookingPackageGrandTotal(booking);
   const stay = quote?.total ?? booking.total;
   const taxes = quote?.taxes ?? 0;
+  const paid = bookingIsPaid(booking);
+  const totalLabel = paid ? "Amount paid" : "Amount due";
+  const paidAt = String(booking.extra.paidAt ?? "");
+  const paidNote = paid
+    ? booking.payment === "card" || booking.payment === "stripe"
+      ? `Paid by card${paidAt ? ` · ${formatDay(paidAt.slice(0, 10))}` : ""}`
+      : "Paid"
+    : booking.payment === "property"
+      ? "Due at the property"
+      : null;
 
   return (
     <div className="mx-auto max-w-2xl px-5 py-10 text-sand print:text-black">
@@ -122,7 +132,10 @@ export function BookingPrint({ kind }: { kind: "invoice" | "receipt" | "voucher"
                   </div>
                 )}
                 <div className="flex items-baseline justify-between border-t border-ink/20 pt-3">
-                  <p className="font-display text-xl">Amount due</p>
+                  <div>
+                    <p className="font-display text-xl">{totalLabel}</p>
+                    {paidNote ? <p className="mt-1 text-xs text-ink/50">{paidNote}</p> : null}
+                  </div>
                   <p className="font-display text-xl">{money(grandTotal)}</p>
                 </div>
               </div>
@@ -142,7 +155,10 @@ export function BookingPrint({ kind }: { kind: "invoice" | "receipt" | "voucher"
                     </tr>
                   )}
                   <tr>
-                    <td className="py-3 font-display text-xl">Amount due</td>
+                    <td className="py-3">
+                      <p className="font-display text-xl">{totalLabel}</p>
+                      {paidNote ? <p className="mt-1 text-xs font-normal text-ink/50">{paidNote}</p> : null}
+                    </td>
                     <td className="py-3 text-right font-display text-xl">{money(grandTotal)}</td>
                   </tr>
                 </tbody>

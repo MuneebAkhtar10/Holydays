@@ -72,3 +72,11 @@ export function bookingPackageGrandTotal(booking: BookingDTO): number {
   if (!pack) return booking.total;
   return packageGrandTotal(booking.total, { stays: pack.stays ?? [] });
 }
+
+export function bookingIsPaid(booking: { status: string; payment: string; extra: Record<string, unknown> }) {
+  if (booking.status === "pending_payment" || booking.status === "cancelled" || booking.status === "declined") {
+    return false;
+  }
+  if (booking.extra.paymentStatus === "paid" || Boolean(booking.extra.paidAt)) return true;
+  return booking.status === "confirmed" && (booking.payment === "card" || booking.payment === "stripe");
+}
