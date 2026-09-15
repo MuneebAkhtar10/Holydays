@@ -30,12 +30,13 @@ export async function fetchAccount(id: string): Promise<AccountRow | null> {
 }
 
 export async function fetchAccountByEmail(email: string): Promise<AccountRow | null> {
+  const normalized = email.toLowerCase().trim();
   const rows = await prisma.$queryRaw<AccountRow[]>`
     SELECT
       id, name, email, image, role, passwordHash AS "passwordHash", googleId AS "googleId",
       emailVerified AS "emailVerified", phone, phoneVerified AS "phoneVerified", nationality, residency, preferences
     FROM "user"
-    WHERE email = ${email}
+    WHERE lower(email) = ${normalized}
     LIMIT 1
   `;
   return rows[0] ?? null;
@@ -90,25 +91,27 @@ export async function deleteAccount(id: string) {
 
 export async function issueToken(userId: string, type: string, ttlMs: number, token?: string) {
   const value = token ?? randomBytes(24).toString("hex");
-  const id = randomBytes(12).toString("hex");
-  const expires = new Date(Date.now() + ttlMs).toISOString();
-  await prisma.$executeRaw`DELETE FROM AuthToken WHERE userId = ${userId} AND type = ${type}`;
-  await prisma.$executeRaw`
-    INSERT INTO AuthToken (id, userId, type, token, expiresAt, createdAt)
-    VALUES (${id}, ${userId}, ${type}, ${value}, ${expires}, CURRENT_TIMESTAMP)
-  `;
+  await prisma.authToken.deleteMany({ where: { userId, type } });
+  await prisma.authToken.create({
+    data: {
+      userId,
+      type,
+      token: value,
+      expiresAt: new Date(Date.now() + ttlMs),
+    },
+  });
   return value;
 }
 
 export async function consumeToken(type: string, token: string) {
-  const rows = await prisma.$queryRaw<{ userId: string; expiresAt: Date | string }[]>`
-    SELECT userId AS "userId", expiresAt AS "expiresAt" FROM AuthToken WHERE type = ${type} AND token = ${token} LIMIT 1
-  `;
-  const row = rows[0];
+  const row = await prisma.authToken.findFirst({
+    where: { type, token },
+    select: { userId: true, expiresAt: true },
+  });
   if (!row) return null;
   const exp = new Date(row.expiresAt).getTime();
   if (Number.isNaN(exp) || exp < Date.now()) return null;
-  await prisma.$executeRaw`DELETE FROM AuthToken WHERE type = ${type} AND token = ${token}`;
+  await prisma.authToken.deleteMany({ where: { type, token } });
   return fetchAccount(row.userId);
 }
 

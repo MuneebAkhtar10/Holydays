@@ -67,9 +67,11 @@ export async function PATCH(req: Request) {
     if (body.email !== undefined) {
       const nextEmail = String(body.email).toLowerCase().trim();
       if (!nextEmail.includes("@")) return NextResponse.json({ error: "Enter a valid email." }, { status: 400 });
-      if (nextEmail !== current.email) {
+      if (nextEmail !== current.email.toLowerCase()) {
         const taken = await fetchAccountByEmail(nextEmail);
-        if (taken) return NextResponse.json({ error: "That email is already in use." }, { status: 409 });
+        if (taken && taken.id !== current.id) {
+          return NextResponse.json({ error: "That email is already in use." }, { status: 409 });
+        }
         email = nextEmail;
         emailVerified = null;
         const token = await issueToken(current.id, "email", 1000 * 60 * 60 * 24);

@@ -29,7 +29,9 @@ export const authOptions: NextAuthOptions = {
         const password = credentials?.password;
         if (!email || !password) return null;
         try {
-          const user = await prisma.user.findUnique({ where: { email } });
+          const user = await prisma.user.findFirst({
+            where: { email: { equals: email, mode: "insensitive" } },
+          });
           if (!user?.passwordHash) return null;
           const ok = await bcrypt.compare(password, user.passwordHash);
           if (!ok) return null;
@@ -42,7 +44,8 @@ export const authOptions: NextAuthOptions = {
             ownerKind: user.ownerKind,
             remember: credentials?.remember !== "false",
           };
-        } catch {
+        } catch (err) {
+          console.error("[auth] credentials", err);
           return null;
         }
       },
@@ -51,18 +54,28 @@ export const authOptions: NextAuthOptions = {
   callbacks: {
     async signIn({ user, account }) {
       if (account?.provider !== "google" || !user.email) return true;
-      const existing = await prisma.user.findUnique({ where: { email: user.email.toLowerCase() } });
+      const email = user.email.toLowerCase();
+      const existing = await prisma.user.findFirst({
+        where: { email: { equals: email, mode: "insensitive" } },
+      });
       if (!existing) {
-        await prisma.user.create({
-          data: {
-            email: user.email.toLowerCase(),
-            name: user.name || "Guest",
-            image: user.image,
-            googleId: account.providerAccountId,
-            role: "TRAVELER",
-            emailVerified: new Date(),
-          },
-        });
+        try {
+          await prisma.user.create({
+            data: {
+              email,
+              name: user.name || "Guest",
+              image: user.image,
+              googleId: account.providerAccountId,
+              role: "TRAVELER",
+              emailVerified: new Date(),
+            },
+          });
+        } catch (err) {
+          const taken = await prisma.user.findFirst({
+            where: { email: { equals: email, mode: "insensitive" } },
+          });
+          if (!taken) throw err;
+        }
       } else {
         await prisma.user.update({
           where: { id: existing.id },

@@ -40,30 +40,35 @@ function RegisterForm() {
     e.preventDefault();
     setError("");
     setOverlay("Creating your account");
+    const emailNorm = email.toLowerCase().trim();
+    const dest = asOwner ? "/owner" : callbackUrl;
     const res = await fetch("/api/register", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name, email, password, asOwner, ownerKind }),
+      body: JSON.stringify({ name, email: emailNorm, password, asOwner, ownerKind }),
     });
     const data = await readJson<{ error?: string; preview?: string }>(res);
     if (!res.ok) {
       setOverlay(null);
-      setError(data?.error || "Could not register");
+      setError(data?.error || "Could not create your account.");
       return;
     }
     if (data?.preview) sessionStorage.setItem("serai-verify-preview", data.preview);
+    setOverlay("Signing you in");
     const signed = await signIn("credentials", {
-      email,
+      email: emailNorm,
       password,
       redirect: false,
-      callbackUrl: asOwner ? "/owner" : callbackUrl,
+      callbackUrl: dest,
     });
     if (signed?.error) {
       setOverlay(null);
-      router.push("/login?as=partner");
+      const q = new URLSearchParams({ registered: "1", email: emailNorm });
+      if (asOwner) q.set("as", "partner");
+      router.push(`/login?${q.toString()}`);
       return;
     }
-    router.push(asOwner ? "/owner" : callbackUrl);
+    router.push(dest);
     router.refresh();
   };
 

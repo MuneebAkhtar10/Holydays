@@ -14,9 +14,13 @@ function LoginForm() {
   const params = useSearchParams();
   const asAdmin = params.get("as") === "admin" || params.get("callbackUrl")?.startsWith("/admin");
   const asPartner = params.get("as") === "partner" || params.get("callbackUrl")?.startsWith("/owner");
+  const justRegistered = params.get("registered") === "1";
+  const registeredEmail = params.get("email") || "";
   const [mode, setMode] = useState<"guest" | "partner" | "admin">(asAdmin ? "admin" : asPartner ? "partner" : "guest");
-  const [email, setEmail] = useState(asAdmin ? "admin@serai.pk" : asPartner ? "taxi.owner@serai.pk" : "");
-  const [password, setPassword] = useState(asAdmin || asPartner ? "serai123" : "");
+  const [email, setEmail] = useState(
+    registeredEmail || (asAdmin ? "admin@serai.pk" : asPartner && !justRegistered ? "taxi.owner@serai.pk" : ""),
+  );
+  const [password, setPassword] = useState(asAdmin || (asPartner && !justRegistered) ? "serai123" : "");
   const [remember, setRemember] = useState(true);
   const [error, setError] = useState("");
   const [google, setGoogle] = useState(false);
@@ -96,6 +100,12 @@ function LoginForm() {
           Admin
         </button>
       </div>
+
+      {justRegistered && (
+        <p className="mt-4 rounded-xl border border-brass/30 bg-brass/10 px-4 py-3 text-sm text-sand">
+          Account created. Sign in with the email and password you just set.
+        </p>
+      )}
 
       <p className="mt-4 text-sm leading-relaxed text-mist">
         {mode === "admin"
