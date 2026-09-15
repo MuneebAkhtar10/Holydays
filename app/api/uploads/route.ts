@@ -26,7 +26,7 @@ function extFor(file: File) {
   return null;
 }
 
-async function saveToDisk(bytes: Buffer, ext: string) {
+async function saveToDisk(bytes: Uint8Array, ext: string) {
   const dir = path.join(process.cwd(), "public", "uploads");
   await mkdir(dir, { recursive: true });
   const filename = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}${ext}`;
@@ -34,9 +34,9 @@ async function saveToDisk(bytes: Buffer, ext: string) {
   return `/uploads/${filename}`;
 }
 
-async function saveToDb(userId: string, mime: string, bytes: Buffer) {
+async function saveToDb(userId: string, mime: string, bytes: Uint8Array) {
   const row = await prisma.media.create({
-    data: { userId, mime, bytes },
+    data: { userId, mime, bytes: Uint8Array.from(bytes) },
     select: { id: true },
   });
   return `/api/media/${row.id}`;
@@ -61,7 +61,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Use PNG, JPG, or WebP" }, { status: 400 });
     }
 
-    const bytes = Buffer.from(await file.arrayBuffer());
+    const bytes = new Uint8Array(await file.arrayBuffer());
     const live = process.env.VERCEL === "1" || process.env.NODE_ENV === "production";
 
     if (live) {

@@ -33,3 +33,22 @@ Open [http://127.0.0.1:3000](http://127.0.0.1:3000).
 Add `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` to `.env`. Redirect URI:
 
 `http://127.0.0.1:3000/api/auth/callback/google`
+
+## Stripe (card payments)
+
+Add test keys from the [Stripe dashboard](https://dashboard.stripe.com/apikeys):
+
+```
+STRIPE_SECRET_KEY=sk_test_...
+STRIPE_WEBHOOK_SECRET=whsec_...
+NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_test_...
+```
+
+Checkout uses Stripe Checkout (redirect). Successful payments confirm the booking; unpaid card bookings stay `pending_payment`.
+
+Forward webhooks while developing:
+
+```
+stripe listen --forward-to http://127.0.0.1:3000/api/stripe/webhook
+```
+
