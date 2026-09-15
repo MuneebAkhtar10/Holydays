@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { signOut, useSession } from "next-auth/react";
-import { Suspense, useEffect, useRef, useState, type MouseEvent } from "react";
+import { Suspense, useEffect, useRef, useState, type MouseEvent as ReactMouseEvent } from "react";
 import { useSerai } from "@/lib/store";
 import { BrandLogo } from "@/components/BrandLogo";
 import { BedIcon, CalendarIcon, CarIcon, ChatIcon, HeartIcon, LandmarkIcon, MoonIcon, PlusIcon, StoreIcon, SunIcon, TableIcon, UserIcon } from "@/components/icons";
@@ -61,7 +61,7 @@ function HeaderBar() {
     { href: copy.marketHref, label: copy.market, icon: StoreIcon, active: path === copy.marketHref || path.startsWith(`${copy.marketHref}/`) },
   ];
 
-  const go = (href: string) => (e: MouseEvent<HTMLAnchorElement>) => {
+  const go = (href: string) => (e: ReactMouseEvent<HTMLAnchorElement>) => {
     if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return;
     e.preventDefault();
     router.push(href);
@@ -202,7 +202,7 @@ function AccountMenu({
   const box = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const onDoc = (e: MouseEvent) => {
+    const onDoc = (e: globalThis.MouseEvent) => {
       if (!box.current?.contains(e.target as Node)) setOpen(false);
     };
     document.addEventListener("mousedown", onDoc);
