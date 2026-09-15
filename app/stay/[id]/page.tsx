@@ -6,7 +6,7 @@ import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState, type ReactNode } from "react";
 import { stayById } from "@/lib/stays";
 import { experienceById } from "@/lib/experiences";
-import { formatDay, nightsBetween } from "@/lib/format";
+import { formatDay, localTodayIso, minCheckoutIso, nightsBetween } from "@/lib/format";
 import { useSerai } from "@/lib/store";
 import { GoogleStayMap } from "@/components/GoogleStayMap";
 import { ListingBook } from "@/components/ListingBook";
@@ -581,6 +581,7 @@ function StayInner() {
                 <input
                   type="date"
                   className="date-chip mt-1 w-full rounded-xl px-2 py-2 text-sm"
+                  min={localTodayIso()}
                   value={checkin}
                   onChange={(e) => setSearch({ checkin: e.target.value })}
                 />
@@ -590,6 +591,7 @@ function StayInner() {
                 <input
                   type="date"
                   className="date-chip mt-1 w-full rounded-xl px-2 py-2 text-sm"
+                  min={minCheckoutIso(checkin)}
                   value={checkout}
                   onChange={(e) => setSearch({ checkout: e.target.value })}
                 />

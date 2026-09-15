@@ -9,7 +9,7 @@ import { BookingActions, BookingHero, BookingNotifyStrip, PaymentBlock } from "@
 import { MessageComposer, MessageThread } from "@/components/MessageThread";
 import { readJson } from "@/lib/readJson";
 import type { BookingDTO } from "@/lib/booking-dto";
-import { formatDay } from "@/lib/format";
+import { formatDay, minCheckoutIso } from "@/lib/format";
 import { PackageSnapshot } from "@/components/PackageSteps";
 import { packagePrimaryAmount, type StayPackage } from "@/lib/package-plan";
 import { CancelBookingModal } from "@/components/CancelBookingModal";
@@ -293,11 +293,11 @@ export default function BookingDetailsPage() {
                   >
                     <label className="auth-label">
                       Arrive
-                      <input type="date" className="auth-field" value={start} onChange={(e) => setStart(e.target.value)} />
+                      <input type="date" className="auth-field" min={minCheckoutIso()} value={start} onChange={(e) => setStart(e.target.value)} />
                     </label>
                     <label className="auth-label">
                       Depart
-                      <input type="date" className="auth-field" value={end} onChange={(e) => setEnd(e.target.value)} />
+                      <input type="date" className="auth-field" min={minCheckoutIso(start)} value={end} onChange={(e) => setEnd(e.target.value < minCheckoutIso(start) ? minCheckoutIso(start) : e.target.value)} />
                     </label>
                     <label className="auth-label">
                       Guests

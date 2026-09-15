@@ -8,6 +8,7 @@ import { DestinationSearch } from "@/components/DestinationSearch";
 import { OccupancyPicker } from "@/components/OccupancyPicker";
 import { CalendarIcon } from "@/components/icons";
 import { pushRecent } from "@/lib/search-index";
+import { localTodayIso, minCheckoutIso } from "@/lib/format";
 
 export function SearchPass({ compact = false, stayCity }: { compact?: boolean; stayCity?: string }) {
   const { search, setSearch, t } = useSerai();
@@ -79,9 +80,9 @@ export function SearchPass({ compact = false, stayCity }: { compact?: boolean; s
             <span className="text-[11px] uppercase tracking-widest text-mist">Check-in / check-out</span>
             <div className="mt-2 flex min-h-[3.15rem] items-center gap-2 rounded-2xl border border-brass/28 bg-ink px-3 py-2">
               <CalendarIcon className="h-4 w-4 shrink-0 text-brass" />
-              <input type="date" className="min-w-0 flex-1 bg-transparent text-sm text-sand outline-none" value={search.checkin || ""} onChange={(e) => setSearch({ checkin: e.target.value })} />
+              <input type="date" className="min-w-0 flex-1 bg-transparent text-sm text-sand outline-none" min={localTodayIso()} value={search.checkin || ""} onChange={(e) => setSearch({ checkin: e.target.value })} />
               <span className="text-mist">–</span>
-              <input type="date" className="min-w-0 flex-1 bg-transparent text-sm text-sand outline-none" value={search.checkout || ""} onChange={(e) => setSearch({ checkout: e.target.value })} />
+              <input type="date" className="min-w-0 flex-1 bg-transparent text-sm text-sand outline-none" min={minCheckoutIso(search.checkin)} value={search.checkout || ""} onChange={(e) => setSearch({ checkout: e.target.value })} />
             </div>
           </label>
           <label className="block min-w-0">

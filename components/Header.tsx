@@ -1,9 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { signOut, useSession } from "next-auth/react";
-import { useEffect, useRef, useState } from "react";
+import { Suspense, useEffect, useRef, useState, type MouseEvent } from "react";
 import { useSerai } from "@/lib/store";
 import { BrandLogo } from "@/components/BrandLogo";
 import { BedIcon, CalendarIcon, CarIcon, ChatIcon, HeartIcon, LandmarkIcon, MoonIcon, PlusIcon, StoreIcon, SunIcon, TableIcon, UserIcon } from "@/components/icons";
@@ -18,15 +18,25 @@ const ownerHome: Record<string, { desk: string; add: string; market: string; mar
 };
 
 export function Header() {
+  return (
+    <Suspense fallback={<header className="sticky top-0 z-50 h-14 border-b border-brass/20 bg-ink/95" />}>
+      <HeaderBar />
+    </Suspense>
+  );
+}
+
+function HeaderBar() {
   const { t, theme, setTheme, currency, setCurrency, wishlist } = useSerai();
   const path = usePathname();
+  const router = useRouter();
+  const params = useSearchParams();
   const { data: session, status } = useSession();
   const isOwner = session?.user?.role === "OWNER";
   const isAdmin = session?.user?.role === "ADMIN";
   const kind = session?.user?.ownerKind || "STAY";
   const copy = ownerHome[kind] ?? ownerHome.STAY;
-  const [hash, setHash] = useState("");
-  const [query, setQuery] = useState("");
+  const tab = params.get("tab");
+  const adding = params.get("new") === "1";
   const [inbox, setInbox] = useState({ unread: 0, href: "" });
 
   useEffect(() => {
@@ -42,29 +52,20 @@ export function Header() {
     return () => window.clearInterval(t);
   }, [status, path]);
 
-  useEffect(() => {
-    const sync = () => {
-      setHash(window.location.hash);
-      setQuery(window.location.search);
-    };
-    sync();
-    window.addEventListener("hashchange", sync);
-    window.addEventListener("popstate", sync);
-    return () => {
-      window.removeEventListener("hashchange", sync);
-      window.removeEventListener("popstate", sync);
-    };
-  }, [path]);
-
   const DeskIcon = kind === "TAXI" ? CarIcon : kind === "ATTRACTION" ? LandmarkIcon : kind === "RESTAURANT" ? TableIcon : BedIcon;
-  const adding = query.includes("new=1");
   const ownerNav = [
-    { href: "/owner", label: copy.desk, icon: DeskIcon, active: path === "/owner" && !adding && hash !== "#messages" && hash !== "#bookings" },
-    { href: "/owner#messages", label: "Messages", icon: ChatIcon, active: hash === "#messages" },
-    { href: "/owner#bookings", label: "Bookings", icon: CalendarIcon, active: hash === "#bookings" },
-    { href: "/owner?new=1", label: copy.add, icon: PlusIcon, active: adding },
-    { href: copy.marketHref, label: copy.market, icon: StoreIcon, active: path.startsWith(copy.marketHref) },
+    { href: "/owner", label: copy.desk, icon: DeskIcon, active: path === "/owner" && !adding && tab !== "messages" && tab !== "bookings" },
+    { href: "/owner?tab=messages", label: "Messages", icon: ChatIcon, active: path === "/owner" && tab === "messages" },
+    { href: "/owner?tab=bookings", label: "Bookings", icon: CalendarIcon, active: path === "/owner" && tab === "bookings" },
+    { href: "/owner?new=1", label: copy.add, icon: PlusIcon, active: path === "/owner" && adding },
+    { href: copy.marketHref, label: copy.market, icon: StoreIcon, active: path === copy.marketHref || path.startsWith(`${copy.marketHref}/`) },
   ];
+
+  const go = (href: string) => (e: MouseEvent<HTMLAnchorElement>) => {
+    if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return;
+    e.preventDefault();
+    router.push(href);
+  };
 
   const guestNav = [
     { href: "/search", label: t.stays, icon: BedIcon },
@@ -98,9 +99,9 @@ export function Header() {
           <nav className="flex flex-1 items-center justify-center gap-0.5">
             {ownerNav.map((n) => {
               const Icon = n.icon;
-              const unread = n.href.includes("#messages") ? inbox.unread : 0;
+              const unread = n.href.includes("tab=messages") ? inbox.unread : 0;
               return (
-                <Link key={n.href} href={n.href} data-active={n.active} className="header-link relative">
+                <Link key={n.href} href={n.href} scroll={n.href.startsWith("/owner")} onClick={go(n.href)} data-active={n.active} className="header-link relative">
                   <span className="relative">
                     <Icon className="h-5 w-5" />
                     <UnreadBadge count={unread} />
@@ -251,10 +252,10 @@ function AccountMenu({
                   <Link href="/owner" className="block px-4 py-2 text-sm text-sand hover:bg-ink" onClick={() => setOpen(false)}>
                     Partner desk
                   </Link>
-                  <Link href="/owner#messages" className="block px-4 py-2 text-sm text-sand hover:bg-ink" onClick={() => setOpen(false)}>
+                  <Link href="/owner?tab=messages" className="block px-4 py-2 text-sm text-sand hover:bg-ink" onClick={() => setOpen(false)}>
                     Messages
                   </Link>
-                  <Link href="/owner#bookings" className="block px-4 py-2 text-sm text-sand hover:bg-ink" onClick={() => setOpen(false)}>
+                  <Link href="/owner?tab=bookings" className="block px-4 py-2 text-sm text-sand hover:bg-ink" onClick={() => setOpen(false)}>
                     Bookings
                   </Link>
                   <Link href="/account" className="block px-4 py-2 text-sm text-sand hover:bg-ink" onClick={() => setOpen(false)}>

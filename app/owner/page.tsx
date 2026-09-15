@@ -2,7 +2,7 @@
 
 import { useSession } from "next-auth/react";
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useRef, useState } from "react";
 import { formatDay, nightsBetween, todayIso } from "@/lib/format";
 import { useSerai } from "@/lib/store";
@@ -113,6 +113,7 @@ function OwnerDesk() {
   const { money } = useSerai();
   const { data, status } = useSession();
   const params = useSearchParams();
+  const router = useRouter();
   const [listings, setListings] = useState<Listing[]>([]);
   const [bookings, setBookings] = useState<OwnerBooking[]>([]);
   const [bookTab, setBookTab] = useState<"upcoming" | "past" | "cancelled" | "all">("all");
@@ -170,20 +171,13 @@ function OwnerDesk() {
   }, []);
 
   useEffect(() => {
+    const tab = params.get("tab");
+    const hash = typeof window !== "undefined" ? window.location.hash : "";
     if (params.get("new") === "1") setOpen(true);
+    if (tab === "messages" || hash === "#messages") setDesk("messages");
+    else if (tab === "bookings" || hash === "#bookings") setDesk("bookings");
+    else setDesk("listings");
   }, [params]);
-
-  useEffect(() => {
-    const apply = () => {
-      const h = window.location.hash;
-      if (h === "#messages") setDesk("messages");
-      else if (h === "#bookings") setDesk("bookings");
-      else setDesk("listings");
-    };
-    apply();
-    window.addEventListener("hashchange", apply);
-    return () => window.removeEventListener("hashchange", apply);
-  }, []);
 
   useEffect(() => {
     if (desk !== "messages") return;
@@ -222,9 +216,8 @@ function OwnerDesk() {
 
   const showDesk = (id: "listings" | "messages" | "bookings") => {
     setDesk(id);
-    const url = id === "listings" ? "/owner" : `/owner#${id}`;
-    history.replaceState(null, "", url);
-    window.dispatchEvent(new HashChangeEvent("hashchange"));
+    const url = id === "listings" ? "/owner" : `/owner?tab=${id}`;
+    router.replace(url, { scroll: false });
   };
 
   const unreadTotal = bookings.reduce((s, b) => {

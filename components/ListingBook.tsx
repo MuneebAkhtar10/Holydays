@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useSession } from "next-auth/react";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
-import { datesOverlap, formatDay, isPastBooking } from "@/lib/format";
+import { datesOverlap, formatDay, isPastBooking, localTodayIso, minCheckoutIso } from "@/lib/format";
 import { useSerai } from "@/lib/store";
 import { defaultDates } from "@/lib/format";
 import { kindLabel, unitLabel, type ListingKind } from "@/lib/marketplace";
@@ -502,12 +502,12 @@ export function ListingBook({ fallbackSlug }: { fallbackSlug?: string }) {
             )}
             <label className="auth-label">
               {oneDay ? "Trip day" : "Date"}
-              <input type="date" className="auth-field" value={start} onChange={(e) => setStart(e.target.value)} />
+              <input type="date" className="auth-field" min={localTodayIso()} value={start} onChange={(e) => setStart(e.target.value)} />
             </label>
             {!oneDay && (
               <label className="auth-label">
                 Until
-                <input type="date" className="auth-field" value={end} onChange={(e) => setEnd(e.target.value)} />
+                <input type="date" className="auth-field" min={minCheckoutIso(start)} value={end} onChange={(e) => setEnd(e.target.value < minCheckoutIso(start) ? minCheckoutIso(start) : e.target.value)} />
               </label>
             )}
             {taxiMode !== "custom" && (

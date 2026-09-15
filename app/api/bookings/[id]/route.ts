@@ -2,7 +2,7 @@ import { getServerSession } from "next-auth";
 import { NextResponse } from "next/server";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { datesOverlap } from "@/lib/format";
+import { datesOverlap, todayIso } from "@/lib/format";
 import { toBookingDTO } from "@/lib/booking-dto";
 import { notifyBookingUpdate } from "@/lib/booking-notify";
 import { parseBookingExtras } from "@/lib/booking-view";
@@ -75,6 +75,9 @@ export async function PATCH(req: Request, { params }: Ctx) {
   const guests = body.guests !== undefined ? Number(body.guests) : booking.guests;
   if (!startDate || endDate < startDate) {
     return NextResponse.json({ error: "Choose valid dates." }, { status: 400 });
+  }
+  if (endDate < todayIso()) {
+    return NextResponse.json({ error: "Check-out cannot be in the past." }, { status: 400 });
   }
   const listingMeta = parseListingMeta(booking.listing.meta);
   if (listingMeta.closedFrom && startDate >= listingMeta.closedFrom) {

@@ -36,7 +36,7 @@ export async function POST(req: Request, { params }: Ctx) {
       booking.listing.owner.email,
       "HolyDays guest message",
       text,
-      `${origin}/owner#messages`,
+      `${origin}/owner?tab=messages`,
     );
   }
   return NextResponse.json({ ok: true, messages: extra.assistance });

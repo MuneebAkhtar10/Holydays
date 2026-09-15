@@ -4,6 +4,7 @@ import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { readJson } from "@/lib/readJson";
+import { postImageUpload } from "@/lib/prepare-image";
 import { type FacilityKey, type MealKey } from "@/lib/search-index";
 import { emptyGalleries, flattenGalleries, parseListingMeta, type StayListingMeta } from "@/lib/listing-meta";
 import type { StayGalleries, StayPricing } from "@/lib/types";
@@ -233,67 +234,53 @@ export function ListingForm({
   const pickFile = async (file: File) => {
     setUploading(true);
     setError("");
-    const body = new FormData();
-    body.append("file", file);
-    const res = await fetch("/api/uploads", { method: "POST", body });
-    const data = await readJson<{ error?: string; url?: string }>(res);
-    setUploading(false);
-    if (!res.ok) {
-      setError(data?.error || "Could not upload image");
-      return;
-    }
-    if (data?.url) {
+    try {
+      const data = await postImageUpload(file);
       if (stay) addToBucket(uploadBucket.current, data.url);
       else {
         set("cover", data.url);
         addPhoto(data.url);
       }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not upload image");
     }
+    setUploading(false);
   };
 
   const pickHostPhoto = async (file: File) => {
     setHostPhotoUploading(true);
     setError("");
-    const body = new FormData();
-    body.append("file", file);
-    const res = await fetch("/api/uploads", { method: "POST", body });
-    const data = await readJson<{ error?: string; url?: string }>(res);
-    setHostPhotoUploading(false);
-    if (!res.ok) {
-      setError(data?.error || "Could not upload photo");
-      return;
+    try {
+      const data = await postImageUpload(file);
+      set("hostPortrait", data.url);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not upload photo");
     }
-    if (data?.url) set("hostPortrait", data.url);
+    setHostPhotoUploading(false);
   };
 
   const pickDriverPhoto = async (file: File) => {
     setDriverPhotoUploading(true);
     setError("");
-    const body = new FormData();
-    body.append("file", file);
-    const res = await fetch("/api/uploads", { method: "POST", body });
-    const data = await readJson<{ error?: string; url?: string }>(res);
-    setDriverPhotoUploading(false);
-    if (!res.ok) {
-      setError(data?.error || "Could not upload photo");
-      return;
+    try {
+      const data = await postImageUpload(file);
+      set("driverPhoto", data.url);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not upload photo");
     }
-    if (data?.url) set("driverPhoto", data.url);
+    setDriverPhotoUploading(false);
   };
 
   const pickVehiclePhoto = async (file: File) => {
     setVehiclePhotoUploading(true);
     setError("");
-    const body = new FormData();
-    body.append("file", file);
-    const res = await fetch("/api/uploads", { method: "POST", body });
-    const data = await readJson<{ error?: string; url?: string }>(res);
-    setVehiclePhotoUploading(false);
-    if (!res.ok) {
-      setError(data?.error || "Could not upload photo");
-      return;
+    try {
+      const data = await postImageUpload(file);
+      set("vehiclePhoto", data.url);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not upload photo");
     }
-    if (data?.url) set("vehiclePhoto", data.url);
+    setVehiclePhotoUploading(false);
   };
 
   const toggleFac = (key: FacilityKey) =>
@@ -810,7 +797,7 @@ export function ListingForm({
         <input
           ref={fileRef}
           type="file"
-          accept="image/png,image/jpeg,image/webp"
+          accept="image/*"
           className="hidden"
           onChange={(e) => {
             const file = e.target.files?.[0];

@@ -6,7 +6,7 @@ import { useSession } from "next-auth/react";
 import { Suspense, useEffect, useMemo, useState } from "react";
 import { stayById } from "@/lib/stays";
 import { hydrateCatalogStay } from "@/lib/search-index";
-import { addDaysIso, formatDay, nightsBetween, stayNightDates } from "@/lib/format";
+import { addDaysIso, clampCheckoutIso, formatDay, minCheckoutIso, nightsBetween, stayNightDates } from "@/lib/format";
 import { useSerai } from "@/lib/store";
 import { LoaderOverlay, PageLoader } from "@/components/PageLoader";
 import { PriceBreakdown } from "@/components/PriceBreakdown";
@@ -168,15 +168,17 @@ function TripOrderEditor({
                   <input
                     type="date"
                     className="date-chip text-xs"
+                    min={minCheckoutIso()}
                     value={leg.checkin}
-                    onChange={(e) => onEditDates(leg.id, e.target.value, leg.checkout)}
+                    onChange={(e) => onEditDates(leg.id, e.target.value, clampCheckoutIso(leg.checkout, e.target.value))}
                   />
                   <span>–</span>
                   <input
                     type="date"
                     className="date-chip text-xs"
+                    min={minCheckoutIso(leg.checkin)}
                     value={leg.checkout}
-                    onChange={(e) => onEditDates(leg.id, leg.checkin, e.target.value)}
+                    onChange={(e) => onEditDates(leg.id, leg.checkin, clampCheckoutIso(e.target.value, leg.checkin))}
                   />
                 </div>
               </div>
@@ -600,12 +602,13 @@ function CheckoutInner() {
   };
 
   const onEditLegDates = (id: string, checkin: string, checkout: string) => {
+    const nextCheckout = clampCheckoutIso(checkout, checkin);
     withConfirmClear(() => {
       if (id === stay.id) {
         setPrimaryCheckin(checkin);
-        setFirstEnd(checkout);
+        setFirstEnd(nextCheckout);
       }
-      checkAndRequoteLeg(id, checkin, checkout);
+      checkAndRequoteLeg(id, checkin, nextCheckout);
     });
   };
 

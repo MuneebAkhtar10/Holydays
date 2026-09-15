@@ -53,6 +53,24 @@ export const addDaysIso = (iso: string, days: number) => {
 
 export const todayIso = () => new Date().toISOString().slice(0, 10);
 
+/** Calendar date in the user's local timezone — use this for date-picker `min`. */
+export const localTodayIso = () => {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+};
+
+/** Earliest valid check-out: not in the past, and after check-in when check-in is set. */
+export const minCheckoutIso = (checkin = "", today = localTodayIso()) => {
+  const afterCheckin = checkin ? addDaysIso(checkin, 1) : today;
+  return afterCheckin > today ? afterCheckin : today;
+};
+
+export const clampCheckoutIso = (checkout: string, checkin = "", today = localTodayIso()) => {
+  const min = minCheckoutIso(checkin, today);
+  if (!checkout || checkout < min) return min;
+  return checkout;
+};
+
 export const isPastBooking = (endDate: string, startDate = "") => {
   const end = endDate || startDate;
   return Boolean(end && end < todayIso());

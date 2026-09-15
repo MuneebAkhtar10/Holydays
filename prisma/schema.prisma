@@ -103,3 +103,13 @@ model Booking {
 
   @@map("booking")
 }
+
+model Media {
+  id        String   @id @default(cuid())
+  userId    String   @map("userid")
+  mime      String
+  bytes     Bytes
+  createdAt DateTime @default(now()) @map("createdat")
+
+  @@map("media")
+}

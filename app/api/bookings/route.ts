@@ -2,7 +2,7 @@ import { getServerSession } from "next-auth";
 import { NextResponse } from "next/server";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { datesOverlap } from "@/lib/format";
+import { datesOverlap, todayIso } from "@/lib/format";
 import { fetchListingByKey, fetchPublicListings, isPublishedLive } from "@/lib/listing-query";
 import { loadBookableStay } from "@/lib/bookable-stay";
 import { quoteStay, roomPicksTotal, type QuoteInput } from "@/lib/pricing";
@@ -75,6 +75,9 @@ async function createBooking(req: Request) {
   }
   if (endDate && endDate < startDate) {
     return NextResponse.json({ error: "End date must be on or after the start date." }, { status: 400 });
+  }
+  if (endDate && endDate < todayIso()) {
+    return NextResponse.json({ error: "Check-out cannot be in the past." }, { status: 400 });
   }
 
   const listingMeta = parseListingMeta(listing.meta);
@@ -151,6 +154,9 @@ async function createBooking(req: Request) {
           taxiList: taxiList.filter((t) => saved.taxis.some((p) => p.id === t.id)),
         };
         for (const slice of saved.stays) {
+          if (slice.checkout < todayIso()) {
+            return NextResponse.json({ error: `Check-out for ${slice.name} cannot be in the past.` }, { status: 400 });
+          }
           const extraListing = await fetchListingByKey(slice.listingId);
           const extraStay = extraListing ? await loadBookableStay(extraListing.slug) : null;
           if (!extraListing || extraListing.kind !== "STAY" || !isPublishedLive(extraListing) || !extraStay) {

@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import { addDaysIso, nightsBetween } from "@/lib/format";
+import { addDaysIso, clampCheckoutIso, minCheckoutIso, nightsBetween } from "@/lib/format";
 import { listingToStay, type ListingCard } from "@/lib/listing-meta";
 import { quoteStay, stayRooms, roomPicksTotal, type RoomPick } from "@/lib/pricing";
 import { citiesForCountry, type PilgrimCountry } from "@/lib/pilgrim";
@@ -155,11 +155,11 @@ export function PackageHotelPicker({
         </label>
         <label className="text-[11px] uppercase tracking-[0.14em] text-mist">
           Check-in
-          <input type="date" className="mt-1 w-full rounded-xl bg-sand/[0.04] px-3 py-2.5 text-sm text-sand outline-none ring-1 ring-sand/[0.08]" value={checkin} onChange={(e) => setCheckin(e.target.value)} />
+          <input type="date" className="mt-1 w-full rounded-xl bg-sand/[0.04] px-3 py-2.5 text-sm text-sand outline-none ring-1 ring-sand/[0.08]" min={minCheckoutIso()} value={checkin} onChange={(e) => { setCheckin(e.target.value); setCheckout((out) => clampCheckoutIso(out, e.target.value)); }} />
         </label>
         <label className="text-[11px] uppercase tracking-[0.14em] text-mist">
           Check-out
-          <input type="date" className="mt-1 w-full rounded-xl bg-sand/[0.04] px-3 py-2.5 text-sm text-sand outline-none ring-1 ring-sand/[0.08]" value={checkout} onChange={(e) => setCheckout(e.target.value)} />
+          <input type="date" className="mt-1 w-full rounded-xl bg-sand/[0.04] px-3 py-2.5 text-sm text-sand outline-none ring-1 ring-sand/[0.08]" min={minCheckoutIso(checkin)} value={checkout} onChange={(e) => setCheckout(clampCheckoutIso(e.target.value, checkin))} />
         </label>
       </div>
 

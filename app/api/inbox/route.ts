@@ -20,7 +20,7 @@ export async function GET() {
       const messages = asMessages(extra);
       return sum + unreadCount(messages, chatReadOf(extra).owner, "guest");
     }, 0);
-    return NextResponse.json({ unread, inbox: "/owner#messages" });
+    return NextResponse.json({ unread, inbox: "/owner?tab=messages" });
   }
 
   const rows = await prisma.booking.findMany({

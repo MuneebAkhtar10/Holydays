@@ -7,6 +7,7 @@ import { FormEvent, useEffect, useRef, useState } from "react";
 import { LoaderOverlay, PageLoader } from "@/components/PageLoader";
 import { countries } from "@/lib/places";
 import { readJson } from "@/lib/readJson";
+import { postImageUpload } from "@/lib/prepare-image";
 import { useSerai } from "@/lib/store";
 
 type Account = {
@@ -108,27 +109,24 @@ export default function AccountPage() {
   const photo = async (file: File) => {
     setProfileError("");
     setOverlay("Uploading photo");
-    const body = new FormData();
-    body.set("file", file);
-    const up = await fetch("/api/uploads", { method: "POST", body });
-    const d = await readJson<{ url?: string; error?: string }>(up);
-    if (!up.ok || !d?.url) {
+    try {
+      const d = await postImageUpload(file);
+      const saved = await fetch("/api/account", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ image: d.url }),
+      });
       setOverlay(null);
-      setProfileError(d?.error || "Could not upload photo.");
-      return;
+      if (!saved.ok) {
+        setProfileError("Photo uploaded but profile did not save.");
+        return;
+      }
+      setMe({ ...me, image: d.url });
+      setNotice("Photo updated.");
+    } catch (err) {
+      setOverlay(null);
+      setProfileError(err instanceof Error ? err.message : "Could not upload photo.");
     }
-    const saved = await fetch("/api/account", {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ image: d.url }),
-    });
-    setOverlay(null);
-    if (!saved.ok) {
-      setProfileError("Photo uploaded but profile did not save.");
-      return;
-    }
-    setMe({ ...me, image: d.url });
-    setNotice("Photo updated.");
   };
 
   const resendEmail = async () => {

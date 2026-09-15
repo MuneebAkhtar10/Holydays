@@ -10,7 +10,7 @@ import {
   type ReactNode,
 } from "react";
 import { formatMoney, isDisplayCurrency, type DisplayCurrency } from "./currency";
-import { defaultDates } from "./format";
+import { clampCheckoutIso, defaultDates } from "./format";
 import { copy, type Lang } from "./i18n";
 import type { Reservation } from "./types";
 
@@ -131,7 +131,7 @@ export function Providers({ children }: { children: ReactNode }) {
       const clean = Object.fromEntries(Object.entries(s).filter(([, v]) => v !== undefined)) as Partial<Search>;
       const next: Search = { ...p, ...clean };
       next.checkin = next.checkin || p.checkin || dates.checkin;
-      next.checkout = next.checkout || p.checkout || dates.checkout;
+      next.checkout = clampCheckoutIso(next.checkout || p.checkout || dates.checkout, next.checkin);
       next.q = next.q ?? "";
       next.city = next.city ?? "";
       if (next.country && next.country !== "IQ" && next.country !== "IR" && next.country !== "SA") {

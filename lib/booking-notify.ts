@@ -76,7 +76,7 @@ export async function notifyBookingCreated(input: {
         input.pending
           ? `${input.name} wants a custom trip with ${input.listing} on ${dates}. Review the details and accept or decline in your partner desk.`
           : `${input.name} booked ${input.listing}.\n${dates}.\nTotal ${formatPKR(input.total)}.`,
-        `${input.origin}/owner#bookings`,
+        `${input.origin}/owner?tab=bookings`,
         "Open partner desk",
       ),
     });
