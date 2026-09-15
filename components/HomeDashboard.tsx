@@ -22,17 +22,35 @@ type Booking = {
 };
 
 const tiles = [
-  { href: "/search", title: "Hotels", ur: "ہوٹل", icon: BedIcon, img: "/images/stay-walled-city.png" },
-  { href: "/attractions", title: "Ziyarat", ur: "زیارت", icon: LandmarkIcon, img: "/images/dest-lahore.png" },
-  { href: "/taxis", title: "Taxis", ur: "کرایہ", icon: CarIcon, img: "/images/stay-truck-art.png" },
-  { href: "/food", title: "Food", ur: "کھانا", icon: TableIcon, img: "/images/stay-apricot-court.png" },
+  { href: "/search", title: "Hotels", ur: "ہوٹل", icon: BedIcon, img: "/uploads/voco-makkah/480212714.jpg" },
+  { href: "/attractions", title: "Ziyarat", ur: "زیارت", icon: LandmarkIcon, img: "/images/home/mosque-night.jpg" },
+  {
+    href: "/taxis",
+    title: "Taxis",
+    ur: "کرایہ",
+    icon: CarIcon,
+    img: "https://images.unsplash.com/photo-1485291571150-772bcfc10da5?auto=format&fit=crop&w=1400&q=80",
+  },
+  { href: "/food", title: "Food", ur: "کھانا", icon: TableIcon, img: "/images/home/food.jpg" },
 ];
 
-const destinations = [
-  { name: "Makkah", ur: "مكة", img: "/images/dest-hunza.png", city: "Makkah", country: "SA" },
-  { name: "Najaf", ur: "نجف", img: "/images/stay-walled-city.png", city: "Najaf", country: "IQ" },
-  { name: "Karbala", ur: "کربلا", img: "/images/dest-lahore.png", city: "Karbala", country: "IQ" },
-  { name: "Mashhad", ur: "مشهد", img: "/images/stay-apricot-court.png", city: "Mashhad", country: "IR" },
+const destinations: { name: string; ur: string; img: string; city: string; country: string; object?: string }[] = [
+  { name: "Makkah", ur: "مكة", img: "/images/home/kaaba.jpg", city: "Makkah", country: "SA" },
+  {
+    name: "Najaf",
+    ur: "نجف",
+    img: "https://images.unsplash.com/photo-1513348235070-7e212225beda?auto=format&fit=crop&w=1400&q=80",
+    city: "Najaf",
+    country: "IQ",
+  },
+  { name: "Karbala", ur: "کربلا", img: "/images/home/karbala-sunset.jpg", city: "Karbala", country: "IQ" },
+  {
+    name: "Mashhad",
+    ur: "مشهد",
+    img: "https://images.unsplash.com/photo-1615124007982-f923ff548c54?auto=format&fit=crop&w=1400&q=80",
+    city: "Mashhad",
+    country: "IR",
+  },
 ];
 
 export function HomeDashboard() {
@@ -130,7 +148,7 @@ export function HomeDashboard() {
           const Icon = c.icon;
           return (
             <Link key={c.href} href={c.href} className="group relative isolate z-0 min-h-[180px] overflow-hidden rounded-2xl">
-              <Image src={c.img} alt={c.title} fill className="object-cover transition duration-500 group-hover:scale-105" />
+              <Image src={c.img} alt={c.title} fill sizes="(max-width: 1024px) 50vw, 25vw" className="object-cover transition duration-500 group-hover:scale-105" />
               <div className="absolute inset-0 bg-ink/50" />
               <div className="absolute inset-0 flex flex-col justify-end p-5">
                 <Icon className="h-6 w-6 text-brass" />
@@ -151,7 +169,7 @@ export function HomeDashboard() {
               href={`/search?country=${d.country}&city=${d.city}&q=${d.city}`}
               className="relative z-0 min-h-[180px] overflow-hidden rounded-2xl"
             >
-              <Image src={d.img} alt={d.name} fill className="object-cover" />
+              <Image src={d.img} alt={d.name} fill sizes="(max-width: 768px) 100vw, 25vw" className={`object-cover ${d.object ?? ""}`} />
               <div className="absolute inset-0 bg-gradient-to-t from-ink/80 to-transparent" />
               <div className="absolute bottom-4 left-4">
                 <p className="font-display text-2xl">{d.name}</p>
