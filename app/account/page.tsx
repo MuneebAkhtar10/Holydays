@@ -24,6 +24,7 @@ type Account = {
   preferences: { lang?: string; theme?: string; notes?: string };
 };
 
+
 function emptyAccount(d: Partial<Account> = {}): Account {
   return {
     name: d.name ?? "",
