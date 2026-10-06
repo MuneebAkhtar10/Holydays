@@ -1,6 +1,7 @@
 "use client";
 
 import { ZoomableImage } from "@/components/ZoomableImage";
+import { defaultVehiclePhoto } from "@/lib/vehicle-photos";
 
 type Size = "sm" | "md" | "lg";
 
@@ -29,10 +30,12 @@ export function taxiCarPhotos(input: {
   vehiclePhotos?: string[];
   cover?: string;
   driverPhoto?: string;
+  vehicle?: string;
 }): string[] {
   const seen = new Set<string>();
   const out: string[] = [];
-  for (const url of [...(input.vehiclePhotos ?? []), input.vehiclePhoto, input.cover]) {
+  // Partner's own vehicle photos first, then a stock photo of that vehicle type, and the listing cover only as a last resort.
+  for (const url of [...(input.vehiclePhotos ?? []), input.vehiclePhoto, defaultVehiclePhoto(input.vehicle), input.cover]) {
     const next = String(url || "").trim();
     if (!next || next === input.driverPhoto || seen.has(next)) continue;
     seen.add(next);
@@ -61,7 +64,7 @@ export function TaxiPhotos({
   className?: string;
 }) {
   const dim = SIZE[size];
-  const cars = taxiCarPhotos({ vehiclePhoto, vehiclePhotos, cover, driverPhoto }).slice(0, dim.cars);
+  const cars = taxiCarPhotos({ vehiclePhoto, vehiclePhotos, cover, driverPhoto, vehicle }).slice(0, dim.cars);
   const face = String(driverPhoto || "").trim();
 
   return (

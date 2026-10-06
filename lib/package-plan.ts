@@ -1,3 +1,4 @@
+import { defaultVehiclePhoto } from "@/lib/vehicle-photos";
 import { formatPKR, formatDay, clampIsoDate, nightsBetween, stayNightDates } from "@/lib/format";
 import { parseRoomPicksBody } from "@/lib/room-picks";
 import type { RoomPick } from "@/lib/pricing";
@@ -255,7 +256,11 @@ export function listingToTaxi(row: PackageListing): PackageTaxi {
   ]
     .map((u) => String(u || "").trim())
     .filter(Boolean);
-  const vehiclePhotos = [...new Set([vehiclePhoto, ...galleryUrls, row.cover].filter(Boolean))].filter((u) => u !== driverPhoto);
+  const vehicleName = String(meta.vehicle || row.name);
+  // Without a partner-uploaded vehicle photo, the gallery/cover are trip scenery — show a stock photo of the vehicle instead.
+  const vehiclePhotos = vehiclePhoto
+    ? [...new Set([vehiclePhoto, ...galleryUrls, row.cover].filter(Boolean))].filter((u) => u !== driverPhoto)
+    : [defaultVehiclePhoto(vehicleName)];
   return {
     id: row.slug,
     country,
@@ -264,7 +269,7 @@ export function listingToTaxi(row: PackageListing): PackageTaxi {
     destination: air ? "Guest hotel" : destination,
     driver: String(meta.driver || row.name),
     driverPhoto,
-    vehicle: String(meta.vehicle || row.name),
+    vehicle: vehicleName,
     vehiclePhoto,
     vehiclePhotos,
     model: String(meta.model || ""),
