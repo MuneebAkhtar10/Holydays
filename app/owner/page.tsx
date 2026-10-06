@@ -66,9 +66,9 @@ const labels: Record<string, { title: string; add: string; empty: string }> = {
     empty: "No hotels yet. Add a property — it goes live after admin approval.",
   },
   ATTRACTION: {
-    title: "Your ziyarat",
-    add: "Add a ziyarat",
-    empty: "No ziyarat yet. Add a shrine plan for Saudi, Iraq, or Iran — admin must approve it.",
+    title: "Your Ziyarat",
+    add: "Add a Ziyarat",
+    empty: "No Ziyarat yet. Add a shrine plan for Saudi, Iraq, or Iran — admin must approve it.",
   },
   RESTAURANT: {
     title: "Your food listings",
@@ -208,7 +208,7 @@ function OwnerDesk() {
     return (
       <div className="mx-auto max-w-lg px-5 py-20">
         <h1 className="font-display text-4xl">Become a partner</h1>
-        <p className="mt-3 text-mist">This login is a traveller account. Choose taxi, hotel, ziyarat, or food to open an owner desk.</p>
+        <p className="mt-3 text-mist">This login is a traveller account. Choose taxi, hotel, Ziyarat, or food to open an owner desk.</p>
         <BecomeOwner />
       </div>
     );

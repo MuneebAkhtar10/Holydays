@@ -221,7 +221,7 @@ export function PackageSnapshot({
 
       {breakdown.extras.length > 0 && (
         <div className="mt-4">
-          <p className="text-[10px] uppercase tracking-[0.14em] text-mist">Transfers & ziyarat</p>
+          <p className="text-[10px] uppercase tracking-[0.14em] text-mist">Transfers & Ziyarat</p>
           <ul className="mt-2 space-y-2 text-sm">
             {breakdown.extras.map((l) => (
               <li key={l.id} className="flex justify-between gap-3">

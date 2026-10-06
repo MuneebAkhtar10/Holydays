@@ -118,7 +118,7 @@ export function BookingPrint({ kind }: { kind: "invoice" | "receipt" | "voucher"
                 ))}
                 {breakdown.extras.length > 0 && (
                   <div>
-                    <p className="text-[11px] uppercase tracking-widest text-ink/40">Transfers & ziyarat</p>
+                    <p className="text-[11px] uppercase tracking-widest text-ink/40">Transfers & Ziyarat</p>
                     <table className="mt-2 w-full text-sm">
                       <tbody>
                         {breakdown.extras.map((line) => (

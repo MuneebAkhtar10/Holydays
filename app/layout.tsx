@@ -19,7 +19,7 @@ const nastaliq = Noto_Nastaliq_Urdu({
 });
 
 export const metadata: Metadata = {
-  title: `${APP_NAME} — hotels for ziyarat`,
+  title: `${APP_NAME} — hotels for Ziyarat`,
   description: APP_TAGLINE,
 };
 

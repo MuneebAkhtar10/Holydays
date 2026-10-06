@@ -33,7 +33,7 @@ const taxis = [
     region: "Iraq",
     cover: "/images/stay-truck-art.png",
     price: 3500,
-    description: "Shared HiAce from your Najaf hotel to Kufa. Stops are timed around ziyarat, not a sightseeing loop.",
+    description: "Shared HiAce from your Najaf hotel to Kufa. Stops are timed around Ziyarat, not a sightseeing loop.",
     extra: {
       country: "IQ",
       driver: "Hajj Kazim al-Najafi",
@@ -48,7 +48,7 @@ const taxis = [
       routeCities: ["Najaf", "Kufa"],
       itinerary: [
         { time: "07:30", place: "Hotel pickup, Najaf", note: "Driver waits at reception" },
-        { time: "08:15", place: "Masjid al-Kufa", note: "Main courtyard and ziyarat" },
+        { time: "08:15", place: "Masjid al-Kufa", note: "Main courtyard and Ziyarat" },
         { time: "09:45", place: "Muslim ibn Aqeel", note: "Adjacent shrine" },
         { time: "10:30", place: "Hannana / Bayt Ali", note: "Short stop" },
         { time: "12:00", place: "Return to Najaf hotel", note: "Drop at the same hotel" },
@@ -164,7 +164,7 @@ const taxis = [
       routeCities: ["Baghdad", "Kadhimiya", "Samarra"],
       itinerary: [
         { time: "07:00", place: "Hotel pickup, Baghdad", note: "" },
-        { time: "07:45", place: "Kadhimiya (Kazimayn)", note: "Morning ziyarat" },
+        { time: "07:45", place: "Kadhimiya (Kazimayn)", note: "Morning Ziyarat" },
         { time: "11:00", place: "Road to Samarra", note: "If the route is open that day" },
         { time: "12:30", place: "Askari shrine, Samarra", note: "Time on site" },
         { time: "17:00", place: "Return to Baghdad hotel", note: "" },
@@ -194,7 +194,7 @@ const taxis = [
       routeCities: ["Mashhad", "Qom"],
       itinerary: [
         { time: "06:30", place: "Hotel pickup, Mashhad", note: "" },
-        { time: "14:00", place: "Hazrat Masumeh, Qom", note: "Haram ziyarat" },
+        { time: "14:00", place: "Hazrat Masumeh, Qom", note: "Haram Ziyarat" },
         { time: "18:00", place: "Return toward Mashhad", note: "Or overnight drop in Qom if you book a hotel there" },
       ],
     },

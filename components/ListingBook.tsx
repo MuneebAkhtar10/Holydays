@@ -96,7 +96,7 @@ function TaxiItinerary({ listing }: { listing: Listing }) {
         ))}
       </ol>
       <p className="mt-5 text-sm text-mist">
-        Shared {money(taxi.ratePerPerson)} / person · Private vehicle {money(taxi.privateRate)}. This is a one-day ziyarat — pick the day on the right.
+        Shared {money(taxi.ratePerPerson)} / person · Private vehicle {money(taxi.privateRate)}. This is a one-day Ziyarat — pick the day on the right.
       </p>
     </div>
   );
@@ -423,7 +423,7 @@ export function ListingBook({ fallbackSlug }: { fallbackSlug?: string }) {
           <>
           <p className="mt-2 text-sm text-mist">
             {oneDay
-              ? "This ziyarat is a single-day plan. Pick the day you will go."
+              ? "This Ziyarat is a single-day plan. Pick the day you will go."
               : "You can book more than once — just choose dates that do not overlap."}
           </p>
           <form

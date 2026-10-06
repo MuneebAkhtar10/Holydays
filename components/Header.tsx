@@ -13,7 +13,7 @@ import { DISPLAY_CURRENCIES } from "@/lib/currency";
 const ownerHome: Record<string, { desk: string; add: string; market: string; marketHref: string }> = {
   TAXI: { desk: "My taxis", add: "Add a taxi", market: "Taxi marketplace", marketHref: "/taxis" },
   STAY: { desk: "My hotels", add: "Add a hotel", market: "Hotel marketplace", marketHref: "/search" },
-  ATTRACTION: { desk: "My ziyarat", add: "Add a ziyarat", market: "Ziyarat marketplace", marketHref: "/attractions" },
+  ATTRACTION: { desk: "My Ziyarat", add: "Add a Ziyarat", market: "Ziyarat marketplace", marketHref: "/attractions" },
   RESTAURANT: { desk: "My food listings", add: "Add food", market: "Food marketplace", marketHref: "/food" },
 };
 
@@ -278,12 +278,6 @@ function AccountMenu({
               </Link>
               <Link href="/register" className="block px-4 py-2 text-sm text-sand hover:bg-ink" onClick={() => setOpen(false)}>
                 Create account
-              </Link>
-              <Link href="/login?as=partner" className="block px-4 py-2 text-sm text-mist hover:bg-ink" onClick={() => setOpen(false)}>
-                Partner login
-              </Link>
-              <Link href="/login?as=admin" className="block px-4 py-2 text-sm text-mist hover:bg-ink" onClick={() => setOpen(false)}>
-                Admin login
               </Link>
             </>
           )}

@@ -6,7 +6,7 @@ import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState, type ReactNode } from "react";
 import { stayById } from "@/lib/stays";
 import { experienceById } from "@/lib/experiences";
-import { formatDay, localTodayIso, minCheckoutIso, nightsBetween } from "@/lib/format";
+import { formatDay, nightsBetween } from "@/lib/format";
 import { useSerai } from "@/lib/store";
 import { GoogleStayMap } from "@/components/GoogleStayMap";
 import { ListingBook } from "@/components/ListingBook";
@@ -26,6 +26,13 @@ import { PriceBreakdown } from "@/components/PriceBreakdown";
 import { readJson } from "@/lib/readJson";
 import type { Stay } from "@/lib/types";
 import { pilgrimCountryForPlace } from "@/lib/pilgrim";
+
+function readOnlyDate(iso: string) {
+  if (!iso) return "—";
+  const d = new Date(`${iso}T00:00:00`);
+  if (Number.isNaN(d.getTime())) return iso;
+  return d.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
+}
 
 function seedRoomPicks(stay: Stay | null | undefined, rooms: number): RoomPick[] {
   const first = stay ? stayRooms(stay)[0] : undefined;
@@ -576,26 +583,18 @@ function StayInner() {
               </p>
             )}
             <div className="mt-4 grid grid-cols-2 gap-2">
-              <label className="text-[10px] uppercase tracking-[0.14em] text-mist">
+              <div className="text-[10px] uppercase tracking-[0.14em] text-mist">
                 Arrive
-                <input
-                  type="date"
-                  className="date-chip mt-1 w-full rounded-xl px-2 py-2 text-sm"
-                  min={localTodayIso()}
-                  value={checkin}
-                  onChange={(e) => setSearch({ checkin: e.target.value })}
-                />
-              </label>
-              <label className="text-[10px] uppercase tracking-[0.14em] text-mist">
+                <div className="date-chip mt-1 w-full select-none rounded-xl px-2 py-2 text-sm normal-case tracking-normal">
+                  {readOnlyDate(checkin)}
+                </div>
+              </div>
+              <div className="text-[10px] uppercase tracking-[0.14em] text-mist">
                 Depart
-                <input
-                  type="date"
-                  className="date-chip mt-1 w-full rounded-xl px-2 py-2 text-sm"
-                  min={minCheckoutIso(checkin)}
-                  value={checkout}
-                  onChange={(e) => setSearch({ checkout: e.target.value })}
-                />
-              </label>
+                <div className="date-chip mt-1 w-full select-none rounded-xl px-2 py-2 text-sm normal-case tracking-normal">
+                  {readOnlyDate(checkout)}
+                </div>
+              </div>
             </div>
             <p
               className={`mt-3 text-xs font-medium ${
@@ -618,7 +617,7 @@ function StayInner() {
             </p>
             <div className="mt-4 border-t border-ink/10 pt-3">{quote && <PriceBreakdown quote={quote} compact />}</div>
             {pilgrimStay ? (
-              <p className="mt-3 text-xs text-ink/55">Build ziyarat keeps today&apos;s flow. Build a package adds airport pick up, extra hotels, and drop off.</p>
+              <p className="mt-3 text-xs text-ink/55">Build Ziyarat keeps today&apos;s flow. Build a package adds airport pick up, extra hotels, and drop off.</p>
             ) : null}
             {(() => {
               const first = activePicks[0];

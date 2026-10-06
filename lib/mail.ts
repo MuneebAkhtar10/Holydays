@@ -1,5 +1,6 @@
 import * as net from "node:net";
 import * as tls from "node:tls";
+import { button, emailShell, paragraphs } from "@/lib/email-templates";
 
 type Mail = { to: string; subject: string; text: string; html?: string };
 
@@ -14,32 +15,13 @@ function isEmail(to: string) {
   return to.includes("@") && !to.startsWith("whatsapp:");
 }
 
-function esc(value: string) {
-  return value
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;");
-}
-
 function wrapHtml(inner: string) {
-  return `<!doctype html>
-<html><body style="margin:0;background:#f4eee4;padding:28px;font-family:Georgia,Times,serif;color:#102948">
-  <div style="max-width:560px;margin:0 auto;background:#fffdf8;border-radius:20px;padding:28px 28px 32px;border:1px solid #e6dcc8">
-    <p style="margin:0 0 8px;letter-spacing:.22em;font-size:11px;color:#b08d52">HOLYDAYS</p>
-    ${inner}
-  </div>
-</body></html>`;
+  return emailShell({ title: "HolyDays", bodyHtml: inner });
 }
 
 export function mailHtml(title: string, body: string, href?: string, cta?: string) {
-  const button = href
-    ? `<p style="margin:24px 0 0"><a href="${esc(href)}" style="display:inline-block;background:#c5a46a;color:#102948;text-decoration:none;padding:12px 18px;border-radius:12px;font-weight:600">${esc(cta || "Open booking")}</a></p>`
-    : "";
-  return wrapHtml(
-    `<h1 style="margin:0 0 12px;font-size:26px;line-height:1.2">${esc(title)}</h1>
-     <p style="margin:0;font-size:16px;line-height:1.55;color:#3d4d63;white-space:pre-wrap">${esc(body)}</p>${button}`,
-  );
+  const action = href ? `<p style="margin:22px 0 0">${button(href, cta || "Open booking")}</p>` : "";
+  return emailShell({ title, preheader: body.split("\n")[0]?.slice(0, 110), bodyHtml: `${paragraphs(body)}${action}` });
 }
 
 async function sendResend(mail: Mail, from: string) {
@@ -54,7 +36,7 @@ async function sendResend(mail: Mail, from: string) {
       to: [mail.to],
       subject: mail.subject,
       text: mail.text,
-      html: mail.html || wrapHtml(`<p style="white-space:pre-wrap">${esc(mail.text)}</p>`),
+      html: mail.html || wrapHtml(paragraphs(mail.text)),
     }),
   });
   if (!res.ok) {
@@ -131,11 +113,11 @@ async function sendSmtp(mail: Mail, from: string) {
   }
 
   const fromEmail = from.match(/<([^>]+)>/)?.[1] || from;
-  const html = mail.html || wrapHtml(`<p style="white-space:pre-wrap">${esc(mail.text)}</p>`);
+  const html = mail.html || wrapHtml(paragraphs(mail.text));
   const payload = [
     `From: ${from}`,
     `To: ${mail.to}`,
-    `Subject: ${mail.subject}`,
+    `Subject: ${/^[\x20-\x7e]*$/.test(mail.subject) ? mail.subject : `=?UTF-8?B?${Buffer.from(mail.subject, "utf8").toString("base64")}?=`}`,
     "MIME-Version: 1.0",
     'Content-Type: text/html; charset="utf-8"',
     "",

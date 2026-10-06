@@ -3,6 +3,7 @@ import { bookingNumber, shareText } from "@/lib/booking-view";
 import { formatDay, formatPKR } from "@/lib/format";
 import { mailHtml } from "@/lib/mail";
 import { publicOrigin } from "@/lib/auth-tokens";
+import { confirmationEmail, loadBookingForEmail, type BuiltEmail } from "@/lib/booking-emails";
 
 export type NotifyChannels = {
   email: boolean;
@@ -39,17 +40,29 @@ export async function notifyBookingCreated(input: {
     ? `Request ${number} sent to ${input.listing} for ${dates}. It is not confirmed yet — the driver needs to accept it first.`
     : `Booking ${number} is confirmed for ${input.listing}. ${dates}. Total ${formatPKR(input.total)}.`;
 
+  let rich: BuiltEmail | null = null;
+  if (!input.pending) {
+    try {
+      const loaded = await loadBookingForEmail(input.id);
+      if (loaded) rich = confirmationEmail(loaded.dto, input.origin);
+    } catch (err) {
+      console.error("[booking-notify] could not build confirmation email", err);
+    }
+  }
+
   const email = input.email.includes("@")
     ? await notifyUser({
         to: input.email,
-        subject: input.pending ? `HolyDays request sent ${number}` : `HolyDays confirmation ${number}`,
-        text: `${body}\n\nOpen your booking: ${url}`,
-        html: mailHtml(
-          input.pending ? "Your trip request is sent" : "Your booking is confirmed",
-          `Hello ${input.name},\n\n${body}\n\nWe sent this to the email on your HolyDays account.`,
-          url,
-          "View booking",
-        ),
+        subject: rich?.subject ?? (input.pending ? `HolyDays request sent ${number}` : `HolyDays confirmation ${number}`),
+        text: rich?.text ?? `${body}\n\nOpen your booking: ${url}`,
+        html:
+          rich?.html ??
+          mailHtml(
+            input.pending ? "Your trip request is sent" : "Your booking is confirmed",
+            `Hello ${input.name},\n\n${body}\n\nWe sent this to the email on your HolyDays account.`,
+            url,
+            "View booking",
+          ),
       })
     : { delivered: false, preview: null };
 

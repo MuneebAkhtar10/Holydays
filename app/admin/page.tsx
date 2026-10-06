@@ -112,7 +112,7 @@ export default function AdminPage() {
       <div className="mx-auto max-w-lg px-5 py-20">
         <h1 className="font-display text-4xl">Admin only</h1>
         <p className="mt-3 text-mist">Sign in with the Serai admin account to approve listings.</p>
-        <Link href="/login?as=admin" className="btn-primary mt-6 inline-flex">
+        <Link href="/login?callbackUrl=/admin" className="btn-primary mt-6 inline-flex">
           Admin sign in
         </Link>
       </div>

@@ -455,13 +455,13 @@ export function ListingForm({
       >
         <div className="shrink-0">
         <p className="text-[10px] uppercase tracking-[0.2em] text-ink/40">{stay ? "Hotel" : taxi ? "Taxi" : ziyarat ? "Ziyarat" : "Listing"}</p>
-        <h2 className={`font-display text-ink ${stay ? "mt-0.5 text-xl" : "mt-1 text-3xl"}`}>{initial?.id ? "Edit listing" : stay ? "New hotel" : taxi ? "New taxi" : ziyarat ? "New ziyarat" : "New listing"}</h2>
+        <h2 className={`font-display text-ink ${stay ? "mt-0.5 text-xl" : "mt-1 text-3xl"}`}>{initial?.id ? "Edit listing" : stay ? "New hotel" : taxi ? "New taxi" : ziyarat ? "New Ziyarat" : "New listing"}</h2>
         {!stay && (
           <p className="mt-2 text-sm text-ink/60">
             {taxi
               ? "Saudi, Iraq, or Iran only. Airport transfer is one taxi per airport: checkout fills the guest’s hotel. Day trips still pick from → to cities. Admin must approve before guests see it."
               : ziyarat
-                ? "Saudi, Iraq, or Iran only. This ziyarat shows on hotel checkout for that country."
+                ? "Saudi, Iraq, or Iran only. This Ziyarat shows on hotel checkout for that country."
                 : "Saudi Arabia, Iraq, and Iran only."}
           </p>
         )}

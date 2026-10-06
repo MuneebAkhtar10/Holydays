@@ -6,7 +6,7 @@ export default function FoodPage() {
       kind="RESTAURANT"
       title="Food"
       urdu="کھانا"
-      blurb="Meals near the haram. Book food for your ziyarat days."
+      blurb="Meals near the haram. Book food for your Ziyarat days."
     />
   );
 }

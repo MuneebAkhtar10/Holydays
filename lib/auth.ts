@@ -3,17 +3,18 @@ import Credentials from "next-auth/providers/credentials";
 import Google from "next-auth/providers/google";
 import bcrypt from "bcryptjs";
 import { prisma } from "./prisma";
+import { googleCredentials } from "./google-config";
 
 export const authOptions: NextAuthOptions = {
   secret: process.env.NEXTAUTH_SECRET || "holydays-dev-secret",
   session: { strategy: "jwt", maxAge: 30 * 24 * 60 * 60 },
   pages: { signIn: "/login" },
   providers: [
-    ...(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET
+    ...(googleCredentials()
       ? [
           Google({
-            clientId: process.env.GOOGLE_CLIENT_ID,
-            clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+            clientId: googleCredentials()!.id,
+            clientSecret: googleCredentials()!.secret,
           }),
         ]
       : []),
@@ -68,6 +69,7 @@ export const authOptions: NextAuthOptions = {
               googleId: account.providerAccountId,
               role: "TRAVELER",
               emailVerified: new Date(),
+              preferences: JSON.stringify({ needsRole: true }),
             },
           });
         } catch (err) {

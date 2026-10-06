@@ -183,7 +183,7 @@ export function PaymentBlock({ booking }: { booking: BookingDTO }) {
           ))}
           {breakdown.extras.length > 0 && (
             <div>
-              <p className="text-[10px] uppercase tracking-[0.14em] text-mist">Transfers & ziyarat</p>
+              <p className="text-[10px] uppercase tracking-[0.14em] text-mist">Transfers & Ziyarat</p>
               <ul className="mt-1.5 space-y-1 text-sm text-mist">
                 {breakdown.extras.map((line) => (
                   <li key={line.id} className="flex justify-between gap-3">

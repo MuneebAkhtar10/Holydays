@@ -98,7 +98,7 @@ export function HomeDashboard() {
             {status === "authenticated" ? `Welcome back${first ? `, ${first}` : ""}` : "Find a hotel"}
           </h1>
           <p className="mt-2 max-w-xl text-mist">
-            Browse hotels, ziyarat, and taxis in Saudi Arabia, Iraq, and Iran.
+            Browse hotels, Ziyarat, and taxis in Saudi Arabia, Iraq, and Iran.
           </p>
         </div>
         {status !== "authenticated" && (

@@ -236,7 +236,7 @@ export const pilgrimStays: MarketItem[] = [
     city: "Qom",
     region: "Iran",
     cover: "/images/stay-orchard.png",
-    description: "Close to Hazrat Masumeh shrine. Quiet rooms for ziyarat nights.",
+    description: "Close to Hazrat Masumeh shrine. Quiet rooms for Ziyarat nights.",
     price: 19800,
     priceUnit: "night",
     ownerEmail: "stay.owner@serai.pk",
