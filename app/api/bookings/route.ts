@@ -15,6 +15,7 @@ import { pilgrimCountryForPlace } from "@/lib/pilgrim";
 import { parseListingMeta } from "@/lib/listing-meta";
 import { roomsLeftFor } from "@/lib/availability";
 import { createStripeCheckoutUrl, isCardPayment, packageBookingIds } from "@/lib/stripe-booking";
+import { independentTripTotal } from "@/lib/trip-total";
 import { displayCurrencyFromRequest } from "@/lib/stripe-money";
 
 export async function GET() {
@@ -196,8 +197,26 @@ async function createBooking(req: Request) {
   }
 
   const customTaxi = listing.kind === "TAXI" && Boolean(body.customTaxi);
+  if (listing.kind !== "STAY" && !customTaxi) {
+    // Never trust a browser-sent total for something that may be charged to a card.
+    let taxiMode = "shared";
+    try {
+      taxiMode = String(JSON.parse(extras || "{}").taxiMode || "shared");
+    } catch {
+      /* plain-text extras */
+    }
+    total = independentTripTotal({
+      kind: listing.kind,
+      price: Number(listing.price),
+      priceUnit: listing.priceUnit,
+      guests: Number(body.guests) || 1,
+      taxi: listing.kind === "TAXI" ? listingToTaxi(listing) : null,
+      taxiMode,
+    });
+  }
   const method = String(body.payment ?? "property");
-  const wantsCard = isCardPayment(method) && !customTaxi;
+  const wantsCard = isCardPayment(method) && !customTaxi && total > 0;
+  const storedMethod = wantsCard ? "card" : isCardPayment(method) ? "property" : method;
   const booking = await prisma.booking.create({
     data: {
       userId: session.user.id,
@@ -206,7 +225,7 @@ async function createBooking(req: Request) {
       endDate,
       guests: Number(body.guests) || Number(body.adults) || 1,
       extras,
-      payment: wantsCard ? "card" : method,
+      payment: storedMethod,
       phone: String(body.phone ?? ""),
       total,
       status: customTaxi ? "pending_driver" : wantsCard ? "pending_payment" : "confirmed",
@@ -273,7 +292,7 @@ async function createBooking(req: Request) {
           quote: { start: extraQuote.start, total: extraQuote.total, taxes: extraQuote.taxes, grand: extraQuote.grand, rules: extraQuote.rulesApplied },
           package: extraObj.package,
         }),
-        payment: wantsCard ? "card" : method,
+        payment: storedMethod,
         phone: String(body.phone ?? ""),
         total: extraQuote.grand,
         status: wantsCard ? "pending_payment" : "confirmed",

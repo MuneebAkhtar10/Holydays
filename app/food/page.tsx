@@ -1,12 +1,5 @@
-import { CatalogGrid } from "@/components/CatalogGrid";
+import { FoodCatalog } from "@/components/FoodCatalog";
 
 export default function FoodPage() {
-  return (
-    <CatalogGrid
-      kind="RESTAURANT"
-      title="Food"
-      urdu="کھانا"
-      blurb="Meals near the haram. Book food for your Ziyarat days."
-    />
-  );
+  return <FoodCatalog />;
 }

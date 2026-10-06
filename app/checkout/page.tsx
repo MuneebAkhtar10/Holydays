@@ -374,8 +374,6 @@ function CheckoutInner() {
   const quote = stay ? quoteStay(stay, input) : null;
   const methods = [
     { id: "card", label: "Card · Visa, Mastercard, Amex" },
-    { id: "jazz", label: "JazzCash" },
-    { id: "easy", label: "EasyPaisa" },
     ...(quote?.payPolicy === "now" ? [] : [{ id: "property", label: "Pay at the door" }]),
   ];
   const [method, setMethod] = useState("card");
@@ -703,10 +701,8 @@ function CheckoutInner() {
       ))}
       {method === "card" ? (
         <p className="text-xs text-mist">You will pay securely on Stripe. The booking is confirmed after the charge succeeds.</p>
-      ) : method === "property" ? (
-        <p className="text-xs text-mist">Pay the property at check-in. No card is charged now.</p>
       ) : (
-        <p className="text-xs text-mist">JazzCash and EasyPaisa are recorded as your method. Wallet collection is not live yet — use card for an immediate charge.</p>
+        <p className="text-xs text-mist">Pay the property at check-in. No card is charged now.</p>
       )}
       {!packageStay && (
       <label className="flex items-center justify-between rounded-2xl bg-sand/[0.03] px-4 py-3.5 ring-1 ring-sand/[0.08]">

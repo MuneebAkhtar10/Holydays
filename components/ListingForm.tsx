@@ -23,6 +23,8 @@ function SavingSpinner({ label }: { label: string }) {
   );
 }
 
+const foodPhoto = (id: string) => `https://images.unsplash.com/photo-${id}?fm=jpg&q=75&w=900&auto=format&fit=crop`;
+
 const library: Record<string, { src: string; label: string }[]> = {
   TAXI: [
     { src: "/images/exp-passu.png", label: "Mountain jeep" },
@@ -49,11 +51,14 @@ const library: Record<string, { src: string; label: string }[]> = {
     { src: "/images/hero-hunza-dusk.png", label: "Dusk" },
   ],
   RESTAURANT: [
-    { src: "/images/stay-apricot-court.png", label: "Kitchen" },
-    { src: "/images/stay-walled-city.png", label: "Roof" },
-    { src: "/images/stay-river-lantern.png", label: "River" },
-    { src: "/images/hero-hunza-dusk.png", label: "Dusk" },
+    { src: foodPhoto("1631515243349-e0cb75fb8d3a"), label: "Biryani" },
+    { src: foodPhoto("1555939594-58d7cb561ad1"), label: "Mixed grill" },
+    { src: foodPhoto("1565557623262-b51c2513a641"), label: "Curry & naan" },
+    { src: foodPhoto("1748540459503-19efc015143b"), label: "Mezze spread" },
+    { src: foodPhoto("1697126248437-db26a30024c5"), label: "Hummus & pita" },
+    { src: foodPhoto("1663505305557-53be07c5b810"), label: "Dates & dallah" },
   ],
+
 };
 
 type RoomRow = BookableRoom;
@@ -117,7 +122,7 @@ export function ListingForm({
     nastaliq: initial?.nastaliq ?? "",
     city: seedAir?.city ?? initial?.city ?? "Najaf",
     region: initial?.region ?? "",
-    cover: initial?.cover ?? "/images/hero-hunza-dusk.png",
+    cover: initial?.cover ?? (kind === "RESTAURANT" ? library.RESTAURANT[0].src : "/images/hero-hunza-dusk.png"),
     description: initial?.description ?? "",
     price: String(initial?.price ?? 15000),
     priceUnit:
@@ -186,6 +191,7 @@ export function ListingForm({
   const stay = kind === "STAY";
   const taxi = kind === "TAXI";
   const ziyarat = kind === "ATTRACTION";
+  const food = kind === "RESTAURANT";
   const country = (form.country === "IQ" || form.country === "IR" || form.country === "SA" ? form.country : "IQ") as PilgrimCountry;
   const cityOptions = citiesForCountry(country);
   const taxiFromOptions = form.service === "airport" ? pilgrimAirports[country].map((a) => a.label) : cityOptions;
@@ -441,11 +447,30 @@ export function ListingForm({
           }
   };
 
+  const priceBlock = (
+        <div className={`grid gap-3 sm:grid-cols-[1fr_auto] ${food ? "mt-2" : ""}`}>
+          <MoneyInput
+            label="Price"
+            pkr={form.price}
+            onPkr={(v) => set("price", v)}
+          />
+          <label className="paper-label">
+            Charged
+            <select className="paper-field" value={form.priceUnit} onChange={(e) => set("priceUnit", e.target.value)}>
+              {!food && <option value="night">per night</option>}
+              {!food && <option value="day">per day</option>}
+              <option value="person">per person</option>
+              <option value="table">per meal</option>
+            </select>
+          </label>
+        </div>
+  );
+
   const shell = (
     <div className={`fixed inset-0 z-[80] overscroll-contain bg-black/55 ${stay ? "overflow-hidden" : "overflow-y-auto"}`} onClick={onClose}>
-      <div className={`mx-auto flex w-full max-w-[92rem] items-start justify-center p-3 sm:p-6 ${stay ? "h-full max-h-full py-4" : "min-h-full py-6"}`}>
+      <div className={`mx-auto flex w-full max-w-[92rem] items-start justify-center p-3 sm:p-6 ${stay ? "h-full max-h-full py-4" : food ? "min-h-full py-4" : "min-h-full py-6"}`}>
       <div
-        className={`paper relative w-full max-w-6xl rounded-2xl shadow-2xl ${stay ? "flex h-[min(92vh,54rem)] flex-col overflow-hidden p-4 sm:p-5" : "paper-scroll p-6 sm:p-8"}`}
+        className={`paper relative w-full rounded-2xl shadow-2xl ${stay ? "max-w-6xl flex h-[min(92vh,54rem)] flex-col overflow-hidden p-4 sm:p-5" : food ? "paper-scroll max-w-4xl p-4 sm:p-5" : "paper-scroll max-w-6xl p-6 sm:p-8"}`}
         onClick={(e) => e.stopPropagation()}
         onKeyDown={(e) => {
           if (e.key === "Enter" && (e.target as HTMLElement).tagName !== "TEXTAREA") {
@@ -454,15 +479,17 @@ export function ListingForm({
         }}
       >
         <div className="shrink-0">
-        <p className="text-[10px] uppercase tracking-[0.2em] text-ink/40">{stay ? "Hotel" : taxi ? "Taxi" : ziyarat ? "Ziyarat" : "Listing"}</p>
-        <h2 className={`font-display text-ink ${stay ? "mt-0.5 text-xl" : "mt-1 text-3xl"}`}>{initial?.id ? "Edit listing" : stay ? "New hotel" : taxi ? "New taxi" : ziyarat ? "New Ziyarat" : "New listing"}</h2>
+        <p className="text-[10px] uppercase tracking-[0.2em] text-ink/40">{stay ? "Hotel" : taxi ? "Taxi" : ziyarat ? "Ziyarat" : food ? "Food" : "Listing"}</p>
+        <h2 className={`font-display text-ink ${stay || food ? "mt-0.5 text-xl" : "mt-1 text-3xl"}`}>{initial?.id ? (food ? "Edit food listing" : "Edit listing") : stay ? "New hotel" : taxi ? "New taxi" : ziyarat ? "New Ziyarat" : food ? "New food listing" : "New listing"}</h2>
         {!stay && (
-          <p className="mt-2 text-sm text-ink/60">
+          <p className={`text-ink/60 ${food ? "mt-1 text-[13px]" : "mt-2 text-sm"}`}>
             {taxi
               ? "Saudi, Iraq, or Iran only. Airport transfer is one taxi per airport: checkout fills the guest’s hotel. Day trips still pick from → to cities. Admin must approve before guests see it."
               : ziyarat
                 ? "Saudi, Iraq, or Iran only. This Ziyarat shows on hotel checkout for that country."
-                : "Saudi Arabia, Iraq, and Iran only."}
+                : food
+                  ? "Meals near the haram in Saudi Arabia, Iraq, or Iran. Admin must approve before guests see it."
+                  : "Saudi Arabia, Iraq, and Iran only."}
           </p>
         )}
         {stay && (
@@ -474,10 +501,10 @@ export function ListingForm({
 
         {!stay && (
         <>
-        <div className="mt-4 grid gap-3 md:grid-cols-2 lg:grid-cols-3">
+        <div className={`grid gap-3 md:grid-cols-2 ${food ? "mt-3 lg:grid-cols-4" : "mt-4 lg:grid-cols-3"}`}>
         <label className="paper-label mt-0">
-          {taxi ? "Trip name" : ziyarat ? "Ziyarat name" : "Property name"} <span className="text-red-500">*</span>
-          <input className="paper-field" placeholder={taxi ? "Karbala → Kufa" : "Canal Breeze Studio"} value={form.name} onChange={(e) => set("name", e.target.value)} required />
+          {taxi ? "Trip name" : ziyarat ? "Ziyarat name" : food ? "Food name" : "Property name"} <span className="text-red-500">*</span>
+          <input className="paper-field" placeholder={taxi ? "Karbala → Kufa" : food ? "Chicken biryani & raita" : "Canal Breeze Studio"} value={form.name} onChange={(e) => set("name", e.target.value)} required />
         </label>
         <label className="paper-label mt-0">
           Nastaliq name
@@ -838,21 +865,21 @@ export function ListingForm({
           />
         ) : (
           <>
-          <div className="mt-5 grid items-start gap-6 lg:grid-cols-2">
+          <div className={`grid items-start lg:grid-cols-2 ${food ? "mt-3 gap-4" : "mt-5 gap-6"}`}>
             <div>
             <p className="paper-label mt-0">Cover photo</p>
             <div className="mt-2 overflow-hidden rounded-2xl border border-ink/10">
-              <div className="relative h-40 bg-ink/5">
+              <div className={`relative bg-ink/5 ${food ? "h-32" : "h-40"}`}>
                 <Image src={form.cover} alt="Cover preview" fill className="object-cover" />
               </div>
-              <div className="paper-light flex flex-wrap items-center gap-3 bg-white px-4 py-3">
+              <div className={`paper-light flex flex-wrap items-center gap-3 bg-white px-4 ${food ? "py-2" : "py-3"}`}>
                 <button type="button" className="btn-ghost text-sm" onClick={() => fileRef.current?.click()}>
                   {uploading ? "Uploading…" : "Choose from computer"}
                 </button>
                 <p className="text-xs text-ink/45">PNG, JPG, or WebP · under 6MB</p>
               </div>
             </div>
-            <p className="mt-3 text-[11px] uppercase tracking-[0.14em] text-ink/40">Library</p>
+            <p className={`text-[11px] uppercase tracking-[0.14em] text-ink/40 ${food ? "mt-2" : "mt-3"}`}>{food ? "Food photos" : "Library"}</p>
             <div className="mt-2 grid grid-cols-4 gap-2 sm:grid-cols-6">
               {photos.map((p) => (
                 <button
@@ -862,7 +889,7 @@ export function ListingForm({
                     set("cover", p.src);
                     addPhoto(p.src);
                   }}
-                  className={`relative h-16 overflow-hidden rounded-xl border ${form.cover === p.src ? "border-flame ring-2 ring-flame/30" : "border-ink/10"}`}
+                  className={`relative overflow-hidden rounded-xl border ${food ? "h-12" : "h-16"} ${form.cover === p.src ? "border-flame ring-2 ring-flame/30" : "border-ink/10"}`}
                   title={p.label}
                 >
                   <Image src={p.src} alt={p.label} fill className="object-cover" />
@@ -870,36 +897,22 @@ export function ListingForm({
               ))}
             </div>
             </div>
+            <div>
             <label className="paper-label mt-0">
-              Description {taxi && <span className="text-red-500">*</span>}
+              {food ? "About this food" : "Description"} {taxi && <span className="text-red-500">*</span>}
               <textarea
-                className="paper-field min-h-40 resize-y"
-                rows={6}
-                placeholder="What guests should know"
+                className={`paper-field resize-y ${food ? "min-h-24" : "min-h-40"}`}
+                rows={food ? 4 : 6}
+                placeholder={food ? "What it is, what comes with it, portion size" : "What guests should know"}
                 value={form.description}
                 onChange={(e) => set("description", e.target.value)}
                 required={taxi}
               />
             </label>
+            {food && priceBlock}
+            </div>
           </div>
-        {!taxi && (
-        <div className="grid gap-3 sm:grid-cols-[1fr_auto]">
-          <MoneyInput
-            label="Price"
-            pkr={form.price}
-            onPkr={(v) => set("price", v)}
-          />
-          <label className="paper-label">
-            Charged
-            <select className="paper-field" value={form.priceUnit} onChange={(e) => set("priceUnit", e.target.value)}>
-              <option value="night">per night</option>
-              <option value="day">per day</option>
-              <option value="person">per person</option>
-              <option value="table">per meal</option>
-            </select>
-          </label>
-        </div>
-        )}
+        {!taxi && !food && priceBlock}
           </>
         )}
 
@@ -935,13 +948,13 @@ export function ListingForm({
           </div>
         ) : (
           <>
-        <p className="mt-4 rounded-xl bg-ink/5 px-4 py-3 text-sm text-ink/70">
+        <p className={`rounded-xl bg-ink/5 text-ink/70 ${food ? "mt-3 px-3 py-2 text-[13px]" : "mt-4 px-4 py-3 text-sm"}`}>
           {initial?.id
             ? "Saving sends this listing back to admin. It stays off the public site until they approve it again."
             : "New listings wait in the admin queue. They appear on HolyDays only after approval."}
         </p>
         {error && <p className="mt-3 text-sm text-rose">{error}</p>}
-        <div className="mt-6 flex flex-wrap items-center gap-2">
+        <div className={`flex flex-wrap items-center gap-2 ${food ? "mt-3" : "mt-6"}`}>
           <button type="button" className="btn-primary" disabled={saving} onClick={saveListing}>
             {saving ? <SavingSpinner label="Saving…" /> : "Save"}
           </button>

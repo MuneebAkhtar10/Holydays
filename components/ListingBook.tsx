@@ -14,6 +14,7 @@ import { LoaderOverlay, PageLoader } from "@/components/PageLoader";
 import { ListingReviews, type ReviewItem } from "@/components/ListingReviews";
 import { StarIcon } from "@/components/StarIcon";
 import { readJson } from "@/lib/readJson";
+import { independentTripTotal } from "@/lib/trip-total";
 import { CancelBookingModal } from "@/components/CancelBookingModal";
 import { TaxiPhotos } from "@/components/TaxiPhotos";
 
@@ -103,7 +104,7 @@ function TaxiItinerary({ listing }: { listing: Listing }) {
 }
 
 export function ListingBook({ fallbackSlug }: { fallbackSlug?: string }) {
-  const { money } = useSerai();
+  const { money, currency } = useSerai();
   const { id } = useParams<{ id: string }>();
   const slug = fallbackSlug || id;
   const { data: session, status } = useSession();
@@ -118,6 +119,7 @@ export function ListingBook({ fallbackSlug }: { fallbackSlug?: string }) {
   const [customHours, setCustomHours] = useState(6);
   const [customNote, setCustomNote] = useState("");
   const [phone, setPhone] = useState("");
+  const [payMethod, setPayMethod] = useState<"property" | "card">("property");
   const [error, setError] = useState("");
   const [ready, setReady] = useState(false);
   const [overlay, setOverlay] = useState<string | null>(null);
@@ -189,13 +191,16 @@ export function ListingBook({ fallbackSlug }: { fallbackSlug?: string }) {
         })
       : null;
   const oneDay = listing.kind === "TAXI" || listing.kind === "ATTRACTION";
-  const tripTotal = taxi
-    ? taxiMode === "custom"
-      ? 0
-      : taxiMode === "private"
-        ? taxi.privateRate
-        : taxi.ratePerPerson * Math.max(1, guests)
-    : listing.price;
+  const tripTotal = independentTripTotal({
+    kind: listing.kind,
+    price: listing.price,
+    priceUnit: listing.priceUnit,
+    guests,
+    taxi,
+    taxiMode,
+  });
+  const canPayNow = taxiMode !== "custom" && tripTotal > 0;
+  const payingNow = canPayNow && payMethod === "card";
 
   const book = async () => {
     if (status !== "authenticated") {
@@ -207,7 +212,7 @@ export function ListingBook({ fallbackSlug }: { fallbackSlug?: string }) {
       setError(`You cannot book more than ${taxi.vacant} seat${taxi.vacant === 1 ? "" : "s"} — only ${taxi.vacant} of ${taxi.seats} seats are open on this trip.`);
       return;
     }
-    setOverlay(taxiMode === "custom" ? "Sending request" : "Confirming booking");
+    setOverlay(taxiMode === "custom" ? "Sending request" : payingNow ? "Opening card payment" : "Confirming booking");
     const res = await fetch("/api/bookings", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -217,7 +222,8 @@ export function ListingBook({ fallbackSlug }: { fallbackSlug?: string }) {
         endDate: oneDay ? start : end,
         guests,
         phone,
-        payment: "property",
+        payment: payingNow ? "card" : "property",
+        currency,
         total: tripTotal,
         customTaxi: taxi && taxiMode === "custom",
         extras: taxi
@@ -227,10 +233,14 @@ export function ListingBook({ fallbackSlug }: { fallbackSlug?: string }) {
           : undefined,
       }),
     });
-    const data = await readJson<{ error?: string; id?: string }>(res);
+    const data = await readJson<{ error?: string; id?: string; payUrl?: string }>(res);
     if (!res.ok) {
       setOverlay(null);
       setError(data?.error || "Could not book");
+      return;
+    }
+    if (data?.payUrl) {
+      window.location.assign(data.payUrl);
       return;
     }
     router.push(`/booked/${data?.id || listing.slug}`);
@@ -530,6 +540,36 @@ export function ListingBook({ fallbackSlug }: { fallbackSlug?: string }) {
               Phone
               <input className="auth-field" placeholder="03xx xxxxxxx" value={phone} onChange={(e) => setPhone(e.target.value)} />
             </label>
+            {canPayNow && (
+              <div>
+                <p className="auth-label">Payment</p>
+                <div className="mt-2 grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    aria-pressed={payMethod === "card"}
+                    className={`rounded-xl border px-3 py-3 text-left text-sm ${payMethod === "card" ? "border-flame bg-flame/10" : "border-brass/30"}`}
+                    onClick={() => setPayMethod("card")}
+                  >
+                    <span className="block text-[11px] uppercase tracking-[0.14em] text-brass">Pay now</span>
+                    <span className="mt-1 block text-sand">Card · {money(tripTotal)}</span>
+                  </button>
+                  <button
+                    type="button"
+                    aria-pressed={payMethod === "property"}
+                    className={`rounded-xl border px-3 py-3 text-left text-sm ${payMethod === "property" ? "border-flame bg-flame/10" : "border-brass/30"}`}
+                    onClick={() => setPayMethod("property")}
+                  >
+                    <span className="block text-[11px] uppercase tracking-[0.14em] text-brass">Pay later</span>
+                    <span className="mt-1 block text-sand">{taxi ? "Pay the driver" : listing.kind === "RESTAURANT" ? "Pay at the restaurant" : "Pay on the day"}</span>
+                  </button>
+                </div>
+                <p className="mt-2 text-xs text-mist">
+                  {payingNow
+                    ? "You will pay securely on Stripe. The booking is confirmed after the charge succeeds."
+                    : "No card is charged now."}
+                </p>
+              </div>
+            )}
             {clash && (
               <p className="text-sm text-rose">
                 {oneDay
@@ -550,9 +590,11 @@ export function ListingBook({ fallbackSlug }: { fallbackSlug?: string }) {
                 ? "Sign in to request"
                 : taxiMode === "custom"
                   ? "Request this driver"
-                  : oneDay
-                    ? "Book this day"
-                    : "Book these dates"}
+                  : payingNow
+                    ? `Pay with card · ${money(tripTotal)}`
+                    : oneDay
+                      ? "Book this day"
+                      : "Book these dates"}
             </button>
           </form>
           </>
