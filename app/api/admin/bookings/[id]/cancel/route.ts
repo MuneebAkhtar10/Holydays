@@ -3,9 +3,8 @@ import { NextResponse } from "next/server";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { toBookingDTO } from "@/lib/booking-dto";
-import { notifyBookingUpdate } from "@/lib/booking-notify";
+import { notifyCancellationDecision } from "@/lib/booking-notify";
 import { parseBookingExtras } from "@/lib/booking-view";
-import { publicOrigin } from "@/lib/auth-tokens";
 
 type Ctx = { params: Promise<{ id: string }> };
 
@@ -34,14 +33,7 @@ export async function POST(req: Request, { params }: Ctx) {
       data: { status: approve ? "cancelled" : "confirmed", extras: JSON.stringify(extra) },
       include: { listing: true, user: true },
     });
-    await notifyBookingUpdate(
-      updated.user?.email || "",
-      approve ? "HolyDays booking cancelled" : "HolyDays cancellation request denied",
-      approve
-        ? `Your booking at ${updated.listing.name} (${updated.startDate} — ${updated.endDate}) has been cancelled as requested.`
-        : `Your request to cancel ${updated.listing.name} (${updated.startDate} — ${updated.endDate}) was not approved — the booking stays confirmed.`,
-      `${publicOrigin()}/bookings/${updated.id}`,
-    );
+    await notifyCancellationDecision(updated.id, approve);
     return NextResponse.json(toBookingDTO(updated));
   } catch (err) {
     console.error(err);

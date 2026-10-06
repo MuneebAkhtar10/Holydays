@@ -3,7 +3,13 @@ import { bookingNumber, shareText } from "@/lib/booking-view";
 import { formatDay, formatPKR } from "@/lib/format";
 import { mailHtml } from "@/lib/mail";
 import { publicOrigin } from "@/lib/auth-tokens";
-import { confirmationEmail, loadBookingForEmail, type BuiltEmail } from "@/lib/booking-emails";
+import {
+  cancellationDecisionEmail,
+  cancellationRequestedEmail,
+  confirmationEmail,
+  loadBookingForEmail,
+  type BuiltEmail,
+} from "@/lib/booking-emails";
 
 export type NotifyChannels = {
   email: boolean;
@@ -148,4 +154,48 @@ export async function notifyGuestHostMessage(input: {
       "Reply to host",
     ),
   });
+}
+
+/** Sent to the traveller (and the host) when a traveller asks to cancel. Never throws — email trouble must not block a cancellation. */
+export async function notifyCancellationRequested(bookingId: string, reason: string) {
+  try {
+    const loaded = await loadBookingForEmail(bookingId);
+    if (!loaded) return;
+    const { dto, ownerEmail } = loaded;
+    // Extra hotels in a package are cancelled together with the main booking, whose email covers all of them.
+    if (dto.extra.packageId && dto.extra.packageId !== dto.id) return;
+    const origin = publicOrigin();
+
+    if (dto.guestEmail?.includes("@")) {
+      const mail = cancellationRequestedEmail(dto, origin, reason);
+      await notifyUser({ to: dto.guestEmail, subject: mail.subject, text: mail.text, html: mail.html });
+    }
+    if (ownerEmail.includes("@")) {
+      await notifyUser({
+        to: ownerEmail,
+        subject: `Cancellation request · ${dto.listing.name} · ${dto.number}`,
+        text: `${dto.guestName || "A guest"} asked to cancel booking ${dto.number} (${dto.listing.name}, ${formatDay(dto.startDate)} — ${formatDay(dto.endDate)}).\nReason: ${reason}\n\nReview it in your partner desk: ${origin}/owner?tab=bookings`,
+        html: mailHtml(
+          "Cancellation request",
+          `${dto.guestName || "A guest"} asked to cancel booking ${dto.number} for ${dto.listing.name} (${formatDay(dto.startDate)} — ${formatDay(dto.endDate)}).\n\nReason: ${reason}\n\nPlease approve or decline it in your partner desk.`,
+          `${origin}/owner?tab=bookings`,
+          "Review request",
+        ),
+      });
+    }
+  } catch (err) {
+    console.error("[booking-notify] cancellation request email failed", err);
+  }
+}
+
+/** Sent to the traveller when a cancellation request is approved or denied. */
+export async function notifyCancellationDecision(bookingId: string, approved: boolean) {
+  try {
+    const loaded = await loadBookingForEmail(bookingId);
+    if (!loaded?.dto.guestEmail?.includes("@")) return;
+    const mail = cancellationDecisionEmail(loaded.dto, publicOrigin(), approved);
+    await notifyUser({ to: loaded.dto.guestEmail, subject: mail.subject, text: mail.text, html: mail.html });
+  } catch (err) {
+    console.error("[booking-notify] cancellation decision email failed", err);
+  }
 }

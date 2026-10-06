@@ -140,22 +140,22 @@ async function sendSmtp(mail: Mail, from: string) {
 
 export async function sendEmail(mail: Mail) {
   if (!isEmail(mail.to)) {
-    return { delivered: false, preview: null as string | null };
+    return { delivered: false, preview: null as string | null, error: undefined as string | undefined };
   }
   const from = fromAddress();
   try {
     if (process.env.RESEND_API_KEY) {
       await sendResend(mail, from);
-      return { delivered: true, preview: null };
+      return { delivered: true, preview: null, error: undefined as string | undefined };
     }
     if (process.env.SMTP_HOST) {
       await sendSmtp(mail, from);
-      return { delivered: true, preview: null };
+      return { delivered: true, preview: null, error: undefined as string | undefined };
     }
   } catch (err) {
     console.error("[holydays-mail]", err);
-    return { delivered: false, preview: mail.text };
+    return { delivered: false, preview: mail.text, error: err instanceof Error ? err.message : String(err) };
   }
   console.info(`[holydays-mail] ${mail.subject} -> ${mail.to}\n${mail.text}`);
-  return { delivered: false, preview: mail.text };
+  return { delivered: false, preview: mail.text, error: "No mail provider configured (set RESEND_API_KEY or SMTP_HOST)." };
 }

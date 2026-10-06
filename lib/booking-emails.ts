@@ -277,3 +277,118 @@ export function thankYouEmail(b: BookingDTO, origin: string): BuiltEmail {
     }),
   };
 }
+
+function cancelFacts(b: BookingDTO): [string, string][] {
+  const isPackage = Boolean(b.extra.package);
+  return [
+    ["Booking number", b.number],
+    [isPackage ? "Package" : isStay(b) ? "Property" : "Service", isPackage ? bookingPackageHotelNames(b).join(" · ") : b.listing.name],
+    ["Dates", `${longDay(b.startDate)} – ${longDay(b.endDate)}`],
+    ["Guests", `${b.guests} guest${b.guests === 1 ? "" : "s"}`],
+    ["Amount", formatPKR(bookingPackageGrandTotal(b))],
+    ["Payment", `${paymentLabel(b)}${wasPaid(b) ? " · paid" : ""}`],
+  ];
+}
+
+/** bookingIsPaid() is false for cancelled bookings, so read the recorded card payment directly. */
+function wasPaid(b: BookingDTO) {
+  return b.extra.paymentStatus === "paid" || Boolean(b.extra.paidAt);
+}
+
+function refundNote(b: BookingDTO) {
+  return wasPaid(b)
+    ? "You paid for this booking in advance. If a refund applies under the cancellation policy of your booking, it is returned to your original payment method, and we will email you once it is processed."
+    : "You had not paid for this booking yet, so there is nothing to refund.";
+}
+
+export function cancellationRequestedEmail(b: BookingDTO, origin: string, reason: string): BuiltEmail {
+  const url = `${origin}/bookings/${b.id}`;
+  const first = (b.guestName || "there").split(" ")[0];
+  const body = `
+    ${paragraphs(`Hello ${first},\n\nWe have received your request to cancel this booking. Our team is reviewing it, and we will email you as soon as a decision is made. Your booking stays active until then.`)}
+    <p style="margin:0 0 6px">${badge("Request received", "gold")} ${badge("Under review", "navy")}</p>
+
+    ${sectionTitle("Booking")}
+    ${detailCard(cancelFacts(b))}
+
+    ${reason ? `${sectionTitle("Your reason")}${paragraphs(`“${reason}”`)}` : ""}
+
+    ${sectionTitle("What happens next")}
+    ${checklist([
+      "Our team and the host review your request, usually within one business day.",
+      "You will receive another email with the decision.",
+      refundNote(b),
+    ])}
+
+    <p style="margin:28px 0 0">${button(url, "View booking")}</p>
+    <p style="margin:14px 0 0;font-family:-apple-system,'Segoe UI',Helvetica,Arial,sans-serif;font-size:12px;color:#8a97a8">Changed your mind? Reply to this email and tell us before the request is reviewed.</p>
+  `;
+  return {
+    subject: `Cancellation request received · ${b.listing.name} · ${b.number}`,
+    text: `Hello ${first},\n\nWe received your request to cancel booking ${b.number} (${b.listing.name}, ${longDay(b.startDate)} – ${longDay(b.endDate)}). It is under review and your booking stays active until a decision is made. We will email you the outcome.\n\nView booking: ${url}\n`,
+    html: emailShell({
+      origin,
+      eyebrow: `Booking ${b.number}`,
+      title: "We received your cancellation request",
+      preheader: `${b.listing.name} · ${longDay(b.startDate)} – ${longDay(b.endDate)} · under review`,
+      bodyHtml: body,
+    }),
+  };
+}
+
+export function cancellationDecisionEmail(b: BookingDTO, origin: string, approved: boolean): BuiltEmail {
+  const url = `${origin}/bookings/${b.id}`;
+  const first = (b.guestName || "there").split(" ")[0];
+  const decidedAt = String(b.extra.cancelDecidedAt ?? "");
+  const decided = decidedAt ? longDay(decidedAt.slice(0, 10)) : "";
+
+  if (approved) {
+    const body = `
+      ${paragraphs(`Hello ${first},\n\nYour cancellation has been confirmed. This booking is now cancelled and your dates have been released.`)}
+      <p style="margin:0 0 6px">${badge("Cancelled", "red")}</p>
+
+      ${sectionTitle("Cancelled booking")}
+      ${detailCard([...cancelFacts(b), ["Cancelled on", decided]])}
+
+      ${sectionTitle("Refund")}
+      ${paragraphs(refundNote(b))}
+
+      <p style="margin:28px 0 0">${button(url, "View booking")}
+        &nbsp;${button(`${origin}/search`, "Find another stay", "outline")}</p>
+      <p style="margin:14px 0 0;font-family:-apple-system,'Segoe UI',Helvetica,Arial,sans-serif;font-size:12px;color:#8a97a8">We are sorry to see this trip change, and hope to host you another time.</p>
+    `;
+    return {
+      subject: `Cancellation confirmed · ${b.listing.name} · ${b.number}`,
+      text: `Hello ${first},\n\nYour cancellation of booking ${b.number} (${b.listing.name}, ${longDay(b.startDate)} – ${longDay(b.endDate)}) is confirmed.\n\n${refundNote(b)}\n\nView booking: ${url}\n`,
+      html: emailShell({
+        origin,
+        eyebrow: `Booking ${b.number}`,
+        title: "Your cancellation is confirmed",
+        preheader: `${b.listing.name} · ${longDay(b.startDate)} – ${longDay(b.endDate)} · cancelled`,
+        bodyHtml: body,
+      }),
+    };
+  }
+
+  const body = `
+    ${paragraphs(`Hello ${first},\n\nYour request to cancel this booking was not approved, so your booking stays confirmed and nothing has changed. If you still need to change your plans, please contact the host or reply to this email.`)}
+    <p style="margin:0 0 6px">${badge("Booking stays confirmed", "green")}</p>
+
+    ${sectionTitle("Your booking")}
+    ${detailCard(cancelFacts(b))}
+
+    <p style="margin:28px 0 0">${button(url, "View booking")}
+      &nbsp;${button(`${url}/voucher`, "Voucher", "outline")}</p>
+  `;
+  return {
+    subject: `Cancellation request not approved · ${b.listing.name} · ${b.number}`,
+    text: `Hello ${first},\n\nYour request to cancel booking ${b.number} (${b.listing.name}) was not approved. The booking stays confirmed.\n\nView booking: ${url}\n`,
+    html: emailShell({
+      origin,
+      eyebrow: `Booking ${b.number}`,
+      title: "Your booking stays confirmed",
+      preheader: `Cancellation request for ${b.listing.name} was not approved`,
+      bodyHtml: body,
+    }),
+  };
+}

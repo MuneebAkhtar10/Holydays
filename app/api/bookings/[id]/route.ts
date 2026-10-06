@@ -4,7 +4,7 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { datesOverlap, todayIso } from "@/lib/format";
 import { toBookingDTO } from "@/lib/booking-dto";
-import { notifyBookingUpdate } from "@/lib/booking-notify";
+import { notifyBookingUpdate, notifyCancellationRequested } from "@/lib/booking-notify";
 import { parseBookingExtras } from "@/lib/booking-view";
 import { publicOrigin } from "@/lib/auth-tokens";
 import { parseListingMeta } from "@/lib/listing-meta";
@@ -63,6 +63,7 @@ export async function PATCH(req: Request, { params }: Ctx) {
       data: { status: "cancel_requested", extras: JSON.stringify(extra) },
       include: { listing: true, user: true },
     });
+    await notifyCancellationRequested(updated.id, reason);
     return NextResponse.json(toBookingDTO(updated));
   }
 
