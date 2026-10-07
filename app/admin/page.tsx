@@ -6,7 +6,7 @@ import { useSession } from "next-auth/react";
 import { useCallback, useEffect, useState } from "react";
 import { useSerai } from "@/lib/store";
 import { kindLabel, kindPath, unitLabel, type ListingKind } from "@/lib/marketplace";
-import { LoaderOverlay, PageLoader } from "@/components/PageLoader";
+import { LoaderMark, LoaderOverlay, PageLoader } from "@/components/PageLoader";
 import { readJson } from "@/lib/readJson";
 import { formatDay } from "@/lib/format";
 import type { BookingDTO } from "@/lib/booking-dto";
@@ -64,7 +64,8 @@ const ROLE_LABEL: Record<string, string> = { OWNER: "Partner", TRAVELER: "Travel
 const joined = (iso: string) =>
   new Date(iso).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
 
-function Initials({ name, size = "h-10 w-10" }: { name: string; size?: string }) {
+function Avatar({ name, image, size = "h-10 w-10" }: { name: string; image?: string | null; size?: string }) {
+  const [broken, setBroken] = useState(false);
   const text =
     name
       .split(" ")
@@ -72,8 +73,33 @@ function Initials({ name, size = "h-10 w-10" }: { name: string; size?: string })
       .slice(0, 2)
       .map((p) => p[0]?.toUpperCase())
       .join("") || "?";
+  if (image && !broken) {
+    return (
+      // eslint-disable-next-line @next/next/no-img-element
+      <img
+        src={image}
+        alt=""
+        loading="lazy"
+        referrerPolicy="no-referrer"
+        onError={() => setBroken(true)}
+        className={`${size} shrink-0 rounded-full border border-brass/30 bg-ink/30 object-cover`}
+      />
+    );
+  }
+  return <span className={`grid ${size} shrink-0 place-items-center rounded-full bg-brass/20 text-sm font-semibold text-brass`}>{text}</span>;
+}
+
+/** Dims the content and shows the HolyDays loader on top while a filter, tab or search is loading. */
+function LoadingVeil({ loading, label, children }: { loading: boolean; label: string; children: React.ReactNode }) {
   return (
-    <span className={`grid ${size} shrink-0 place-items-center rounded-full bg-brass/20 text-sm font-semibold text-brass`}>{text}</span>
+    <div className="relative min-h-40">
+      <div className={`transition-opacity ${loading ? "pointer-events-none opacity-25" : ""}`}>{children}</div>
+      {loading && (
+        <div className="absolute inset-0 z-10 grid place-items-start justify-center pt-10" aria-live="polite" aria-busy>
+          <LoaderMark label={label} />
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -189,6 +215,7 @@ export default function AdminPage() {
   const [items, setItems] = useState<QueueItem[]>([]);
   const [queueLoading, setQueueLoading] = useState(false);
   const [cancellations, setCancellations] = useState<BookingDTO[]>([]);
+  const [cancelLoading, setCancelLoading] = useState(false);
 
   const loadUsers = useCallback(async () => {
     setUsersLoading(true);
@@ -243,6 +270,7 @@ export default function AdminPage() {
   }, [tab]);
 
   const loadCancellations = useCallback(async () => {
+    setCancelLoading(true);
     try {
       const d = await readJson<BookingDTO[] | { error?: string }>(await fetch("/api/admin/bookings/cancellations"));
       if (Array.isArray(d)) {
@@ -256,6 +284,7 @@ export default function AdminPage() {
       setCancellations([]);
       setLoadError("Could not load cancellation requests.");
     }
+    setCancelLoading(false);
   }, []);
 
   // users: search is debounced; the same fetch keeps the header counts fresh
@@ -413,7 +442,8 @@ export default function AdminPage() {
               {users.length > 0 ? " · click one to see their listings" : ""}
             </p>
 
-            <div className="mt-2 space-y-2">
+            <LoadingVeil loading={usersLoading} label="Loading accounts">
+            <div className="space-y-2">
               {!usersLoading && users.length === 0 && !loadError && <p className="text-sm text-mist">No accounts match these filters.</p>}
               {users.map((u) => {
                 const on = u.id === selectedId;
@@ -424,7 +454,7 @@ export default function AdminPage() {
                     onClick={() => setSelectedId(on ? null : u.id)}
                     className={`flex w-full items-center gap-3 rounded-xl border px-3 py-2.5 text-left transition-colors ${on ? "border-brass bg-brass/10" : "border-brass/20 bg-ink-2 hover:border-brass/50"}`}
                   >
-                    <Initials name={u.name} />
+                    <Avatar name={u.name} image={u.image} />
                     <span className="min-w-0 flex-1">
                       <span className="flex flex-wrap items-center gap-1.5">
                         <span className="truncate text-sm font-semibold text-sand">{u.name}</span>
@@ -462,18 +492,26 @@ export default function AdminPage() {
                 );
               })}
             </div>
+            </LoadingVeil>
           </div>
 
           {selectedId && (
-            <aside className="min-w-0 self-start rounded-2xl border border-brass/30 bg-ink-2/70 p-4 lg:sticky lg:top-20">
+            <aside className="relative min-w-0 self-start rounded-2xl border border-brass/30 bg-ink-2/70 p-4 lg:sticky lg:top-20">
+              {detailLoading && detail && (
+                <div className="absolute inset-0 z-10 grid place-items-center rounded-2xl bg-ink/60 backdrop-blur-[1px]" aria-busy>
+                  <LoaderMark label="Loading owner" />
+                </div>
+              )}
               {detailLoading && !detail ? (
-                <p className="text-sm text-mist">Loading…</p>
+                <div className="grid min-h-48 place-items-center">
+                  <LoaderMark label="Loading owner" />
+                </div>
               ) : !detail ? (
                 <p className="text-sm text-mist">Could not load this account.</p>
               ) : (
                 <>
                   <div className="flex items-start gap-3">
-                    <Initials name={detail.user.name} size="h-12 w-12" />
+                    <Avatar name={detail.user.name} image={detail.user.image} size="h-12 w-12" />
                     <div className="min-w-0 flex-1">
                       <h2 className="font-display truncate text-2xl leading-tight">{detail.user.name}</h2>
                       <p className="truncate text-sm text-mist">{detail.user.email}</p>
@@ -527,12 +565,15 @@ export default function AdminPage() {
             </div>
             <p className="text-xs text-mist">New and edited owner listings stay off the public site until approved.</p>
           </div>
-          <div className="mt-3 space-y-2">
-            {queueLoading && items.length === 0 && <p className="text-sm text-mist">Loading…</p>}
-            {!queueLoading && items.length === 0 && !loadError && <p className="text-sm text-mist">Nothing in this queue.</p>}
-            {items.map((l) => (
-              <ListingRow key={l.id} l={l} money={money} onDecide={decide} onOpenOwner={openOwner} />
-            ))}
+          <div className="mt-3">
+            <LoadingVeil loading={queueLoading} label="Loading listings">
+              <div className="space-y-2">
+                {!queueLoading && items.length === 0 && !loadError && <p className="text-sm text-mist">Nothing in this queue.</p>}
+                {items.map((l) => (
+                  <ListingRow key={l.id} l={l} money={money} onDecide={decide} onOpenOwner={openOwner} />
+                ))}
+              </div>
+            </LoadingVeil>
           </div>
         </div>
       )}
@@ -540,7 +581,9 @@ export default function AdminPage() {
       {section === "cancellations" && (
         <div className="mt-5 space-y-2">
           <p className="text-xs text-mist">Guests who requested a cancellation wait here until you approve or deny it.</p>
-          {cancellations.length === 0 && !loadError && <p className="mt-3 text-sm text-mist">No pending cancellation requests.</p>}
+          <LoadingVeil loading={cancelLoading} label="Loading requests">
+          <div className="space-y-2">
+          {!cancelLoading && cancellations.length === 0 && !loadError && <p className="mt-3 text-sm text-mist">No pending cancellation requests.</p>}
           {cancellations.map((b) => (
             <article key={b.id} className="rounded-xl border border-brass/20 bg-ink-2 px-3 py-2.5">
               <div className="flex items-center gap-3">
@@ -570,6 +613,8 @@ export default function AdminPage() {
               {b.extra?.cancelReason ? <p className="mt-1.5 rounded-lg bg-rose/10 px-3 py-1.5 text-xs text-rose">“{String(b.extra.cancelReason)}”</p> : null}
             </article>
           ))}
+          </div>
+          </LoadingVeil>
         </div>
       )}
     </div>
