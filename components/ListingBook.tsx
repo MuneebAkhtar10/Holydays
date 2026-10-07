@@ -425,7 +425,11 @@ export function ListingBook({ fallbackSlug }: { fallbackSlug?: string }) {
               </div>
             </div>
           ) : null}
-          {listing.status && listing.status !== "approved" ? (
+          {asAdmin ? (
+            <p className="mt-4 rounded-xl bg-ink/30 px-4 py-3 text-sm text-mist">
+              Admin preview — this is how guests see the listing. Booking is turned off for admin accounts.
+            </p>
+          ) : listing.status && listing.status !== "approved" ? (
             <p className="mt-4 rounded-xl bg-ink/30 px-4 py-3 text-sm text-mist">
               Booking opens once this listing is approved and live.
             </p>

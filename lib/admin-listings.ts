@@ -14,6 +14,8 @@ export type AdminListingRow = {
   rejectReason: string;
   ownerName: string;
   ownerEmail: string;
+  ownerId: string;
+  createdAt: Date | string;
 };
 
 export async function fetchAdminListings(status: string): Promise<AdminListingRow[]> {
@@ -32,7 +34,9 @@ export async function fetchAdminListings(status: string): Promise<AdminListingRo
       COALESCE(l.status, 'pending') AS status,
       COALESCE(l.rejectReason, '') AS "rejectReason",
       u.name AS "ownerName",
-      u.email AS "ownerEmail"
+      u.email AS "ownerEmail",
+      l.ownerId AS "ownerId",
+      l.createdAt AS "createdAt"
     FROM Listing l
     INNER JOIN "user" u ON u.id = l.ownerId
     WHERE (${filter} = '%' OR COALESCE(l.status, 'pending') = ${filter})

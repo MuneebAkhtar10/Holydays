@@ -29,6 +29,8 @@ export async function GET(req: Request) {
         status: l.status,
         rejectReason: l.rejectReason,
         owner: { name: l.ownerName, email: l.ownerEmail },
+        ownerId: l.ownerId,
+        createdAt: l.createdAt,
       })),
     );
   } catch (err) {

@@ -650,6 +650,13 @@ function StayInner() {
               };
               const soldOut = roomsLeft === 0 || roomCount < 1 || (roomsLeft != null && roomCount > roomsLeft);
               const blockedLabel = roomCount < 1 ? "Select a room" : "Not available for these dates";
+              if (asAdmin) {
+                return (
+                  <p className="mt-4 rounded-xl bg-ink/5 px-4 py-3 text-sm text-ink/55">
+                    Admin preview — booking is turned off for admin accounts.
+                  </p>
+                );
+              }
               if (pendingPreview) {
                 return (
                   <p className="mt-4 rounded-xl bg-ink/5 px-4 py-3 text-sm text-ink/55">
