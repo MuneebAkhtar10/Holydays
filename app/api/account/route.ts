@@ -1,3 +1,5 @@
+import { verifyEmailMail } from "@/lib/account-emails";
+import { showDemoCodes } from "@/lib/verification";
 import { getServerSession } from "next-auth";
 import { NextResponse } from "next/server";
 import { authOptions } from "@/lib/auth";
@@ -75,14 +77,11 @@ export async function PATCH(req: Request) {
         email = nextEmail;
         emailVerified = null;
         const token = await issueToken(current.id, "email", 1000 * 60 * 60 * 24);
-        const link = `${publicOrigin()}/verify-email?token=${token}`;
-        const sent = await notifyUser({
-          to: email,
-          subject: "Verify your new Serai email",
-          text: `Confirm this address: ${link}`,
-          code: token,
-        });
-        preview = sent.delivered ? null : link;
+        const origin = publicOrigin();
+        const link = `${origin}/verify-email?token=${token}`;
+        const mail = verifyEmailMail({ name: current.name, link, origin, changed: true });
+        const sent = await notifyUser({ to: email, subject: mail.subject, text: mail.text, html: mail.html, code: token });
+        preview = sent.delivered || !showDemoCodes() ? null : link;
       }
     }
 

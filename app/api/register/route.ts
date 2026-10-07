@@ -1,3 +1,5 @@
+import { verifyEmailMail } from "@/lib/account-emails";
+import { showDemoCodes } from "@/lib/verification";
 import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import { Prisma } from "@prisma/client";
@@ -55,14 +57,11 @@ export async function POST(req: Request) {
     let preview: string | null = null;
     try {
       const token = await issueToken(user.id, "email", 1000 * 60 * 60 * 24);
-      const link = `${publicOrigin()}/verify-email?token=${token}`;
-      const sent = await notifyUser({
-        to: email,
-        subject: "Verify your HolyDays email",
-        text: `Open this link to verify your email: ${link}`,
-        code: token,
-      });
-      preview = sent.delivered ? null : link;
+      const origin = publicOrigin();
+      const link = `${origin}/verify-email?token=${token}`;
+      const mail = verifyEmailMail({ name, link, origin });
+      const sent = await notifyUser({ to: email, subject: mail.subject, text: mail.text, html: mail.html, code: token });
+      preview = sent.delivered || !showDemoCodes() ? null : link;
     } catch (err) {
       console.error("[register] account created; verify email skipped", err);
     }
