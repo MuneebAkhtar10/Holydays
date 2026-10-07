@@ -93,3 +93,11 @@ export const defaultDates = () => {
   const iso = (d: Date) => d.toISOString().slice(0, 10);
   return { checkin: iso(inD), checkout: iso(outD) };
 };
+
+/** "19:30" -> "7:30 PM" */
+export const formatTime = (hhmm: string) => {
+  const m = /^(\d{1,2}):(\d{2})$/.exec(hhmm || "");
+  if (!m) return hhmm || "";
+  const h = Number(m[1]);
+  return `${h % 12 || 12}:${m[2]} ${h < 12 ? "AM" : "PM"}`;
+};

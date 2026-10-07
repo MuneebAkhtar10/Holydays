@@ -1,13 +1,15 @@
 "use client";
 
 import Image from "next/image";
+import { useEffect, useState } from "react";
 import { useSerai } from "@/lib/store";
 import { quoteStay, stayRooms, type QuoteInput, type RoomPick } from "@/lib/pricing";
 import { BED_LABEL, CANCEL_LABEL, MEAL_PLAN_LABEL, PAY_LABEL, bedCopy, bedCount, type BookableRoom } from "@/lib/rooms";
 import type { RatePlan, Stay } from "@/lib/types";
 
-function roomImage(stay: Stay, room: BookableRoom, fallback: string[]) {
-  return room.images[0] || fallback[0] || stay.cover;
+function roomShotsFor(stay: Stay, room: BookableRoom, fallback: string[]) {
+  if (room.images.length) return room.images.filter(Boolean);
+  return [fallback[0] || stay.cover].filter(Boolean);
 }
 
 function pickFor(picks: RoomPick[], room: BookableRoom): RoomPick {
@@ -87,9 +89,7 @@ export function RoomPicker({
             }}
           >
             <div className="grid gap-0 md:grid-cols-[220px_minmax(0,1fr)]">
-              <div className="relative min-h-[160px]">
-                <Image src={roomImage(stay, room, roomShots)} alt={room.name} fill className="object-cover" />
-              </div>
+              <RoomPhotos name={room.name} shots={roomShotsFor(stay, room, roomShots)} />
               <div className="p-5">
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div>
@@ -204,6 +204,67 @@ export function RoomPicker({
         );
       })}
     </div>
+  );
+}
+
+function RoomPhotos({ name, shots }: { name: string; shots: string[] }) {
+  const [open, setOpen] = useState<number | null>(null);
+  const cover = shots[0];
+
+  useEffect(() => {
+    if (open == null) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setOpen(null);
+      if (e.key === "ArrowRight") setOpen((i) => (i == null ? 0 : (i + 1) % shots.length));
+      if (e.key === "ArrowLeft") setOpen((i) => (i == null ? 0 : (i - 1 + shots.length) % shots.length));
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [open, shots.length]);
+
+  if (!cover) return <div className="relative min-h-[160px] bg-ink-2" />;
+
+  return (
+    <>
+      <button
+        type="button"
+        className="relative min-h-[160px] w-full overflow-hidden text-left"
+        onClick={() => setOpen(0)}
+        aria-label={`View ${name} photos`}
+      >
+        <Image src={cover} alt={name} fill className="object-cover" />
+        <span className="absolute bottom-2 left-2 rounded-full bg-ink/75 px-2 py-0.5 text-[11px] text-sand">
+          {shots.length} photo{shots.length === 1 ? "" : "s"}
+        </span>
+      </button>
+      {open != null && (
+        <div
+          className="fixed inset-0 z-50 grid place-items-center bg-ink/92 p-6"
+          onClick={() => setOpen(null)}
+          role="dialog"
+          aria-modal="true"
+          aria-label={`${name} photos`}
+        >
+          <Image src={shots[open] ?? cover} alt="" width={1400} height={900} className="max-h-[80vh] w-auto object-contain" />
+          <p className="absolute left-6 top-6 font-display text-lg text-sand">{name}</p>
+          <div className="absolute bottom-8 flex max-w-[90vw] flex-wrap justify-center gap-2">
+            {shots.map((src, i) => (
+              <button
+                key={`${src}-${i}`}
+                type="button"
+                className={`h-14 w-20 overflow-hidden border ${open === i ? "border-brass" : "border-transparent"}`}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setOpen(i);
+                }}
+              >
+                <Image src={src} alt="" width={80} height={56} className="h-full w-full object-cover" />
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+    </>
   );
 }
 

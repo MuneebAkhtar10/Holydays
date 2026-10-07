@@ -1,4 +1,4 @@
-const u = (id: string) => `https://images.unsplash.com/photo-${id}?fm=jpg&q=75&w=640&h=420&auto=format&fit=crop`;
+const u = (id: string) => `https://images.unsplash.com/photo-${id}?fm=jpg&q=80&w=1400&h=900&auto=format&fit=crop`;
 
 const HIACE = u("1650807486050-a142ea418b19");
 const MINIBUS = u("1715340614342-899407bed6dd");

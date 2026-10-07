@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { toBookingDTO } from "@/lib/booking-dto";
-import { notifyBookingCreated } from "@/lib/booking-notify";
+import { notifyBookingCreated, recordEmailSent } from "@/lib/booking-notify";
 import { parseBookingExtras } from "@/lib/booking-view";
 import { getStripe, stripeConfigured } from "@/lib/stripe";
 import { toStripeCharge } from "@/lib/stripe-money";
@@ -120,7 +120,7 @@ export async function markBookingsPaid(bookingId: string, sessionId: string, ori
     include: { listing: { include: { owner: true } }, user: true },
   });
 
-  await notifyBookingCreated({
+  const notice = await notifyBookingCreated({
     email: saved.user?.email || "",
     phone: saved.phone,
     name: saved.user?.name || "Guest",
@@ -132,6 +132,7 @@ export async function markBookingsPaid(bookingId: string, sessionId: string, ori
     origin,
     ownerEmail: saved.listing.owner?.email,
   });
+  if (notice.sentEmail) await recordEmailSent(saved.id, notice.sentEmail.type, notice.sentEmail.to);
 
   return toBookingDTO(saved);
 }

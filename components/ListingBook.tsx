@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useSession } from "next-auth/react";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
-import { datesOverlap, formatDay, isPastBooking, localTodayIso, minCheckoutIso } from "@/lib/format";
+import { addDaysIso, datesOverlap, formatDay, formatTime, isPastBooking, localTodayIso, minCheckoutIso } from "@/lib/format";
 import { useSerai } from "@/lib/store";
 import { defaultDates } from "@/lib/format";
 import { kindLabel, unitLabel, type ListingKind } from "@/lib/marketplace";
@@ -15,8 +15,10 @@ import { ListingReviews, type ReviewItem } from "@/components/ListingReviews";
 import { StarIcon } from "@/components/StarIcon";
 import { readJson } from "@/lib/readJson";
 import { independentTripTotal } from "@/lib/trip-total";
+import { parseBookingExtras } from "@/lib/booking-view";
 import { CancelBookingModal } from "@/components/CancelBookingModal";
-import { TaxiPhotos } from "@/components/TaxiPhotos";
+import { TaxiPhotos, taxiCarPhotos } from "@/components/TaxiPhotos";
+import { ZoomableImage } from "@/components/ZoomableImage";
 
 type Booking = {
   id: string;
@@ -25,6 +27,7 @@ type Booking = {
   total: number;
   guests: number;
   status: string;
+  extras?: string;
 };
 
 type Listing = {
@@ -79,10 +82,15 @@ function TaxiItinerary({ listing }: { listing: Listing }) {
           vehiclePhotos={taxi.vehiclePhotos}
           cover={taxi.cover}
           size="lg"
+          showVehicle={false}
         />
         <div className="min-w-0">
+          <p className="text-[10px] uppercase tracking-[0.16em] text-brass">Driver</p>
           <p className="truncate text-sm font-medium text-sand">{taxi.driver}</p>
-          <p className="truncate text-xs text-mist">{taxi.vehicle}</p>
+          <p className="truncate text-xs text-mist">
+            {taxi.vehicle}
+            {taxi.model ? ` · ${taxi.model}` : ""}
+          </p>
         </div>
       </div>
       <ol className="mt-5 space-y-2 border-l border-brass/30 pl-4">
@@ -103,6 +111,13 @@ function TaxiItinerary({ listing }: { listing: Listing }) {
   );
 }
 
+const SLOTS = Array.from({ length: 26 }, (_, i) => {
+  const m = 11 * 60 + i * 30;
+  return `${String(Math.floor(m / 60)).padStart(2, "0")}:${String(m % 60).padStart(2, "0")}`;
+});
+
+const reservationTime = (b: { extras?: string }) => String(parseBookingExtras(b.extras).time ?? "");
+
 export function ListingBook({ fallbackSlug }: { fallbackSlug?: string }) {
   const { money, currency } = useSerai();
   const { id } = useParams<{ id: string }>();
@@ -119,6 +134,8 @@ export function ListingBook({ fallbackSlug }: { fallbackSlug?: string }) {
   const [customHours, setCustomHours] = useState(6);
   const [customNote, setCustomNote] = useState("");
   const [phone, setPhone] = useState("");
+  const [slot, setSlot] = useState("19:30");
+  const [notes, setNotes] = useState("");
   const [payMethod, setPayMethod] = useState<"property" | "card">("property");
   const [error, setError] = useState("");
   const [ready, setReady] = useState(false);
@@ -157,15 +174,21 @@ export function ListingBook({ fallbackSlug }: { fallbackSlug?: string }) {
     void load();
   }, [slug]);
 
+  useEffect(() => {
+    if (listing?.kind === "RESTAURANT") setStart(addDaysIso(localTodayIso(), 1));
+  }, [listing?.kind]);
+
   const bookings = listing?.myBookings ?? [];
   const clash = useMemo(
     () =>
       bookings.find(
         (b) =>
           !isPastBooking(b.endDate, b.startDate) &&
-          datesOverlap(start, listing?.kind === "TAXI" || listing?.kind === "ATTRACTION" ? start : end || start, b.startDate, b.endDate),
+          (listing?.kind === "RESTAURANT"
+            ? b.startDate === start && reservationTime(b) === slot
+            : datesOverlap(start, listing?.kind === "TAXI" || listing?.kind === "ATTRACTION" ? start : end || start, b.startDate, b.endDate)),
       ),
-    [bookings, start, end, listing?.kind],
+    [bookings, start, end, slot, listing?.kind],
   );
 
   if (!ready) return <PageLoader label="Loading listing" />;
@@ -191,6 +214,7 @@ export function ListingBook({ fallbackSlug }: { fallbackSlug?: string }) {
         })
       : null;
   const oneDay = listing.kind === "TAXI" || listing.kind === "ATTRACTION";
+  const reservation = listing.kind === "RESTAURANT";
   const tripTotal = independentTripTotal({
     kind: listing.kind,
     price: listing.price,
@@ -219,14 +243,16 @@ export function ListingBook({ fallbackSlug }: { fallbackSlug?: string }) {
       body: JSON.stringify({
         listingId: listing.slug,
         startDate: start,
-        endDate: oneDay ? start : end,
+        endDate: oneDay || reservation ? start : end,
         guests,
         phone,
         payment: payingNow ? "card" : "property",
         currency,
         total: tripTotal,
         customTaxi: taxi && taxiMode === "custom",
-        extras: taxi
+        extras: reservation
+          ? JSON.stringify({ time: slot, requests: notes.trim() })
+          : taxi
           ? JSON.stringify(
               taxiMode === "custom" ? { taxiMode, hours: customHours, note: customNote } : { taxiMode },
             )
@@ -245,6 +271,126 @@ export function ListingBook({ fallbackSlug }: { fallbackSlug?: string }) {
     }
     router.push(`/booked/${data?.id || listing.slug}`);
   };
+
+  const paymentBlock = canPayNow ? (
+<div>
+                <p className="auth-label">Payment</p>
+                <div className="mt-2 grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    aria-pressed={payMethod === "card"}
+                    className={`rounded-xl border px-3 py-3 text-left text-sm ${payMethod === "card" ? "border-flame bg-flame/10" : "border-brass/30"}`}
+                    onClick={() => setPayMethod("card")}
+                  >
+                    <span className="block text-[11px] uppercase tracking-[0.14em] text-brass">Pay now</span>
+                    <span className="mt-1 block text-sand">Card · {money(tripTotal)}</span>
+                  </button>
+                  <button
+                    type="button"
+                    aria-pressed={payMethod === "property"}
+                    className={`rounded-xl border px-3 py-3 text-left text-sm ${payMethod === "property" ? "border-flame bg-flame/10" : "border-brass/30"}`}
+                    onClick={() => setPayMethod("property")}
+                  >
+                    <span className="block text-[11px] uppercase tracking-[0.14em] text-brass">Pay later</span>
+                    <span className="mt-1 block text-sand">{taxi ? "Pay the driver" : listing.kind === "RESTAURANT" ? "Pay at the restaurant" : "Pay on the day"}</span>
+                  </button>
+                </div>
+                <p className="mt-2 text-xs text-mist">
+                  {payingNow
+                    ? "You will pay securely on Stripe. The booking is confirmed after the charge succeeds."
+                    : "No card is charged now."}
+                </p>
+              </div>
+  ) : null;
+
+  const today = localTodayIso();
+  const nowMinutes = new Date().getHours() * 60 + new Date().getMinutes();
+  const slots = SLOTS.filter((t) => start !== today || Number(t.slice(0, 2)) * 60 + Number(t.slice(3)) > nowMinutes + 30);
+  const slotValue = slots.includes(slot) ? slot : slots[0] ?? slot;
+
+  const reservationForm = (
+    <form
+      className="mt-4 space-y-4"
+      onSubmit={(e) => {
+        e.preventDefault();
+        if (slotValue !== slot) setSlot(slotValue);
+        void book();
+      }}
+    >
+      <div className="grid grid-cols-2 gap-3">
+        <label className="auth-label">
+          Date
+          <input type="date" className="auth-field" min={today} value={start} onChange={(e) => setStart(e.target.value)} />
+        </label>
+        <label className="auth-label">
+          Time
+          <select className="auth-field" value={slotValue} onChange={(e) => setSlot(e.target.value)} disabled={slots.length === 0}>
+            {slots.length === 0 && <option>No times left today</option>}
+            {slots.map((t) => (
+              <option key={t} value={t}>
+                {formatTime(t)}
+              </option>
+            ))}
+          </select>
+        </label>
+      </div>
+      <div>
+        <p className="auth-label">Party size</p>
+        <div className="mt-2 flex items-center justify-between rounded-xl border border-brass/25 bg-ink/25 px-3 py-2">
+          <button
+            type="button"
+            aria-label="Fewer guests"
+            className="btn-ghost px-3! py-1! text-lg! leading-none"
+            disabled={guests <= 1}
+            onClick={() => setGuests((g) => Math.max(1, g - 1))}
+          >
+            −
+          </button>
+          <span className="text-sand">
+            {guests} {guests === 1 ? "guest" : "guests"}
+          </span>
+          <button
+            type="button"
+            aria-label="More guests"
+            className="btn-ghost px-3! py-1! text-lg! leading-none"
+            disabled={guests >= 20}
+            onClick={() => setGuests((g) => Math.min(20, g + 1))}
+          >
+            +
+          </button>
+        </div>
+      </div>
+      <label className="auth-label">
+        Phone
+        <input className="auth-field" placeholder="03xx xxxxxxx" value={phone} onChange={(e) => setPhone(e.target.value)} />
+      </label>
+      <label className="auth-label">
+        Special requests <span className="normal-case tracking-normal text-mist">(optional)</span>
+        <textarea
+          className="auth-field min-h-16"
+          maxLength={300}
+          placeholder="Occasion, allergies, high chair…"
+          value={notes}
+          onChange={(e) => setNotes(e.target.value)}
+        />
+      </label>
+      {paymentBlock}
+      <div className="rounded-xl bg-ink/30 px-3 py-2.5 text-sm">
+        <p className="text-sand">
+          {start ? new Date(`${start}T12:00:00`).toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" }) : "—"}
+          {slotValue ? ` · ${formatTime(slotValue)}` : ""} · {guests} {guests === 1 ? "guest" : "guests"}
+        </p>
+        <p className="mt-0.5 text-mist">Total {money(tripTotal)}</p>
+      </div>
+      {clash && (
+        <p className="text-sm text-rose">You already have a reservation here at that date and time. Pick another time or cancel it first.</p>
+      )}
+      {error && <p className="text-sm text-rose">{error}</p>}
+      <button type="submit" className="btn-primary w-full" disabled={Boolean(clash) || Boolean(overlay) || slots.length === 0}>
+        {status !== "authenticated" ? "Sign in to reserve" : payingNow ? `Reserve & pay · ${money(tripTotal)}` : "Reserve a table"}
+      </button>
+    </form>
+  );
 
   const decideListing = async (next: "approved" | "rejected") => {
     if (next === "rejected") {
@@ -278,7 +424,16 @@ export function ListingBook({ fallbackSlug }: { fallbackSlug?: string }) {
     <div>
       <LoaderOverlay show={Boolean(overlay)} label={overlay ?? "Updating"} />
       <div className="relative h-[58vh] min-h-[380px] overflow-hidden">
-        <Image src={listing.cover || "/images/hero-hunza-dusk.png"} alt={listing.name} fill priority className="object-cover" />
+        {taxi ? (
+          <ZoomableImage
+            src={taxiCarPhotos(taxi)[0] || listing.cover || "/images/hero-hunza-dusk.png"}
+            sources={taxiCarPhotos(taxi)}
+            alt={taxi.vehicle || listing.name}
+            className="absolute inset-0 h-full w-full"
+          />
+        ) : (
+          <Image src={listing.cover || "/images/hero-hunza-dusk.png"} alt={listing.name} fill priority className="object-cover" />
+        )}
         <div className="absolute inset-0 bg-gradient-to-t from-ink via-ink/35 to-ink/25" />
         <div className="absolute inset-x-0 bottom-0 mx-auto max-w-6xl px-5 pb-10">
           <p className="inline-flex rounded-full border border-brass/40 bg-ink/50 px-3 py-1 text-[11px] uppercase tracking-[0.18em] text-brass backdrop-blur">
@@ -296,7 +451,7 @@ export function ListingBook({ fallbackSlug }: { fallbackSlug?: string }) {
         </div>
       </div>
 
-      <div className="mx-auto grid max-w-6xl gap-10 px-5 py-12 lg:grid-cols-[minmax(0,1fr)_360px]">
+      <div className="mx-auto grid max-w-6xl gap-10 px-5 py-12 lg:grid-cols-[minmax(0,1fr)_440px]">
         <div>
           {(mine || asAdmin) && listing.status && listing.status !== "approved" && (
             <div className="mb-8 rounded-2xl border border-brass/35 bg-ink-2/70 px-5 py-4 text-sm text-sand">
@@ -376,7 +531,8 @@ export function ListingBook({ fallbackSlug }: { fallbackSlug?: string }) {
                     <p className="text-sm text-sand">
                       {oneDay || b.startDate === b.endDate
                         ? formatDay(b.startDate)
-                        : `${formatDay(b.startDate)} — ${formatDay(b.endDate)}`}{" "}
+                        : `${formatDay(b.startDate)} — ${formatDay(b.endDate)}`}
+                      {reservation && reservationTime(b) ? ` · ${formatTime(reservationTime(b))}` : ""}{" "}
                       · {money(b.total)}
                       {past ? " · Completed" : ""}
                     </p>
@@ -398,6 +554,7 @@ export function ListingBook({ fallbackSlug }: { fallbackSlug?: string }) {
         </div>
 
         <aside className="h-fit rounded-2xl border border-brass/30 bg-ink-2 p-6 shadow-[0_20px_60px_rgba(0,0,0,0.28)]">
+          {reservation && <p className="mb-1 text-[11px] uppercase tracking-[0.18em] text-brass">Reserve a table</p>}
           {taxi && taxiMode === "custom" ? (
             <p className="font-display text-2xl">Customize this trip</p>
           ) : (
@@ -418,10 +575,15 @@ export function ListingBook({ fallbackSlug }: { fallbackSlug?: string }) {
                 vehiclePhotos={taxi.vehiclePhotos}
                 cover={taxi.cover}
                 size="md"
+                showVehicle={false}
               />
               <div className="min-w-0">
+                <p className="text-[10px] uppercase tracking-[0.16em] text-brass">Driver</p>
                 <p className="truncate text-sm font-medium text-sand">{taxi.driver}</p>
-                <p className="truncate text-xs text-mist">{taxi.vehicle}</p>
+                <p className="truncate text-xs text-mist">
+                  {taxi.vehicle}
+                  {taxi.model ? ` · ${taxi.model}` : ""}
+                </p>
               </div>
             </div>
           ) : null}
@@ -433,6 +595,9 @@ export function ListingBook({ fallbackSlug }: { fallbackSlug?: string }) {
             <p className="mt-4 rounded-xl bg-ink/30 px-4 py-3 text-sm text-mist">
               Booking opens once this listing is approved and live.
             </p>
+          ) : (
+          reservation ? (
+            reservationForm
           ) : (
           <>
           <p className="mt-2 text-sm text-mist">
@@ -544,36 +709,7 @@ export function ListingBook({ fallbackSlug }: { fallbackSlug?: string }) {
               Phone
               <input className="auth-field" placeholder="03xx xxxxxxx" value={phone} onChange={(e) => setPhone(e.target.value)} />
             </label>
-            {canPayNow && (
-              <div>
-                <p className="auth-label">Payment</p>
-                <div className="mt-2 grid grid-cols-2 gap-2">
-                  <button
-                    type="button"
-                    aria-pressed={payMethod === "card"}
-                    className={`rounded-xl border px-3 py-3 text-left text-sm ${payMethod === "card" ? "border-flame bg-flame/10" : "border-brass/30"}`}
-                    onClick={() => setPayMethod("card")}
-                  >
-                    <span className="block text-[11px] uppercase tracking-[0.14em] text-brass">Pay now</span>
-                    <span className="mt-1 block text-sand">Card · {money(tripTotal)}</span>
-                  </button>
-                  <button
-                    type="button"
-                    aria-pressed={payMethod === "property"}
-                    className={`rounded-xl border px-3 py-3 text-left text-sm ${payMethod === "property" ? "border-flame bg-flame/10" : "border-brass/30"}`}
-                    onClick={() => setPayMethod("property")}
-                  >
-                    <span className="block text-[11px] uppercase tracking-[0.14em] text-brass">Pay later</span>
-                    <span className="mt-1 block text-sand">{taxi ? "Pay the driver" : listing.kind === "RESTAURANT" ? "Pay at the restaurant" : "Pay on the day"}</span>
-                  </button>
-                </div>
-                <p className="mt-2 text-xs text-mist">
-                  {payingNow
-                    ? "You will pay securely on Stripe. The booking is confirmed after the charge succeeds."
-                    : "No card is charged now."}
-                </p>
-              </div>
-            )}
+            {paymentBlock}
             {clash && (
               <p className="text-sm text-rose">
                 {oneDay
@@ -602,6 +738,7 @@ export function ListingBook({ fallbackSlug }: { fallbackSlug?: string }) {
             </button>
           </form>
           </>
+          )
           )}
         </aside>
       </div>

@@ -796,3 +796,54 @@ html[data-theme="dark"] .btn-outline {
   color: var(--serai-sand);
   background: color-mix(in srgb, var(--serai-brass) 12%, transparent);
 }
+
+/* Printing / "Save as PDF": just the document — no site header or footer, no browser header/footer, always light. */
+@media print {
+  @page {
+    size: A4;
+    margin: 0;
+  }
+
+  html,
+  body {
+    background: #ffffff !important;
+    color: #0b1c34 !important;
+  }
+
+  body > header,
+  header,
+  footer,
+  [data-print-hide] {
+    display: none !important;
+  }
+
+  main {
+    padding: 14mm 16mm !important;
+  }
+
+  /* Without this Chrome and Safari drop every background colour when printing. */
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  .paper,
+  html[data-theme="dark"] .paper,
+  html:not([data-theme="light"]) .paper {
+    color-scheme: light;
+    background: #ffffff !important;
+    color: #0b1c34 !important;
+    border: 0 !important;
+    box-shadow: none !important;
+    --serai-ink: #0b1c34;
+    --serai-ink-2: #ebe3d4;
+    --serai-sand: #0b1c34;
+    --serai-mist: #3a4454;
+    --serai-sage: #1f6b38;
+    --color-ink: #0b1c34;
+    --color-ink-2: #ebe3d4;
+    --color-sand: #0b1c34;
+    --color-mist: #3a4454;
+    --color-sage: #1f6b38;
+  }
+}

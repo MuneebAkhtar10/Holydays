@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { useSerai } from "@/lib/store";
@@ -10,7 +9,8 @@ import { pilgrimCountries, pilgrimCountryForPlace, type PilgrimCountry } from "@
 import { PageLoader } from "@/components/PageLoader";
 import { StarIcon } from "@/components/StarIcon";
 import { readJson } from "@/lib/readJson";
-import { TaxiPhotos } from "@/components/TaxiPhotos";
+import { TaxiPhotos, taxiCarPhotos } from "@/components/TaxiPhotos";
+import { ZoomableImage } from "@/components/ZoomableImage";
 
 type Listing = {
   id: string;
@@ -173,13 +173,20 @@ function TaxiCard({
   money: (n: number) => string;
 }) {
   const countryName = pilgrimCountryForPlace(item.city, item.region);
+  const shots = taxiCarPhotos(taxi);
+  const hero = shots[0] || item.cover || "/images/hero-hunza-dusk.png";
   return (
     <Link
       href={`/${kindPath.TAXI}/${item.slug}`}
       className="flex flex-col overflow-hidden rounded-2xl border border-brass/20 bg-ink-2 transition-colors hover:border-brass/40"
     >
-      <div className="relative h-36">
-        <Image src={item.cover || "/images/hero-hunza-dusk.png"} alt={item.name} fill className="object-cover" />
+      <div className="relative h-48">
+        <ZoomableImage
+          src={hero}
+          sources={shots.length ? shots : [hero]}
+          alt={taxi.vehicle || item.name}
+          className="absolute inset-0 h-full w-full"
+        />
         {countryName && (
           <span className="absolute left-2.5 top-2.5 rounded-full bg-ink/70 px-2.5 py-1 text-[10px] uppercase tracking-[0.1em] text-sand backdrop-blur">
             {countryName}
@@ -196,7 +203,7 @@ function TaxiCard({
           {taxi.origin} → {taxi.destination} · {taxi.hours}
         </p>
 
-        <div className="mt-3 flex items-center gap-2 rounded-xl bg-ink/25 px-2.5 py-2">
+        <div className="mt-3 flex items-center gap-3 rounded-xl bg-ink/25 px-3 py-2.5">
           <TaxiPhotos
             driver={taxi.driver}
             driverPhoto={taxi.driverPhoto}
@@ -204,11 +211,16 @@ function TaxiCard({
             vehiclePhoto={taxi.vehiclePhoto}
             vehiclePhotos={taxi.vehiclePhotos}
             cover={taxi.cover}
-            size="sm"
+            size="md"
+            showVehicle={false}
           />
           <div className="min-w-0">
-            <p className="truncate text-xs font-medium text-sand">{taxi.driver}</p>
-            <p className="truncate text-[11px] text-mist">{taxi.vehicle}</p>
+            <p className="text-[10px] uppercase tracking-[0.16em] text-brass">Driver</p>
+            <p className="truncate text-sm font-medium text-sand">{taxi.driver}</p>
+            <p className="truncate text-[11px] text-mist">
+              {taxi.vehicle}
+              {taxi.model ? ` · ${taxi.model}` : ""}
+            </p>
           </div>
         </div>
 

@@ -52,6 +52,7 @@ export function TaxiPhotos({
   vehiclePhotos,
   cover,
   size = "md",
+  showVehicle = true,
   className = "",
 }: {
   driver: string;
@@ -61,10 +62,13 @@ export function TaxiPhotos({
   vehiclePhotos?: string[];
   cover?: string;
   size?: Size;
+  showVehicle?: boolean;
   className?: string;
 }) {
   const dim = SIZE[size];
-  const cars = taxiCarPhotos({ vehiclePhoto, vehiclePhotos, cover, driverPhoto, vehicle }).slice(0, dim.cars);
+  const cars = showVehicle
+    ? taxiCarPhotos({ vehiclePhoto, vehiclePhotos, cover, driverPhoto, vehicle }).slice(0, dim.cars)
+    : [];
   const face = String(driverPhoto || "").trim();
 
   return (
@@ -83,18 +87,20 @@ export function TaxiPhotos({
           {initials(driver)}
         </span>
       )}
-      {cars.length ? (
-        cars.map((src) => (
-          <ZoomableImage
-            key={src}
-            src={src}
-            alt={vehicle || "Vehicle"}
-            className={`${dim.car} shrink-0 overflow-hidden rounded-xl border border-brass/25 bg-ink/40`}
-          />
-        ))
-      ) : (
-        <span className={`${dim.car} shrink-0 rounded-xl border border-brass/25 bg-ink/30`} aria-hidden />
-      )}
+      {showVehicle ? (
+        cars.length ? (
+          cars.map((src) => (
+            <ZoomableImage
+              key={src}
+              src={src}
+              alt={vehicle || "Vehicle"}
+              className={`${dim.car} shrink-0 overflow-hidden rounded-xl border border-brass/25 bg-ink/40`}
+            />
+          ))
+        ) : (
+          <span className={`${dim.car} shrink-0 rounded-xl border border-brass/25 bg-ink/30`} aria-hidden />
+        )
+      ) : null}
     </div>
   );
 }

@@ -13,7 +13,9 @@ function PostLoginInner() {
   useEffect(() => {
     if (status === "loading") return;
     const next = params.get("next") || "/";
-    const safe = next.startsWith("/") && !next.startsWith("//") ? next : "/";
+    const internal = next.startsWith("/") && !next.startsWith("//");
+    // Never bounce a freshly signed-in user back onto an auth screen — land on the home page instead.
+    const safe = internal && !/^\/(login|register|post-login|welcome)(\/|\?|$)/.test(next) ? next : "/";
     if (status !== "authenticated") {
       router.replace(safe);
       return;
@@ -32,7 +34,7 @@ function PostLoginInner() {
       .catch(() => router.replace(safe));
   }, [data?.user?.role, params, router, status]);
 
-  return <PageLoader label="Opening your desk" />;
+  return <PageLoader label="Signing you in" />;
 }
 
 export default function PostLoginPage() {

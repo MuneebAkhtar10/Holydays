@@ -188,7 +188,7 @@ export function PackageSnapshot({
   const grandTotal = typeof bookingTotal === "number" ? packageGrandTotal(bookingTotal, { stays }) : breakdown.total;
 
   return (
-    <div className="mt-6 rounded-2xl border border-sand/[0.08] bg-ink-2 p-5 shadow-[0_12px_40px_rgba(11,28,52,0.05)]">
+    <section className="rounded-2xl border border-brass/25 bg-ink-2/70 p-5">
       <p className="text-[11px] uppercase tracking-[0.16em] text-brass">Ziyarat package</p>
 
       {breakdown.hotels.length > 0 && (
@@ -234,11 +234,11 @@ export function PackageSnapshot({
       )}
 
       {grandTotal > 0 ? (
-        <p className="mt-4 flex items-baseline justify-between border-t border-sand/[0.1] pt-3 text-base font-semibold text-sand">
+        <p className="mt-4 flex items-baseline justify-between border-t border-brass/15 pt-3 text-base font-semibold text-sand">
           <span>Package total</span>
           <span className="font-display text-xl">{money(grandTotal)}</span>
         </p>
       ) : null}
-    </div>
+    </section>
   );
 }

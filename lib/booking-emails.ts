@@ -1,7 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { toBookingDTO, type BookingDTO } from "@/lib/booking-dto";
 import { bookingInvoiceBreakdown, bookingIsPaid, bookingPackageGrandTotal, bookingPackageHotelNames } from "@/lib/booking-invoice";
-import { formatPKR, nightsBetween } from "@/lib/format";
+import { formatPKR, formatTime, nightsBetween } from "@/lib/format";
 import {
   badge,
   button,
@@ -67,7 +67,9 @@ function stayFacts(b: BookingDTO): [string, string][] {
     [isPackage ? "Package" : isStay(b) ? "Property" : "Service", isPackage ? hotels.join(" · ") : b.listing.name],
     ["Location", b.listing.address || `${b.listing.city}, ${b.listing.region}`],
     [isStay(b) ? "Check-in" : "Starts", `${longDay(b.startDate)}${isStay(b) && b.listing.checkIn ? ` · from ${b.listing.checkIn}` : ""}`],
-    [isStay(b) ? "Check-out" : "Ends", `${longDay(b.endDate)}${isStay(b) && b.listing.checkOut ? ` · by ${b.listing.checkOut}` : ""}`],
+    ["Reservation time", b.extra.reservation && b.extra.time ? formatTime(String(b.extra.time)) : ""],
+    ["Your requests", b.extra.reservation ? String(b.extra.requests ?? "") : ""],
+    [isStay(b) ? "Check-out" : "Ends", b.extra.reservation ? "" : `${longDay(b.endDate)}${isStay(b) && b.listing.checkOut ? ` · by ${b.listing.checkOut}` : ""}`],
     [isStay(b) ? "Length of stay" : "Duration", isStay(b) ? `${nights} night${nights === 1 ? "" : "s"}` : ""],
     ["Guests", `${b.guests} guest${b.guests === 1 ? "" : "s"}`],
     ["Booked by", b.guestName || ""],
@@ -224,7 +226,8 @@ export function reminderEmail(b: BookingDTO, origin: string, kind: ReminderKind)
       [stay ? "Property" : "Service", b.listing.name],
       ["Address", b.listing.address || `${b.listing.city}, ${b.listing.region}`],
       [stay ? "Check-in" : "Starts", `${longDay(b.startDate)}${stay && b.listing.checkIn ? ` · from ${b.listing.checkIn}` : ""}`],
-      [stay ? "Check-out" : "Ends", `${longDay(b.endDate)}${stay && b.listing.checkOut ? ` · by ${b.listing.checkOut}` : ""}`],
+      ["Reservation time", b.extra.reservation && b.extra.time ? formatTime(String(b.extra.time)) : ""],
+      [stay ? "Check-out" : "Ends", b.extra.reservation ? "" : `${longDay(b.endDate)}${stay && b.listing.checkOut ? ` · by ${b.listing.checkOut}` : ""}`],
       ["Property phone", b.listing.phone],
       ["Host", b.listing.hostContactRevealed ? b.listing.hostName : ""],
       ["Host phone", b.listing.hostPhone],

@@ -291,18 +291,25 @@ export function defaultStayMeta(partial?: Partial<StayListingMeta> & { city?: st
 
 export function listingToStay(listing: ListingCard): Stay {
   const meta = parseListingMeta(listing.meta);
-  const galleries = {
-    property: meta.galleries.property.length ? meta.galleries.property : [listing.cover],
-    room: meta.galleries.room,
-    bathroom: meta.galleries.bathroom,
-    facilities: meta.galleries.facilities,
-  };
-  const gallery = flattenGalleries(galleries);
   const rooms = normalizeRooms(meta.rooms, listing.price, {
     meals: meta.meals,
     cancellation: meta.cancellation,
     payAtProperty: meta.payAtProperty,
   });
+  const roomPhotos = rooms.flatMap((r) => r.images).filter(Boolean);
+  const roomSeen = new Set<string>();
+  const room = [...roomPhotos, ...meta.galleries.room].filter((src) => {
+    if (roomSeen.has(src)) return false;
+    roomSeen.add(src);
+    return true;
+  });
+  const galleries = {
+    property: meta.galleries.property.length ? meta.galleries.property : [listing.cover],
+    room,
+    bathroom: meta.galleries.bathroom,
+    facilities: meta.galleries.facilities,
+  };
+  const gallery = flattenGalleries(galleries);
   const pin = meta.pin?.x ? meta.pin : pinForCity(listing.city);
   const coords = coordsForCity(listing.city);
   return {

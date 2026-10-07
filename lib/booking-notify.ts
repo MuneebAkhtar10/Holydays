@@ -1,8 +1,9 @@
 import { notifyUser } from "@/lib/notify";
-import { bookingNumber, shareText } from "@/lib/booking-view";
+import { bookingNumber, parseBookingExtras, shareText } from "@/lib/booking-view";
 import { formatDay, formatPKR } from "@/lib/format";
 import { mailHtml } from "@/lib/mail";
 import { publicOrigin } from "@/lib/auth-tokens";
+import { prisma } from "@/lib/prisma";
 import {
   cancellationDecisionEmail,
   cancellationRequestedEmail,
@@ -10,6 +11,23 @@ import {
   loadBookingForEmail,
   type BuiltEmail,
 } from "@/lib/booking-emails";
+
+
+export type SentEmail = { type: string; at: string; to: string };
+
+/** Keeps a small per-booking log of emails that really went out (shown on the booking page). Never throws. */
+export async function recordEmailSent(bookingId: string, type: string, to: string) {
+  try {
+    const row = await prisma.booking.findUnique({ where: { id: bookingId }, select: { extras: true } });
+    if (!row) return;
+    const extra = parseBookingExtras(row.extras);
+    const log = Array.isArray(extra.emails) ? (extra.emails as SentEmail[]) : [];
+    extra.emails = [...log, { type, at: new Date().toISOString(), to }].slice(-30);
+    await prisma.booking.update({ where: { id: bookingId }, data: { extras: JSON.stringify(extra) } });
+  } catch (err) {
+    console.error("[booking-notify] could not record email", err);
+  }
+}
 
 export type NotifyChannels = {
   email: boolean;
@@ -110,6 +128,7 @@ export async function notifyBookingCreated(input: {
 
   return {
     channels,
+    sentEmail: !input.pending && email.delivered ? ({ type: "confirmation", at: new Date().toISOString(), to: input.email } as SentEmail) : null,
     number,
     url,
     waLink: input.phone
@@ -168,7 +187,8 @@ export async function notifyCancellationRequested(bookingId: string, reason: str
 
     if (dto.guestEmail?.includes("@")) {
       const mail = cancellationRequestedEmail(dto, origin, reason);
-      await notifyUser({ to: dto.guestEmail, subject: mail.subject, text: mail.text, html: mail.html });
+      const res = await notifyUser({ to: dto.guestEmail, subject: mail.subject, text: mail.text, html: mail.html });
+      if (res.delivered) await recordEmailSent(bookingId, "cancel_requested", dto.guestEmail);
     }
     if (ownerEmail.includes("@")) {
       await notifyUser({
@@ -194,7 +214,8 @@ export async function notifyCancellationDecision(bookingId: string, approved: bo
     const loaded = await loadBookingForEmail(bookingId);
     if (!loaded?.dto.guestEmail?.includes("@")) return;
     const mail = cancellationDecisionEmail(loaded.dto, publicOrigin(), approved);
-    await notifyUser({ to: loaded.dto.guestEmail, subject: mail.subject, text: mail.text, html: mail.html });
+    const res = await notifyUser({ to: loaded.dto.guestEmail, subject: mail.subject, text: mail.text, html: mail.html });
+    if (res.delivered) await recordEmailSent(bookingId, approved ? "cancelled" : "cancel_denied", loaded.dto.guestEmail);
   } catch (err) {
     console.error("[booking-notify] cancellation decision email failed", err);
   }

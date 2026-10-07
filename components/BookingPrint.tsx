@@ -9,11 +9,11 @@ import { readJson } from "@/lib/readJson";
 import type { BookingDTO } from "@/lib/booking-dto";
 import { bookingInvoiceBreakdown, bookingIsPaid, bookingPackageGrandTotal, bookingPackageHotelNames } from "@/lib/booking-invoice";
 import { APP_NAME } from "@/lib/brand";
-import { formatDay } from "@/lib/format";
+import { formatDay, formatTime } from "@/lib/format";
 import { useSerai } from "@/lib/store";
 
 export function BookingPrint({ kind }: { kind: "invoice" | "receipt" | "voucher" }) {
-  const { money } = useSerai();
+  const { money, currency } = useSerai();
   const { id } = useParams<{ id: string }>();
   const [booking, setBooking] = useState<BookingDTO | null>(null);
   const [ready, setReady] = useState(false);
@@ -57,13 +57,29 @@ export function BookingPrint({ kind }: { kind: "invoice" | "receipt" | "voucher"
         <Link href={`/bookings/${booking.id}`} className="btn-ghost">
           Back
         </Link>
-        <button type="button" className="btn-primary" onClick={() => window.print()}>
-          Print / save PDF
-        </button>
+        <div className="flex flex-wrap gap-2">
+          <button type="button" className="btn-ghost" onClick={() => window.print()}>
+            Print
+          </button>
+          <a className="btn-primary" href={`/api/bookings/${booking.id}/pdf?kind=${kind}&currency=${currency}`} download>
+            Download PDF
+          </a>
+        </div>
       </div>
       <div className="paper mt-6 p-8">
-        <BrandLogo size="sm" />
-        <h1 className="font-display mt-2 text-4xl">{title}</h1>
+        <div className="print-band -mx-8 -mt-8 mb-6 bg-[#102948] px-8 py-4">
+          <BrandLogo size="sm" />
+        </div>
+        <div className="flex flex-wrap items-end justify-between gap-2">
+          <h1 className="font-display text-4xl">{title}</h1>
+          <span
+            className={`print-pill rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.12em] ${
+              booking.status === "cancelled" ? "bg-[#fdeaea] text-[#a12626]" : paid ? "bg-[#e6f4ea] text-[#1e6b3a]" : "bg-[#f8efd9] text-[#8a6c32]"
+            }`}
+          >
+            {booking.status === "cancelled" ? "Cancelled" : paid ? "Paid" : "Due at property"}
+          </span>
+        </div>
         <p className="mt-2 text-sm text-ink/60">Booking {booking.number}</p>
         <div className="mt-6 grid gap-4 sm:grid-cols-2 text-sm">
           <div>
@@ -131,12 +147,12 @@ export function BookingPrint({ kind }: { kind: "invoice" | "receipt" | "voucher"
                     </table>
                   </div>
                 )}
-                <div className="flex items-baseline justify-between border-t border-ink/20 pt-3">
+                <div className="print-total flex items-center justify-between rounded-xl bg-[#102948] px-5 py-4 text-white">
                   <div>
-                    <p className="font-display text-xl">{totalLabel}</p>
-                    {paidNote ? <p className="mt-1 text-xs text-ink/50">{paidNote}</p> : null}
+                    <p className="text-[11px] uppercase tracking-[0.16em] text-[#c5a46a]">{totalLabel}</p>
+                    {paidNote ? <p className="mt-1 text-xs text-white/70">{paidNote}</p> : null}
                   </div>
-                  <p className="font-display text-xl">{money(grandTotal)}</p>
+                  <p className="font-display text-2xl">{money(grandTotal)}</p>
                 </div>
               </div>
             ) : (
@@ -154,12 +170,12 @@ export function BookingPrint({ kind }: { kind: "invoice" | "receipt" | "voucher"
                       <td className="py-2 text-right">{money(taxes)}</td>
                     </tr>
                   )}
-                  <tr>
-                    <td className="py-3">
-                      <p className="font-display text-xl">{totalLabel}</p>
-                      {paidNote ? <p className="mt-1 text-xs font-normal text-ink/50">{paidNote}</p> : null}
+                  <tr className="print-total bg-[#102948] text-white">
+                    <td className="rounded-l-xl px-5 py-4">
+                      <p className="text-[11px] uppercase tracking-[0.16em] text-[#c5a46a]">{totalLabel}</p>
+                      {paidNote ? <p className="mt-1 text-xs font-normal text-white/70">{paidNote}</p> : null}
                     </td>
-                    <td className="py-3 text-right font-display text-xl">{money(grandTotal)}</td>
+                    <td className="rounded-r-xl px-5 py-4 text-right font-display text-2xl">{money(grandTotal)}</td>
                   </tr>
                 </tbody>
               </table>
@@ -214,7 +230,11 @@ export function BookingPrint({ kind }: { kind: "invoice" | "receipt" | "voucher"
         {kind === "voucher" && (
           <div className="mt-6 border border-dashed border-ink/20 p-6 text-center">
             <p className="font-display text-5xl tracking-[0.2em]">{booking.number}</p>
-            <p className="mt-3 text-sm text-ink/60">Show this at reception · Check-in {booking.listing.checkIn}</p>
+            <p className="mt-3 text-sm text-ink/60">
+              {booking.extra.reservation && booking.extra.time
+                ? `Show this at the restaurant · Table for ${booking.guests} at ${formatTime(String(booking.extra.time))}`
+                : `Show this at reception · Check-in ${booking.listing.checkIn}`}
+            </p>
             <p className="mt-6 text-xs uppercase tracking-widest text-ink/40">Status: {booking.status}</p>
           </div>
         )}

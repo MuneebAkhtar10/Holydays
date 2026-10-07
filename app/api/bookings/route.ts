@@ -71,7 +71,7 @@ async function createBooking(req: Request) {
   const startDate = String(body.startDate ?? "");
   let endDate = String(body.endDate ?? body.startDate ?? "");
   if (!startDate) return NextResponse.json({ error: "Choose dates" }, { status: 400 });
-  if (listing.kind === "TAXI" || listing.kind === "ATTRACTION") {
+  if (listing.kind === "TAXI" || listing.kind === "ATTRACTION" || listing.kind === "RESTAURANT") {
     endDate = startDate;
   }
   if (endDate && endDate < startDate) {
@@ -86,13 +86,39 @@ async function createBooking(req: Request) {
     return NextResponse.json({ error: "This listing is no longer taking bookings from that date onward." }, { status: 403 });
   }
 
+  // A table reservation is one date + one time; the details are rebuilt here so the browser can't inject anything else.
+  let reservationExtras = "";
+  let reservationTime = "";
+  if (listing.kind === "RESTAURANT") {
+    let raw: Record<string, unknown> = {};
+    try {
+      raw = JSON.parse(String(body.extras ?? "{}"));
+    } catch {
+      /* falls through to the time check */
+    }
+    reservationTime = String(raw.time ?? "");
+    if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(reservationTime)) {
+      return NextResponse.json({ error: "Choose a reservation time." }, { status: 400 });
+    }
+    reservationExtras = JSON.stringify({ reservation: true, time: reservationTime, requests: String(raw.requests ?? "").slice(0, 300) });
+  }
+
   const existing = await prisma.booking.findMany({
     where: { userId: session.user.id, listingId: listing.id, status: { in: ["confirmed", "pending_payment"] } },
   });
-  const clash = existing.find((b) => datesOverlap(startDate, endDate, b.startDate, b.endDate));
+  const clash = existing.find((b) =>
+    listing.kind === "RESTAURANT"
+      ? b.startDate === startDate && parseBookingExtras(b.extras).time === reservationTime
+      : datesOverlap(startDate, endDate, b.startDate, b.endDate),
+  );
   if (clash) {
     return NextResponse.json(
-      { error: `Those dates overlap a booking you already have (${clash.startDate} – ${clash.endDate}). Pick other dates or cancel that one.` },
+      {
+        error:
+          listing.kind === "RESTAURANT"
+            ? "You already have a reservation here at that date and time. Pick another time or cancel that one."
+            : `Those dates overlap a booking you already have (${clash.startDate} – ${clash.endDate}). Pick other dates or cancel that one.`,
+      },
       { status: 409 },
     );
   }
@@ -100,7 +126,7 @@ async function createBooking(req: Request) {
   // A custom taxi hire legitimately totals 0 (rate is agreed directly with the driver) — only fall back
   // to the listing price when the client didn't send a total at all, not when it explicitly sent 0.
   let total = body.total === undefined || body.total === null || body.total === "" ? Number(listing.price) : Number(body.total) || 0;
-  let extras = String(body.extras ?? "");
+  let extras = listing.kind === "RESTAURANT" ? reservationExtras : String(body.extras ?? "");
   let extraSlices: PackageStaySlice[] = [];
   let stayQuoteInput: QuoteInput | null = null;
   if (listing.kind === "STAY") {
@@ -252,7 +278,7 @@ async function createBooking(req: Request) {
       });
   const extraObj = parseBookingExtras(booking.extras);
   extraObj.packageId = booking.id;
-  extraObj.notify = notice.channels;
+  if ("sentEmail" in notice && notice.sentEmail) extraObj.emails = [notice.sentEmail];
   extraObj.waLink = notice.waLink;
   extraObj.number = notice.number;
   if (extraObj.package && typeof extraObj.package === "object") {

@@ -8,13 +8,13 @@ const password = "serai123";
 const stays = [];
 
 const ziyarat = [
-  ["imam-ali", "Imam Ali shrine", "حرم امام علی", "Najaf", "Iraq", "/images/stay-walled-city.png", 0, "The heart of Najaf. Walking plan with a local companion.", "Half day"],
-  ["imam-hussain", "Imam Hussain & Abbas", "کربلا", "Karbala", "Iraq", "/images/dest-lahore.png", 0, "Between the two harams. Timed around prayer.", "Full day"],
-  ["kadhimiya", "Kadhimiya", "کاظمین", "Baghdad", "Iraq", "/images/stay-canal-breeze.png", 4500, "Kazimayn, then return to your hotel.", "Half day"],
-  ["imam-reza", "Imam Reza shrine", "حرم امام رضا", "Mashhad", "Iran", "/images/stay-apricot-court.png", 0, "Stay near the haram. Walking, not a checklist.", "Open"],
-  ["fatima-masumeh", "Hazrat Masumeh", "قم", "Qom", "Iran", "/images/stay-orchard.png", 0, "Qom haram and the lanes around it.", "Half day"],
-  ["haram-makkah", "Masjid al-Haram", "الحرم المكي", "Makkah", "Saudi Arabia", "/images/dest-hunza.png", 0, "Hotel-to-haram walking times and prayer windows.", "Open"],
-  ["rawdah", "Masjid an-Nabawi", "المسجد النبوي", "Madinah", "Saudi Arabia", "/images/dest-skardu.png", 0, "Rawdah slot guidance with your dates.", "Open"],
+  ["imam-ali", "Imam Ali shrine", "حرم امام علی", "Najaf", "Iraq", "/uploads/ziyarat/imam-ali.jpg", 0, "The heart of Najaf. Walking plan with a local companion.", "Half day"],
+  ["imam-hussain", "Imam Hussain & Abbas", "کربلا", "Karbala", "Iraq", "/uploads/ziyarat/hussain.jpg", 0, "Between the two harams. Timed around prayer.", "Full day"],
+  ["kadhimiya", "Kadhimiya", "کاظمین", "Baghdad", "Iraq", "/uploads/ziyarat/kadhimiya.jpg", 4500, "Kazimayn, then return to your hotel.", "Half day"],
+  ["imam-reza", "Imam Reza shrine", "حرم امام رضا", "Mashhad", "Iran", "/uploads/ziyarat/reza.jpg", 0, "Stay near the haram. Walking, not a checklist.", "Open"],
+  ["fatima-masumeh", "Hazrat Masumeh", "قم", "Qom", "Iran", "/uploads/ziyarat/masumeh.jpg", 0, "Qom haram and the lanes around it.", "Half day"],
+  ["haram-makkah", "Masjid al-Haram", "الحرم المكي", "Makkah", "Saudi Arabia", "/images/home/kaaba.jpg", 0, "Hotel-to-haram walking times and prayer windows.", "Open"],
+  ["rawdah", "Masjid an-Nabawi", "المسجد النبوي", "Madinah", "Saudi Arabia", "/uploads/ziyarat/nabawi.jpg", 0, "Rawdah slot guidance with your dates.", "Open"],
 ];
 
 const taxis = [
