@@ -1,16 +1,22 @@
 import { notifyUser } from "@/lib/notify";
 import { bookingNumber, parseBookingExtras, shareText } from "@/lib/booking-view";
-import { formatDay, formatPKR } from "@/lib/format";
+import { formatDay, formatPKR, formatTime } from "@/lib/format";
 import { mailHtml } from "@/lib/mail";
 import { publicOrigin } from "@/lib/auth-tokens";
 import { prisma } from "@/lib/prisma";
 import {
   cancellationDecisionEmail,
   cancellationRequestedEmail,
+  chatMessageEmail,
   confirmationEmail,
   loadBookingForEmail,
+  ownerBookingEmail,
   type BuiltEmail,
+  type ProviderItem,
 } from "@/lib/booking-emails";
+import { toBookingDTO } from "@/lib/booking-dto";
+import { bookingIsPaid, type StoredPackage } from "@/lib/booking-invoice";
+import { packagePrimaryAmount } from "@/lib/package-plan";
 
 
 export type SentEmail = { type: string; at: string; to: string };
@@ -101,23 +107,7 @@ export async function notifyBookingCreated(input: {
       })
     : { delivered: false, preview: null };
 
-  if (input.ownerEmail?.includes("@")) {
-    await notifyUser({
-      to: input.ownerEmail,
-      subject: input.pending ? `New HolyDays trip request ${number}` : `New HolyDays booking ${number}`,
-      text: input.pending
-        ? `${input.name} sent a custom trip request for ${input.listing}. ${dates}. Accept or decline it in your partner desk. ${url}`
-        : `${input.name} booked ${input.listing}. ${body} ${url}`,
-      html: mailHtml(
-        input.pending ? "New custom trip request" : "New guest booking",
-        input.pending
-          ? `${input.name} wants a custom trip with ${input.listing} on ${dates}. Review the details and accept or decline in your partner desk.`
-          : `${input.name} booked ${input.listing}.\n${dates}.\nTotal ${formatPKR(input.total)}.`,
-        `${input.origin}/owner?tab=bookings`,
-        "Open partner desk",
-      ),
-    });
-  }
+  await notifyProvidersOfBooking(input.id, { pending: input.pending });
 
   const channels: NotifyChannels = {
     email: email.delivered || Boolean(input.email),
@@ -159,20 +149,19 @@ export async function notifyGuestHostMessage(input: {
   endDate: string;
 }) {
   if (!input.guestEmail?.includes("@")) return { delivered: false, preview: null };
-  const url = `${publicOrigin()}/bookings/${input.bookingId}`;
-  const dates = `${formatDay(input.startDate)} — ${formatDay(input.endDate)}`;
-  const text = `${input.hostName} sent you a message about ${input.listing} (${dates}):\n\n${input.message}\n\nReply here: ${url}`;
-  return notifyUser({
-    to: input.guestEmail,
-    subject: `New message from ${input.listing}`,
-    text,
-    html: mailHtml(
-      "New message from your host",
-      `Hello ${input.guestName},\n\n${input.hostName} wrote about your stay at ${input.listing} (${dates}):\n\n“${input.message}”`,
-      url,
-      "Reply to host",
-    ),
+  const origin = publicOrigin();
+  const mail = chatMessageEmail({
+    to: "guest",
+    recipientName: input.guestName,
+    senderName: input.hostName,
+    listing: input.listing,
+    dates: input.startDate === input.endDate ? formatDay(input.startDate) : `${formatDay(input.startDate)} — ${formatDay(input.endDate)}`,
+    number: bookingNumber(input.bookingId),
+    message: input.message,
+    url: `${origin}/bookings/${input.bookingId}`,
+    origin,
   });
+  return notifyUser({ to: input.guestEmail, subject: mail.subject, text: mail.text, html: mail.html });
 }
 
 /** Sent to the traveller (and the host) when a traveller asks to cancel. Never throws — email trouble must not block a cancellation. */
@@ -218,5 +207,163 @@ export async function notifyCancellationDecision(bookingId: string, approved: bo
     if (res.delivered) await recordEmailSent(bookingId, approved ? "cancelled" : "cancel_denied", loaded.dto.guestEmail);
   } catch (err) {
     console.error("[booking-notify] cancellation decision email failed", err);
+  }
+}
+
+const longDay = (iso: string) =>
+  iso ? new Date(`${iso}T12:00:00`).toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short", year: "numeric" }) : "";
+const payName = (m: string) => (m === "property" ? "Pay at the property" : m === "card" || m === "stripe" ? "Card" : m);
+
+/**
+ * Tells every partner whose listing is part of a booking — the main hotel, extra hotels, Ziyarat and taxi
+ * owners inside a package, or the restaurant / taxi / Ziyarat booked on its own. One email per partner.
+ * Never throws: email trouble must not undo a booking.
+ */
+export async function notifyProvidersOfBooking(bookingId: string, opts: { pending?: boolean } = {}) {
+  try {
+    const row = await prisma.booking.findUnique({
+      where: { id: bookingId },
+      include: { listing: { include: { owner: true } }, user: true },
+    });
+    if (!row) return;
+    const dto = toBookingDTO(row);
+    const extra = parseBookingExtras(row.extras);
+    const pack = extra.package as (StoredPackage & { stays?: { listingId: string; name: string; city: string; checkin: string; checkout: string; amount: number }[] }) | undefined;
+    const origin = publicOrigin();
+
+    type Group = { email: string; name: string; items: ProviderItem[] };
+    const groups = new Map<string, Group>();
+    const add = (owner: { id: string; email: string; name: string } | null | undefined, item: ProviderItem) => {
+      if (!owner?.email?.includes("@")) return;
+      const g = groups.get(owner.id) ?? { email: owner.email, name: owner.name, items: [] };
+      g.items.push(item);
+      groups.set(owner.id, g);
+    };
+
+    // The listing that was booked directly
+    const kind = row.listing.kind;
+    let primaryWhen = `${longDay(row.startDate)} to ${longDay(row.endDate)}`;
+    let primaryDetail = "";
+    if (extra.reservation && extra.time) {
+      primaryWhen = `${longDay(row.startDate)} at ${formatTime(String(extra.time))}`;
+      primaryDetail = `Table for ${row.guests}`;
+    } else if (kind === "TAXI") {
+      primaryWhen = longDay(row.startDate);
+      primaryDetail = extra.taxiMode === "private" ? "Private vehicle" : extra.taxiMode === "custom" ? "Custom trip, rate agreed with you" : `${row.guests} seat${row.guests === 1 ? "" : "s"} (shared)`;
+    } else if (kind === "ATTRACTION") {
+      primaryWhen = longDay(row.startDate);
+    }
+    add(row.listing.owner, {
+      label: row.listing.name,
+      type: kindLabelFor(kind),
+      when: primaryWhen,
+      detail: primaryDetail || (kind === "STAY" ? `${row.guests} guest${row.guests === 1 ? "" : "s"}` : undefined),
+      amount: pack ? packagePrimaryAmount(row.total, { total: pack.total ?? 0, stays: (pack.stays ?? []) as never }) : row.total,
+    });
+
+    if (pack) {
+      const slugs = [...(pack.ziyaratIds ?? []), ...(pack.taxis ?? []).map((t) => t.id)];
+      const stayIds = (pack.stays ?? []).map((st) => st.listingId);
+      const found = await prisma.listing.findMany({
+        where: { OR: [{ slug: { in: slugs } }, { id: { in: stayIds } }, { slug: { in: stayIds } }] },
+        include: { owner: true },
+      });
+      const bySlug = new Map(found.map((l) => [l.slug, l]));
+      const byAny = new Map<string, (typeof found)[number]>([...found.map((l) => [l.id, l] as const), ...found.map((l) => [l.slug, l] as const)]);
+
+      for (const st of pack.stays ?? []) {
+        const l = byAny.get(st.listingId);
+        add(l?.owner, {
+          label: st.name,
+          type: "Hotel stay",
+          when: `${longDay(st.checkin)} to ${longDay(st.checkout)}`,
+          detail: `${st.city} · ${row.guests} guest${row.guests === 1 ? "" : "s"}`,
+          amount: st.amount,
+        });
+      }
+      for (const zid of pack.ziyaratIds ?? []) {
+        const l = bySlug.get(zid);
+        const z = (pack.ziyarat ?? []).find((x) => x.id === zid);
+        add(l?.owner, {
+          label: l?.name ?? z?.name ?? zid,
+          type: "Ziyarat visit",
+          when: z?.hours ? `${z.hours} · during the stay in ${l?.city ?? z.city}` : `During the stay in ${l?.city ?? ""}`,
+          detail: `${row.guests} guest${row.guests === 1 ? "" : "s"}`,
+          amount: z ? z.price * Math.max(1, row.guests) : undefined,
+        });
+      }
+      for (const pick of pack.taxis ?? []) {
+        const l = bySlug.get(pick.id);
+        const t = (pack.taxiList ?? []).find((x) => x.id === pick.id);
+        add(l?.owner, {
+          label: l?.name ?? (t ? `${t.origin} to ${t.destination}` : pick.id),
+          type: pick.leg === "out" ? "Airport drop-off" : pick.leg === "in" ? "Airport pick-up" : "Taxi trip",
+          when: longDay(pick.date),
+          detail: pick.mode === "private" ? "Private vehicle" : `${pick.seats} seat${pick.seats === 1 ? "" : "s"} (shared)`,
+          amount: t ? (pick.mode === "private" ? t.privateRate : t.ratePerPerson * Math.max(1, pick.seats)) : undefined,
+        });
+      }
+    }
+
+    const guest = { name: row.user?.name || "A guest", email: row.user?.email || "", phone: row.phone };
+    const requests = String(extra.specialRequests ?? extra.requests ?? "").trim();
+    for (const g of groups.values()) {
+      const mail = ownerBookingEmail({
+        ownerName: g.name,
+        origin,
+        number: dto.number,
+        items: g.items,
+        guest,
+        guests: row.guests,
+        paid: bookingIsPaid(dto),
+        paymentLabel: payName(row.payment),
+        requests,
+        pending: opts.pending,
+      });
+      await notifyUser({ to: g.email, subject: mail.subject, text: mail.text, html: mail.html });
+    }
+  } catch (err) {
+    console.error("[booking-notify] partner booking emails failed", err);
+  }
+}
+
+function kindLabelFor(kind: string) {
+  return kind === "STAY" ? "Hotel stay" : kind === "TAXI" ? "Taxi trip" : kind === "ATTRACTION" ? "Ziyarat visit" : kind === "RESTAURANT" ? "Table reservation" : "Booking";
+}
+
+const CHAT_EMAIL_GAP_MS = 5 * 60 * 1000;
+
+/** Emails the host when a guest writes in the booking chat — at most one email per booking every 5 minutes, so a burst of messages is one alert. */
+export async function notifyOwnerGuestMessage(bookingId: string, message: string) {
+  try {
+    const row = await prisma.booking.findUnique({
+      where: { id: bookingId },
+      include: { listing: { include: { owner: true } }, user: true },
+    });
+    const to = row?.listing.owner?.email ?? "";
+    if (!row || !to.includes("@")) return;
+    const extra = parseBookingExtras(row.extras);
+    const last = new Date(String(extra.ownerChatEmailAt ?? 0)).getTime();
+    if (Number.isFinite(last) && Date.now() - last < CHAT_EMAIL_GAP_MS) return;
+
+    const origin = publicOrigin();
+    const mail = chatMessageEmail({
+      to: "host",
+      recipientName: row.listing.owner.name,
+      senderName: row.user?.name || "A guest",
+      listing: row.listing.name,
+      dates: row.startDate === row.endDate ? formatDay(row.startDate) : `${formatDay(row.startDate)} — ${formatDay(row.endDate)}`,
+      number: bookingNumber(row.id),
+      message,
+      url: `${origin}/owner?tab=messages`,
+      origin,
+    });
+    const res = await notifyUser({ to, subject: mail.subject, text: mail.text, html: mail.html });
+    if (res.delivered) {
+      extra.ownerChatEmailAt = new Date().toISOString();
+      await prisma.booking.update({ where: { id: bookingId }, data: { extras: JSON.stringify(extra) } });
+    }
+  } catch (err) {
+    console.error("[booking-notify] host chat email failed", err);
   }
 }

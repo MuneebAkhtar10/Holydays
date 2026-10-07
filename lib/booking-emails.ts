@@ -395,3 +395,110 @@ export function cancellationDecisionEmail(b: BookingDTO, origin: string, approve
     }),
   };
 }
+
+export type ProviderItem = { label: string; type: string; when: string; detail?: string; amount?: number };
+
+/** Sent to a hotel / Ziyarat / taxi / food partner when a guest's booking against their listing is made. */
+export function ownerBookingEmail(input: {
+  ownerName: string;
+  origin: string;
+  number: string;
+  items: ProviderItem[];
+  guest: { name: string; email: string; phone: string };
+  guests: number;
+  paid: boolean;
+  paymentLabel: string;
+  requests?: string;
+  pending?: boolean;
+}): BuiltEmail {
+  const first = (input.ownerName || "there").split(" ")[0];
+  const url = `${input.origin}/owner?tab=bookings`;
+  const many = input.items.length > 1;
+  const title = input.pending ? "New trip request" : many ? "You have new bookings" : "You have a new booking";
+  const intro = input.pending
+    ? `Hello ${first},\n\n${input.guest.name} sent you a custom trip request on HolyDays. Review the details and accept or decline it in your partner desk. The guest is waiting for your answer.`
+    : `Hello ${first},\n\n${input.guest.name} has booked ${many ? "with you" : input.items[0]?.label ? `${input.items[0].label}` : "with you"} on HolyDays. Here is what you need to prepare.`;
+
+  const itemCards = input.items
+    .map(
+      (it) => `${sectionTitle(it.type)}${detailCard([
+        ["Listing", it.label],
+        ["When", it.when],
+        ["Details", it.detail ?? ""],
+        ["Your amount", it.amount && it.amount > 0 ? formatPKR(it.amount) : ""],
+      ])}`,
+    )
+    .join("");
+
+  const body = `
+    ${paragraphs(intro)}
+    <p style="margin:0 0 6px">${badge(input.pending ? "Awaiting your answer" : "New booking", input.pending ? "gold" : "green")} ${input.pending ? "" : input.paid ? badge("Paid online", "navy") : badge("Pay on arrival", "gold")}</p>
+    ${itemCards}
+
+    ${sectionTitle("Guest")}
+    ${detailCard([
+      ["Name", input.guest.name],
+      ["Phone", input.guest.phone],
+      ["Email", input.guest.email],
+      ["Party size", `${input.guests} guest${input.guests === 1 ? "" : "s"}`],
+      ["Payment", input.paid ? `Paid (${input.paymentLabel})` : input.paymentLabel],
+      ["Booking number", input.number],
+    ])}
+    ${input.requests ? `${sectionTitle("Guest requests")}${paragraphs(`“${input.requests}”`)}` : ""}
+
+    <p style="margin:28px 0 0">${button(url, input.pending ? "Review request" : "Open partner desk")}</p>
+    <p style="margin:14px 0 0;font-family:-apple-system,'Segoe UI',Helvetica,Arial,sans-serif;font-size:12px;color:#8a97a8">You can chat with the guest from the Messages tab of your partner desk.</p>
+  `;
+
+  return {
+    subject: `${input.pending ? "New trip request" : "New booking"} · ${input.items[0]?.label ?? "HolyDays"} · ${input.number}`,
+    text: `Hello ${first},\n\n${input.guest.name} ${input.pending ? "sent a trip request" : "made a booking"} (${input.number}).\n${input.items.map((i) => `- ${i.label}: ${i.when}`).join("\n")}\nGuest phone: ${input.guest.phone || "not given"}\n\nOpen your partner desk: ${url}\n`,
+    html: emailShell({
+      origin: input.origin,
+      eyebrow: `Booking ${input.number}`,
+      title,
+      preheader: `${input.guest.name} · ${input.items[0]?.label ?? ""} · ${input.items[0]?.when ?? ""}`,
+      bodyHtml: body,
+    }),
+  };
+}
+
+/** A chat message between guest and host, in either direction. */
+export function chatMessageEmail(input: {
+  to: "host" | "guest";
+  recipientName: string;
+  senderName: string;
+  listing: string;
+  dates: string;
+  number: string;
+  message: string;
+  url: string;
+  origin: string;
+}): BuiltEmail {
+  const first = (input.recipientName || "there").split(" ")[0];
+  const toHost = input.to === "host";
+  const body = `
+    ${paragraphs(`Hello ${first},\n\n${input.senderName} sent you a message${toHost ? " about a booking" : ""}:`)}
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:6px 0 4px"><tbody><tr>
+      <td style="background:#f6f0e4;border-left:3px solid #c5a46a;border-radius:6px;padding:14px 16px;font-family:-apple-system,'Segoe UI',Helvetica,Arial,sans-serif;font-size:15px;line-height:1.6;color:#102948;white-space:pre-wrap">${esc(input.message)}</td>
+    </tr></tbody></table>
+    ${sectionTitle("Booking")}
+    ${detailCard([
+      ["Listing", input.listing],
+      ["Dates", input.dates],
+      ["Booking number", input.number],
+    ])}
+    <p style="margin:28px 0 0">${button(input.url, "Reply")}</p>
+  `;
+  return {
+    subject: toHost ? `New message from ${input.senderName} · ${input.number}` : `New message from ${input.listing} · ${input.number}`,
+    text: `Hello ${first},\n\n${input.senderName} wrote:\n\n${input.message}\n\n${input.listing} (${input.dates}) - booking ${input.number}\nReply: ${input.url}\n`,
+    html: emailShell({
+      origin: input.origin,
+      eyebrow: "New message",
+      title: toHost ? "A guest sent you a message" : "Your host sent you a message",
+      preheader: input.message.slice(0, 110),
+      bodyHtml: body,
+    }),
+  };
+}

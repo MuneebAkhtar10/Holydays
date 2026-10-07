@@ -2,7 +2,7 @@ import { getServerSession } from "next-auth";
 import { NextResponse } from "next/server";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { notifyBookingUpdate } from "@/lib/booking-notify";
+import { notifyOwnerGuestMessage } from "@/lib/booking-notify";
 import { appendMessage, asMessages, markChatRead, parseBookingExtras } from "@/lib/booking-view";
 
 type Ctx = { params: Promise<{ id: string }> };
@@ -29,15 +29,6 @@ export async function POST(req: Request, { params }: Ctx) {
   if (!message) return NextResponse.json({ error: "Write a message." }, { status: 400 });
   extra = appendMessage(extra, "guest", message);
   await prisma.booking.update({ where: { id }, data: { extras: JSON.stringify(extra) } });
-  const origin = process.env.NEXTAUTH_URL || new URL(req.url).origin;
-  const text = `${session.user.name} messaged you about ${booking.listing.name} (${booking.startDate} — ${booking.endDate}): ${message}`;
-  if (booking.listing.owner.email) {
-    await notifyBookingUpdate(
-      booking.listing.owner.email,
-      "HolyDays guest message",
-      text,
-      `${origin}/owner?tab=messages`,
-    );
-  }
+  await notifyOwnerGuestMessage(id, message);
   return NextResponse.json({ ok: true, messages: extra.assistance });
 }
