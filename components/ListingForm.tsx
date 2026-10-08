@@ -163,6 +163,8 @@ export function ListingForm({
     seats: String(seed.seats || (kind === "TAXI" ? 7 : 0)),
     vacant: String(seed.vacant || (kind === "TAXI" ? 7 : 0)),
     routeCities: (seed.routeCities.length ? seed.routeCities : initial?.city ? [initial.city] : []).join(", "),
+    guideFee: String(seed.guideFee || ""),
+    guideFeeUnit: seed.guideFeeUnit === "group" ? "group" : "person",
     hours: seed.hours || (kind === "ATTRACTION" ? "Half day" : kind === "TAXI" ? (seedAir ? "Airport pickup / drop-off" : "Full day") : ""),
     origin: seedAir?.label ?? (seed.origin || initial?.city || "Najaf"),
     destination: seedAir ? "Guest hotel" : seed.destination || "",
@@ -447,7 +449,35 @@ export function ListingForm({
           }
   };
 
-  const priceBlock = (
+  const priceBlock = ziyarat ? (
+    <div className="space-y-3">
+      <div className="grid gap-3 sm:grid-cols-2">
+        <MoneyInput label="Entry fee, 0 if free" pkr={form.price} onPkr={(v) => set("price", v)} />
+        <label className="paper-label">
+          Entry fee charged
+          <select className="paper-field" value={form.priceUnit} onChange={(e) => set("priceUnit", e.target.value)}>
+            <option value="person">per person</option>
+            <option value="day">per day (whole group)</option>
+          </select>
+        </label>
+      </div>
+      <div className="grid gap-3 sm:grid-cols-2">
+        <MoneyInput label="Guide fee" pkr={form.guideFee} onPkr={(v) => set("guideFee", v)} placeholder="Fee you charge for guiding" />
+        <label className="paper-label">
+          Guide fee charged
+          <select className="paper-field" value={form.guideFeeUnit} onChange={(e) => set("guideFeeUnit", e.target.value)}>
+            <option value="person">per guest, per day</option>
+            <option value="group">per day, whole group</option>
+          </select>
+        </label>
+      </div>
+      <p className="text-xs text-ink/45">
+        {form.guideFeeUnit === "group"
+          ? "The guide fee is one flat amount for each day, however many guests there are. 3 guests for 2 days pays it twice."
+          : "The guide fee is charged for every guest on every day. 3 guests for 2 days pays it 6 times."}
+      </p>
+    </div>
+  ) : (
         <div className={`grid gap-3 sm:grid-cols-[1fr_auto] ${food ? "mt-2" : ""}`}>
           <MoneyInput
             label="Price"

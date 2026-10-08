@@ -153,7 +153,8 @@ export default function BookedPage() {
           <>
             <p className="mt-4 text-xl text-sand">{booking.listing.name}</p>
             <p className="mt-3 text-mist">
-              {formatDay(booking.startDate)} — {formatDay(booking.endDate)} · {money(booking.total)}
+              {booking.startDate === booking.endDate ? formatDay(booking.startDate) : `${formatDay(booking.startDate)} — ${formatDay(booking.endDate)}`} ·{" "}
+              {(booking.extra.visit as { free?: boolean } | undefined)?.free ? "Free visit" : money(booking.total)}
               {booking.listing.city ? ` · ${booking.listing.city}` : ""}
             </p>
           </>

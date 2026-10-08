@@ -1,7 +1,8 @@
 import { toBookingDTO } from "@/lib/booking-dto";
 import { bookingInvoiceBreakdown, bookingIsPaid, type StoredPackage } from "@/lib/booking-invoice";
 import { parseBookingExtras } from "@/lib/booking-view";
-import { nightsBetween } from "@/lib/format";
+import { formatPKR, nightsBetween } from "@/lib/format";
+import { guideAmount } from "@/lib/trip-total";
 import { parseListingMeta } from "@/lib/listing-meta";
 import { packagePrimaryAmount } from "@/lib/package-plan";
 import { CANCEL_LABEL, MEAL_PLAN_LABEL, PAY_LABEL, BED_LABEL } from "@/lib/rooms";
@@ -36,6 +37,8 @@ export type OwnerDetail = {
   requests: string;
   reservation?: { time: string };
   taxiMode?: string;
+  /** Multi-day Ziyarat plan: days booked and the per-day rate. */
+  visit?: { days: number; guests: number; rate: number; unit: string; guideFee: number; guideUnit: string; free: boolean };
   paid: boolean;
   refundOutlook: RefundOutlook;
   /** Set once a cancellation of a card-paid booking was approved. */
@@ -130,7 +133,35 @@ export function buildOwnerDetail(row: OwnerBookingRow): OwnerDetail {
       }
     }
   } else {
-    invoice.push({ label: row.listingName, note: extra.reservation ? `Table for ${row.guests}` : undefined, amount: row.total });
+    const v = extra.visit as { days?: number; guests?: number; rate?: number; unit?: string; guideFee?: number; guideUnit?: string; free?: boolean } | undefined;
+    if (v && !v.free && !extra.reservation) {
+      const days = Number(v.days) || 1;
+      const guests = Number(v.guests) || row.guests;
+      const perPerson = v.unit === "person";
+      const visitPart = (perPerson ? (Number(v.rate) || 0) * guests : Number(v.rate) || 0) * days;
+      const guidePart = guideAmount(v.guideFee, v.guideUnit, guests, days);
+      if (visitPart > 0) {
+        invoice.push({
+          label: "Visit fee",
+          note: `${formatPKR(Number(v.rate) || 0)}${perPerson ? ` × ${guests} guest${guests === 1 ? "" : "s"}` : ""} × ${days} day${days === 1 ? "" : "s"}`,
+          amount: visitPart,
+        });
+      }
+      if (guidePart > 0) {
+        invoice.push({
+          label: "Guide fee",
+          note: `${formatPKR(Number(v.guideFee) || 0)}${v.guideUnit === "group" ? " flat for the group" : ` × ${guests} guest${guests === 1 ? "" : "s"}`} × ${days} day${days === 1 ? "" : "s"}`,
+          amount: guidePart,
+        });
+      }
+      if (!visitPart && !guidePart) invoice.push({ label: row.listingName, amount: row.total });
+    } else {
+      invoice.push({
+        label: row.listingName,
+        note: extra.reservation ? `Table for ${row.guests}` : v?.free ? "Free visit" : undefined,
+        amount: row.total,
+      });
+    }
   }
 
   const flow = String(pack?.flow ?? "");
@@ -152,6 +183,18 @@ export function buildOwnerDetail(row: OwnerBookingRow): OwnerDetail {
     requests: String(extra.specialRequests ?? extra.requests ?? "").trim(),
     reservation: extra.reservation && extra.time ? { time: String(extra.time) } : undefined,
     taxiMode: row.kind === "TAXI" ? String(extra.taxiMode ?? "") : undefined,
+    visit:
+      row.kind === "ATTRACTION" && extra.visit && typeof extra.visit === "object"
+        ? {
+            days: Number((extra.visit as { days?: number }).days) || 1,
+            guests: Number((extra.visit as { guests?: number }).guests) || row.guests,
+            rate: Number((extra.visit as { rate?: number }).rate) || 0,
+            unit: String((extra.visit as { unit?: string }).unit ?? ""),
+            guideFee: Number((extra.visit as { guideFee?: number }).guideFee) || 0,
+            guideUnit: String((extra.visit as { guideUnit?: string }).guideUnit ?? "person"),
+            free: Boolean((extra.visit as { free?: boolean }).free),
+          }
+        : undefined,
     paid,
     refundOutlook: dto.refundOutlook,
     refund:

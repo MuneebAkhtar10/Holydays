@@ -3,6 +3,7 @@ import { toBookingDTO, type BookingDTO } from "@/lib/booking-dto";
 import { bookingInvoiceBreakdown, bookingIsPaid, bookingPackageGrandTotal, bookingPackageHotelNames } from "@/lib/booking-invoice";
 import { formatPKR, formatTime, nightsBetween } from "@/lib/format";
 import { bookingCurrency, formatMoney } from "@/lib/currency";
+import { guideAmount } from "@/lib/trip-total";
 
 /** Amounts in the currency the guest chose at checkout. */
 const fmt = (b: BookingDTO, n: number) => formatMoney(n, bookingCurrency(b.extra));
@@ -45,8 +46,13 @@ function shortDay(iso: string) {
   return new Date(`${iso}T12:00:00`).toLocaleDateString("en-GB", { day: "numeric", month: "short" });
 }
 
+type Visit = { days: number; guests: number; rate: number; unit: string; guideFee?: number; guideUnit?: string; free: boolean };
+/** A multi-day Ziyarat plan: number of days, and whether it costs nothing. */
+const visitOf = (b: BookingDTO) => (b.extra.visit && typeof b.extra.visit === "object" ? (b.extra.visit as Visit) : null);
+
 function paymentLabel(b: BookingDTO) {
-  if (b.payment === "property") return "Pay at the property";
+  if (visitOf(b)?.free) return "Free visit";
+  if (b.payment === "property") return b.listing.kind === "STAY" ? "Pay at the property" : "Pay on the day";
   if (b.payment === "card" || b.payment === "stripe") return "Card";
   if (b.payment === "jazz") return "JazzCash";
   if (b.payment === "easy") return "EasyPaisa";
@@ -74,7 +80,10 @@ function stayFacts(b: BookingDTO): [string, string][] {
     ["Reservation time", b.extra.reservation && b.extra.time ? formatTime(String(b.extra.time)) : ""],
     ["Your requests", b.extra.reservation ? String(b.extra.requests ?? "") : ""],
     [isStay(b) ? "Check-out" : "Ends", b.extra.reservation ? "" : `${longDay(b.endDate)}${isStay(b) && b.listing.checkOut ? ` · by ${b.listing.checkOut}` : ""}`],
-    [isStay(b) ? "Length of stay" : "Duration", isStay(b) ? `${nights} night${nights === 1 ? "" : "s"}` : ""],
+    [
+      isStay(b) ? "Length of stay" : "Duration",
+      isStay(b) ? `${nights} night${nights === 1 ? "" : "s"}` : visitOf(b) ? `${visitOf(b)!.days} day${visitOf(b)!.days === 1 ? "" : "s"}` : "",
+    ],
     ["Guests", `${b.guests} guest${b.guests === 1 ? "" : "s"}`],
     ["Booked by", b.guestName || ""],
   ];
@@ -98,7 +107,21 @@ function invoiceLines(b: BookingDTO): { lines: MailLine[]; grand: number } {
     const quote = b.extra.quote as { total?: number; taxes?: number } | undefined;
     const base = quote?.total ?? b.total;
     const taxes = quote?.taxes ?? 0;
-    lines.push({ label: isStay(b) ? "Accommodation" : b.listing.name, amount: fmt(b, base) });
+    const v = visitOf(b);
+    const g = `${v?.guests ?? b.guests} guest${(v?.guests ?? b.guests) === 1 ? "" : "s"}`;
+    const d = v ? `${v.days} day${v.days === 1 ? "" : "s"}` : "";
+    if (v && !v.free) {
+      const guide = guideAmount(v.guideFee, v.guideUnit, v.guests, v.days);
+      const visitPart = Math.max(0, base - guide);
+      if (visitPart > 0) lines.push({ label: `${b.listing.name} · visit`, note: `${fmt(b, v.rate)}${v.unit === "person" ? ` × ${g}` : ""} × ${d}`, amount: fmt(b, visitPart) });
+      if (guide > 0) lines.push({ label: `${b.listing.name} · guide fee`, note: `${fmt(b, v.guideFee ?? 0)}${v.guideUnit === "group" ? " flat for the group" : ` × ${g}`} × ${d}`, amount: fmt(b, guide) });
+    } else {
+      lines.push({
+        label: isStay(b) ? "Accommodation" : b.listing.name,
+        note: v ? "Free visit" : undefined,
+        amount: fmt(b, base),
+      });
+    }
     if (taxes > 0) lines.push({ label: "Taxes & fees", amount: fmt(b, taxes) });
   }
   return { lines, grand };
@@ -116,6 +139,7 @@ function plainSummary(b: BookingDTO, grand: number) {
 export function confirmationEmail(b: BookingDTO, origin: string): BuiltEmail {
   const url = `${origin}/bookings/${b.id}`;
   const paid = bookingIsPaid(b);
+  const free = Boolean(visitOf(b)?.free);
   const { lines, grand } = invoiceLines(b);
   const first = (b.guestName || "there").split(" ")[0];
   const paidAt = String(b.extra.paidAt ?? "");
@@ -133,13 +157,17 @@ export function confirmationEmail(b: BookingDTO, origin: string): BuiltEmail {
 
   const next = [
     "Carry a valid passport or national ID for every guest.",
-    paid ? "Your payment is complete — nothing more to pay before you arrive." : `Bring ${fmt(b, grand)} to pay at the property on arrival.`,
+    free
+      ? "This is a free visit — there is nothing to pay."
+      : paid
+        ? "Your payment is complete — nothing more to pay before you arrive."
+        : `Bring ${fmt(b, grand)} to pay ${isStay(b) ? "at the property on arrival" : "on the day"}.`,
     "Open your booking any time to message the host, view your voucher, or make changes.",
   ];
 
   const body = `
     ${paragraphs(`Hello ${first},\n\nThank you for booking with HolyDays. Your reservation is confirmed — here is everything you need, including your invoice and receipt.`)}
-    <p style="margin:0 0 6px">${badge("Confirmed", "green")} ${paid ? badge("Paid", "navy") : badge("Pay at property", "gold")}</p>
+    <p style="margin:0 0 6px">${badge("Confirmed", "green")} ${free ? badge("Free visit", "navy") : paid ? badge("Paid", "navy") : badge(isStay(b) ? "Pay at property" : "Pay on the day", "gold")}</p>
 
     ${sectionTitle("Your booking")}
     ${detailCard(stayFacts(b))}
@@ -147,17 +175,17 @@ export function confirmationEmail(b: BookingDTO, origin: string): BuiltEmail {
     ${sectionTitle(`Invoice · ${invoiceNo}`)}
     <p style="margin:0 0 6px;font-family:-apple-system,'Segoe UI',Helvetica,Arial,sans-serif;font-size:12px;color:#8a97a8">Issued ${esc(longDay(issued))}</p>
     ${lineTable(lines)}
-    ${totalBar(paid ? "Total paid" : "Total due", fmt(b, grand), paid ? "Paid in full" : "Payable at the property")}
+    ${free ? totalBar("Total", "Free", "No payment needed") : totalBar(paid ? "Total paid" : "Total due", fmt(b, grand), paid ? "Paid in full" : isStay(b) ? "Payable at the property" : "Payable on the day")}
 
     ${sectionTitle(`Receipt · ${receiptNo}`)}
     ${detailCard([
       ["Payment method", paymentLabel(b)],
-      ["Status", paid ? "Paid" : "Due at check-in"],
-      [paid ? "Amount paid" : "Amount due", fmt(b, grand)],
+      ["Status", free ? "No payment needed" : paid ? "Paid" : isStay(b) ? "Due at check-in" : "Due on the day"],
+      [paid ? "Amount paid" : "Amount due", free ? "Free" : fmt(b, grand)],
       ["Paid on", paid && paidAt ? longDay(paidAt.slice(0, 10)) : ""],
       ["Reference", b.number],
     ])}
-    ${paid ? "" : `<p style="margin:10px 0 0;font-family:-apple-system,'Segoe UI',Helvetica,Arial,sans-serif;font-size:12px;color:#8a97a8">This receipt will show as paid once the property confirms payment at check-in.</p>`}
+    ${paid || free ? "" : `<p style="margin:10px 0 0;font-family:-apple-system,'Segoe UI',Helvetica,Arial,sans-serif;font-size:12px;color:#8a97a8">This receipt will show as paid once the host confirms payment${isStay(b) ? " at check-in" : " on the day"}.</p>`}
 
     ${hasContact ? `${sectionTitle("Contact")}${detailCard(contact)}` : ""}
 
@@ -210,13 +238,13 @@ export function reminderEmail(b: BookingDTO, origin: string, kind: ReminderKind)
       ? [
           "Check that your passport or national ID is valid for travel.",
           "Confirm your flight, transfer or driver pick-up times.",
-          paid ? "Payment is complete — nothing to pay on arrival." : `Plan to pay ${fmt(b, grand)} at the property.`,
+          visitOf(b)?.free ? "This is a free visit — nothing to pay." : paid ? "Payment is complete — nothing to pay on arrival." : `Plan to pay ${fmt(b, grand)} ${stay ? "at the property" : "on the day"}.`,
           "Message the host from your booking if you have special requests.",
         ]
       : [
           "Keep your booking number and ID handy for check-in.",
           stay && b.listing.checkIn ? `Check-in opens at ${b.listing.checkIn}.` : "Be ready at the agreed meeting point.",
-          paid ? "Payment is complete — nothing to pay on arrival." : `Bring ${fmt(b, grand)} to pay at the property.`,
+          visitOf(b)?.free ? "This is a free visit — nothing to pay." : paid ? "Payment is complete — nothing to pay on arrival." : `Bring ${fmt(b, grand)} to pay ${stay ? "at the property" : "on the day"}.`,
           "Use your voucher at reception — it has your booking number.",
         ];
 

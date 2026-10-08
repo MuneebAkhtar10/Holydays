@@ -2,7 +2,7 @@ import { getServerSession } from "next-auth";
 import { NextResponse } from "next/server";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { datesOverlap, todayIso } from "@/lib/format";
+import { datesOverlap, inclusiveDays, MAX_VISIT_DAYS, todayIso } from "@/lib/format";
 import { fetchListingByKey, fetchPublicListings, isPublishedLive } from "@/lib/listing-query";
 import { loadBookableStay } from "@/lib/bookable-stay";
 import { quoteStay, roomPicksTotal, type QuoteInput } from "@/lib/pricing";
@@ -15,7 +15,7 @@ import { pilgrimCountryForPlace } from "@/lib/pilgrim";
 import { parseListingMeta } from "@/lib/listing-meta";
 import { roomsLeftFor } from "@/lib/availability";
 import { createStripeCheckoutUrl, isCardPayment, packageBookingIds } from "@/lib/stripe-booking";
-import { independentTripTotal } from "@/lib/trip-total";
+import { guideFeeOf, guideUnitOf, independentTripTotal } from "@/lib/trip-total";
 import { displayCurrencyFromRequest } from "@/lib/stripe-money";
 
 export async function GET() {
@@ -71,8 +71,13 @@ async function createBooking(req: Request) {
   const startDate = String(body.startDate ?? "");
   let endDate = String(body.endDate ?? body.startDate ?? "");
   if (!startDate) return NextResponse.json({ error: "Choose dates" }, { status: 400 });
-  if (listing.kind === "TAXI" || listing.kind === "ATTRACTION" || listing.kind === "RESTAURANT") {
+  if (listing.kind === "TAXI" || listing.kind === "RESTAURANT") {
     endDate = startDate;
+  }
+  // A Ziyarat plan can run for several days in a row (last day included).
+  const visitDays = listing.kind === "ATTRACTION" ? inclusiveDays(startDate, endDate || startDate) : 1;
+  if (listing.kind === "ATTRACTION" && visitDays > MAX_VISIT_DAYS) {
+    return NextResponse.json({ error: `A Ziyarat plan can cover up to ${MAX_VISIT_DAYS} days in one booking.` }, { status: 400 });
   }
   if (endDate && endDate < startDate) {
     return NextResponse.json({ error: "End date must be on or after the start date." }, { status: 400 });
@@ -239,6 +244,9 @@ async function createBooking(req: Request) {
       guests: Number(body.guests) || 1,
       taxi: listing.kind === "TAXI" ? listingToTaxi(listing) : null,
       taxiMode,
+      days: visitDays,
+      guideFee: guideFeeOf(listing.meta),
+      guideFeeUnit: guideUnitOf(listing.meta),
     });
   }
   const method = String(body.payment ?? "property");
@@ -246,7 +254,11 @@ async function createBooking(req: Request) {
   const storedMethod = wantsCard ? "card" : isCardPayment(method) ? "property" : method;
   // Remember the currency the guest checked out in so every email and receipt uses it.
   const guestCurrency = displayCurrencyFromRequest(req, body);
-  extras = JSON.stringify({ ...parseBookingExtras(extras), currency: guestCurrency });
+  const visit =
+    listing.kind === "ATTRACTION"
+      ? { visit: { days: visitDays, guests: Math.max(1, Number(body.guests) || 1), rate: Number(listing.price) || 0, unit: listing.priceUnit, guideFee: guideFeeOf(listing.meta), guideUnit: guideUnitOf(listing.meta), free: total <= 0 } }
+      : {};
+  extras = JSON.stringify({ ...parseBookingExtras(extras), ...visit, currency: guestCurrency });
   const booking = await prisma.booking.create({
     data: {
       userId: session.user.id,

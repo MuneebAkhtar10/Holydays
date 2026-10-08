@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useSession } from "next-auth/react";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
-import { addDaysIso, datesOverlap, formatDay, formatTime, isPastBooking, localTodayIso, minCheckoutIso } from "@/lib/format";
+import { addDaysIso, datesOverlap, formatDay, formatTime, inclusiveDays, isPastBooking, localTodayIso, MAX_VISIT_DAYS, minCheckoutIso } from "@/lib/format";
 import { useSerai } from "@/lib/store";
 import { defaultDates } from "@/lib/format";
 import { kindLabel, unitLabel, type ListingKind } from "@/lib/marketplace";
@@ -14,7 +14,7 @@ import { LoaderOverlay, PageLoader } from "@/components/PageLoader";
 import { ListingReviews, type ReviewItem } from "@/components/ListingReviews";
 import { StarIcon } from "@/components/StarIcon";
 import { readJson } from "@/lib/readJson";
-import { independentTripTotal } from "@/lib/trip-total";
+import { guideAmount, guideFeeOf, guideUnitOf, independentTripTotal } from "@/lib/trip-total";
 import { parseBookingExtras } from "@/lib/booking-view";
 import { CancelBookingModal } from "@/components/CancelBookingModal";
 import { TaxiPhotos, taxiCarPhotos } from "@/components/TaxiPhotos";
@@ -176,6 +176,7 @@ export function ListingBook({ fallbackSlug }: { fallbackSlug?: string }) {
 
   useEffect(() => {
     if (listing?.kind === "RESTAURANT") setStart(addDaysIso(localTodayIso(), 1));
+    if (listing?.kind === "ATTRACTION") setEnd(start);
   }, [listing?.kind]);
 
   const bookings = listing?.myBookings ?? [];
@@ -186,7 +187,7 @@ export function ListingBook({ fallbackSlug }: { fallbackSlug?: string }) {
           !isPastBooking(b.endDate, b.startDate) &&
           (listing?.kind === "RESTAURANT"
             ? b.startDate === start && reservationTime(b) === slot
-            : datesOverlap(start, listing?.kind === "TAXI" || listing?.kind === "ATTRACTION" ? start : end || start, b.startDate, b.endDate)),
+            : datesOverlap(start, listing?.kind === "TAXI" ? start : end || start, b.startDate, b.endDate)),
       ),
     [bookings, start, end, slot, listing?.kind],
   );
@@ -213,8 +214,13 @@ export function ListingBook({ fallbackSlug }: { fallbackSlug?: string }) {
           meta: listing.meta,
         })
       : null;
-  const oneDay = listing.kind === "TAXI" || listing.kind === "ATTRACTION";
+  const oneDay = listing.kind === "TAXI";
+  const ziyarat = listing.kind === "ATTRACTION";
   const reservation = listing.kind === "RESTAURANT";
+  const guideFee = ziyarat ? guideFeeOf(listing.meta) : 0;
+  const guideGroup = ziyarat && guideUnitOf(listing.meta) === "group";
+  const lastDay = ziyarat ? (end < start ? start : end) : start;
+  const visitDays = ziyarat ? inclusiveDays(start, lastDay) : 1;
   const tripTotal = independentTripTotal({
     kind: listing.kind,
     price: listing.price,
@@ -222,7 +228,14 @@ export function ListingBook({ fallbackSlug }: { fallbackSlug?: string }) {
     guests,
     taxi,
     taxiMode,
+    days: visitDays,
+    guideFee,
+    guideFeeUnit: guideGroup ? "group" : "person",
   });
+  const freeVisit = ziyarat && tripTotal <= 0;
+  const perPerson = listing.priceUnit === "person";
+  const visitFee = (perPerson ? Number(listing.price) * guests : Number(listing.price)) * visitDays;
+  const guideTotal = guideAmount(guideFee, guideGroup ? "group" : "person", guests, visitDays);
   const canPayNow = taxiMode !== "custom" && tripTotal > 0;
   const payingNow = canPayNow && payMethod === "card";
 
@@ -243,7 +256,7 @@ export function ListingBook({ fallbackSlug }: { fallbackSlug?: string }) {
       body: JSON.stringify({
         listingId: listing.slug,
         startDate: start,
-        endDate: oneDay || reservation ? start : end,
+        endDate: ziyarat ? lastDay : oneDay || reservation ? start : end,
         guests,
         phone,
         payment: payingNow ? "card" : "property",
@@ -298,7 +311,9 @@ export function ListingBook({ fallbackSlug }: { fallbackSlug?: string }) {
                 <p className="mt-2 text-xs text-mist">
                   {payingNow
                     ? "You will pay securely on Stripe. The booking is confirmed after the charge succeeds."
-                    : "No card is charged now."}
+                    : ziyarat
+                      ? "Your booking is confirmed now. No card is charged; you pay on the day."
+                      : "No card is charged now."}
                 </p>
               </div>
   ) : null;
@@ -522,14 +537,14 @@ export function ListingBook({ fallbackSlug }: { fallbackSlug?: string }) {
           />
           {bookings.length > 0 && (
             <div className="mt-10 max-w-xl">
-              <h2 className="font-display text-2xl">{oneDay ? "Your trips" : "Your dates on this listing"}</h2>
+              <h2 className="font-display text-2xl">{oneDay || ziyarat ? "Your trips" : "Your dates on this listing"}</h2>
               <ul className="mt-4 space-y-3">
                 {bookings.map((b) => {
                   const past = isPastBooking(b.endDate, b.startDate);
                   return (
                   <li key={b.id} className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-brass/25 px-4 py-3">
                     <p className="text-sm text-sand">
-                      {oneDay || b.startDate === b.endDate
+                      {b.startDate === b.endDate
                         ? formatDay(b.startDate)
                         : `${formatDay(b.startDate)} — ${formatDay(b.endDate)}`}
                       {reservation && reservationTime(b) ? ` · ${formatTime(reservationTime(b))}` : ""}{" "}
@@ -557,11 +572,29 @@ export function ListingBook({ fallbackSlug }: { fallbackSlug?: string }) {
           {reservation && <p className="mb-1 text-[11px] uppercase tracking-[0.18em] text-brass">Reserve a table</p>}
           {taxi && taxiMode === "custom" ? (
             <p className="font-display text-2xl">Customize this trip</p>
+          ) : ziyarat && Number(listing.price) <= 0 ? (
+            guideFee > 0 ? (
+              <div>
+                <p className="font-display text-3xl">
+                  {money(guideFee)} <span className="text-base text-mist">{guideGroup ? "/ day · whole group" : "/ guest · per day"}</span>
+                </p>
+                <p className="mt-1 text-sm text-mist">
+                  Entry is free. The fee is for your guide,{" "}
+                  {guideGroup ? "one flat amount for each day, however many guests you bring." : "charged for each guest on every day you book."}
+                </p>
+              </div>
+            ) : (
+              <div>
+                <p className="font-display text-3xl">Free visit</p>
+                <p className="mt-1 text-sm text-mist">No charge for this Ziyarat. Reserve your day or days so the host expects you.</p>
+              </div>
+            )
           ) : (
             <p className="font-display text-3xl">
               {money(taxi ? (taxiMode === "private" ? taxi.privateRate : taxi.ratePerPerson) : listing.price)}{" "}
               <span className="text-base text-mist">
                 / {taxi ? (taxiMode === "private" ? "vehicle" : "person") : unitLabel[listing.priceUnit] ?? listing.priceUnit}
+                {ziyarat ? " · per day" : ""}
               </span>
             </p>
           )}
@@ -601,9 +634,11 @@ export function ListingBook({ fallbackSlug }: { fallbackSlug?: string }) {
           ) : (
           <>
           <p className="mt-2 text-sm text-mist">
-            {oneDay
-              ? "This Ziyarat is a single-day plan. Pick the day you will go."
-              : "You can book more than once — just choose dates that do not overlap."}
+            {ziyarat
+              ? "Choose the day you will go. Staying longer? Pick a last day and every day in between is booked."
+              : oneDay
+                ? "This is a single-day trip. Pick the day you will go."
+                : "You can book more than once — just choose dates that do not overlap."}
           </p>
           <form
             className="mt-5 space-y-4"
@@ -679,17 +714,82 @@ export function ListingBook({ fallbackSlug }: { fallbackSlug?: string }) {
                 </p>
               </div>
             )}
-            <label className="auth-label">
-              {oneDay ? "Trip day" : "Date"}
-              <input type="date" className="auth-field" min={localTodayIso()} value={start} onChange={(e) => setStart(e.target.value)} />
-            </label>
-            {!oneDay && (
-              <label className="auth-label">
-                Until
-                <input type="date" className="auth-field" min={minCheckoutIso(start)} value={end} onChange={(e) => setEnd(e.target.value < minCheckoutIso(start) ? minCheckoutIso(start) : e.target.value)} />
-              </label>
+            {ziyarat ? (
+              <div>
+                <div className="grid grid-cols-2 gap-3">
+                  <label className="auth-label">
+                    First day
+                    <input
+                      type="date"
+                      className="auth-field"
+                      min={localTodayIso()}
+                      value={start}
+                      onChange={(e) => {
+                        setStart(e.target.value);
+                        if (end < e.target.value) setEnd(e.target.value);
+                      }}
+                    />
+                  </label>
+                  <label className="auth-label">
+                    Last day
+                    <input
+                      type="date"
+                      className="auth-field"
+                      min={start}
+                      max={addDaysIso(start, MAX_VISIT_DAYS - 1)}
+                      value={lastDay}
+                      onChange={(e) => setEnd(e.target.value < start ? start : e.target.value)}
+                    />
+                  </label>
+                </div>
+                <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                  {[1, 2, 3, 5, 7].map((n) => (
+                    <button
+                      key={n}
+                      type="button"
+                      className="filter-chip"
+                      data-on={visitDays === n}
+                      onClick={() => setEnd(addDaysIso(start, n - 1))}
+                    >
+                      {n} {n === 1 ? "day" : "days"}
+                    </button>
+                  ))}
+                  <span className="ml-auto text-xs text-mist">
+                    {visitDays} {visitDays === 1 ? "day" : "days"} · up to {MAX_VISIT_DAYS}
+                  </span>
+                </div>
+              </div>
+            ) : (
+              <>
+                <label className="auth-label">
+                  {oneDay ? "Trip day" : "Date"}
+                  <input type="date" className="auth-field" min={localTodayIso()} value={start} onChange={(e) => setStart(e.target.value)} />
+                </label>
+                {!oneDay && (
+                  <label className="auth-label">
+                    Until
+                    <input type="date" className="auth-field" min={minCheckoutIso(start)} value={end} onChange={(e) => setEnd(e.target.value < minCheckoutIso(start) ? minCheckoutIso(start) : e.target.value)} />
+                  </label>
+                )}
+              </>
             )}
-            {taxiMode !== "custom" && (
+            {ziyarat && (
+              <div>
+                <p className="auth-label">Guests</p>
+                <div className="mt-2 flex items-center justify-between rounded-xl border border-brass/25 bg-ink/25 px-3 py-2">
+                  <button type="button" aria-label="Fewer guests" className="btn-ghost px-3! py-1! text-lg! leading-none" disabled={guests <= 1} onClick={() => setGuests((g) => Math.max(1, g - 1))}>
+                    −
+                  </button>
+                  <span className="text-sand">
+                    {guests} {guests === 1 ? "guest" : "guests"}
+                  </span>
+                  <button type="button" aria-label="More guests" className="btn-ghost px-3! py-1! text-lg! leading-none" disabled={guests >= 50} onClick={() => setGuests((g) => Math.min(50, g + 1))}>
+                    +
+                  </button>
+                </div>
+              </div>
+            )}
+            {taxiMode !== "custom" && !ziyarat && (
               <label className="auth-label">
                 Guests
                 <input
@@ -709,10 +809,50 @@ export function ListingBook({ fallbackSlug }: { fallbackSlug?: string }) {
               Phone
               <input className="auth-field" placeholder="03xx xxxxxxx" value={phone} onChange={(e) => setPhone(e.target.value)} />
             </label>
+            {ziyarat && (
+              <div className="rounded-xl bg-ink/30 px-4 py-3 text-sm">
+                <p className="text-sand">
+                  {formatDay(start)}
+                  {lastDay !== start ? ` — ${formatDay(lastDay)}` : ""} · {visitDays} {visitDays === 1 ? "day" : "days"} · {guests} {guests === 1 ? "guest" : "guests"}
+                </p>
+                {freeVisit ? (
+                  <p className="mt-1 text-mist">Free visit · nothing to pay</p>
+                ) : (
+                  <>
+                    <ul className="mt-2 space-y-1 text-xs text-mist">
+                      {visitFee > 0 && (
+                        <li className="flex justify-between gap-3">
+                          <span>
+                            Visit · {money(listing.price)}
+                            {perPerson ? ` × ${guests} ${guests === 1 ? "guest" : "guests"}` : ""} × {visitDays} {visitDays === 1 ? "day" : "days"}
+                          </span>
+                          <span className="tabular-nums text-sand">{money(visitFee)}</span>
+                        </li>
+                      )}
+                      {guideTotal > 0 && (
+                        <li className="flex justify-between gap-3">
+                          <span>
+                            Guide · {money(guideFee)}
+                            {guideGroup ? " flat" : ` × ${guests} ${guests === 1 ? "guest" : "guests"}`} × {visitDays} {visitDays === 1 ? "day" : "days"}
+                          </span>
+                          <span className="tabular-nums text-sand">{money(guideTotal)}</span>
+                        </li>
+                      )}
+                    </ul>
+                    <p className="mt-2 flex items-baseline justify-between border-t border-brass/15 pt-2 text-sand">
+                      <span>Total</span>
+                      <span className="font-display text-2xl">{money(tripTotal)}</span>
+                    </p>
+                  </>
+                )}
+              </div>
+            )}
             {paymentBlock}
             {clash && (
               <p className="text-sm text-rose">
-                {oneDay
+                {ziyarat
+                  ? `You already have this Ziyarat on ${formatDay(clash.startDate)}${clash.endDate !== clash.startDate ? ` — ${formatDay(clash.endDate)}` : ""}. Pick other days or cancel that booking first.`
+                  : oneDay
                   ? `You already have this trip on ${formatDay(clash.startDate)}. Pick another day or cancel that booking first.`
                   : `Those dates overlap ${formatDay(clash.startDate)} — ${formatDay(clash.endDate)}. Change dates or cancel that booking first.`}
               </p>
@@ -732,9 +872,13 @@ export function ListingBook({ fallbackSlug }: { fallbackSlug?: string }) {
                   ? "Request this driver"
                   : payingNow
                     ? `Pay with card · ${money(tripTotal)}`
-                    : oneDay
-                      ? "Book this day"
-                      : "Book these dates"}
+                    : ziyarat
+                      ? freeVisit
+                        ? visitDays > 1 ? `Reserve ${visitDays} days` : "Reserve this day"
+                        : visitDays > 1 ? `Book ${visitDays} days · pay on the day` : "Book this day · pay on the day"
+                      : oneDay
+                        ? "Book this day"
+                        : "Book these dates"}
             </button>
           </form>
           </>

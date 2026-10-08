@@ -64,6 +64,10 @@ export type StayListingMeta = {
   vacant: number;
   routeCities: string[];
   hours: string;
+  /** Ziyarat: guide fee, in PKR, charged per guest for each day. The visit itself is the listing price. */
+  guideFee: number;
+  /** "person": guideFee × guests × days. "group": guideFee × days for the whole party. */
+  guideFeeUnit: "person" | "group";
   origin: string;
   destination: string;
   privateRate: number;
@@ -189,6 +193,8 @@ export function parseListingMeta(raw: unknown): StayListingMeta {
           .map((s) => s.trim())
           .filter(Boolean),
     hours: String(obj.hours ?? ""),
+    guideFee: Math.max(0, Number(obj.guideFee) || 0),
+    guideFeeUnit: obj.guideFeeUnit === "group" ? "group" : "person",
     origin: String(obj.origin ?? ""),
     destination: String(obj.destination ?? ""),
     privateRate: Number(obj.privateRate) || 0,
@@ -279,6 +285,8 @@ export function defaultStayMeta(partial?: Partial<StayListingMeta> & { city?: st
     vacant: partial?.vacant ?? 0,
     routeCities: partial?.routeCities ?? [],
     hours: partial?.hours ?? "",
+    guideFee: partial?.guideFee ?? 0,
+    guideFeeUnit: partial?.guideFeeUnit ?? "person",
     origin: partial?.origin ?? "",
     destination: partial?.destination ?? "",
     privateRate: partial?.privateRate ?? 0,
@@ -471,6 +479,8 @@ export function encodeStayMeta(body: Record<string, unknown>, fallback?: Partial
         ? body.routeCities.split(",").map((s) => s.trim()).filter(Boolean)
         : fallback?.routeCities,
     hours: body.hours !== undefined ? String(body.hours) : fallback?.hours,
+    guideFee: body.guideFee !== undefined ? Math.max(0, Number(body.guideFee) || 0) : fallback?.guideFee,
+    guideFeeUnit: body.guideFeeUnit !== undefined ? (body.guideFeeUnit === "group" ? "group" : "person") : fallback?.guideFeeUnit,
     origin: body.origin !== undefined ? String(body.origin) : fallback?.origin,
     destination: body.destination !== undefined ? String(body.destination) : fallback?.destination,
     privateRate: body.privateRate !== undefined ? Number(body.privateRate) : fallback?.privateRate,

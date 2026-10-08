@@ -254,7 +254,9 @@ export async function notifyProvidersOfBooking(bookingId: string, opts: { pendin
       primaryWhen = longDay(row.startDate);
       primaryDetail = extra.taxiMode === "private" ? "Private vehicle" : extra.taxiMode === "custom" ? "Custom trip, rate agreed with you" : `${row.guests} seat${row.guests === 1 ? "" : "s"} (shared)`;
     } else if (kind === "ATTRACTION") {
-      primaryWhen = longDay(row.startDate);
+      const visit = extra.visit as { days?: number; free?: boolean; guideFee?: number } | undefined;
+      primaryWhen = row.startDate === row.endDate ? longDay(row.startDate) : `${longDay(row.startDate)} to ${longDay(row.endDate)}`;
+      primaryDetail = `${row.guests} guest${row.guests === 1 ? "" : "s"}${visit?.days && visit.days > 1 ? ` · ${visit.days} days` : ""}${visit?.free ? " · free visit" : visit?.guideFee ? " · includes guide fee" : ""}`;
     }
     add(row.listing.owner, {
       label: row.listing.name,

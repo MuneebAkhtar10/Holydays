@@ -6,6 +6,7 @@ import { useState } from "react";
 import type { BookingDTO } from "@/lib/booking-dto";
 import { addDaysIso, formatDay, formatTime, nightsBetween, todayIso } from "@/lib/format";
 import { useSerai } from "@/lib/store";
+import { guideAmount } from "@/lib/trip-total";
 import { shareText } from "@/lib/booking-view";
 import { readJson } from "@/lib/readJson";
 import { bookingIsPaid, bookingPackageGrandTotal, bookingPackageHotelNames } from "@/lib/booking-invoice";
@@ -219,12 +220,15 @@ export function PaymentBlock({ booking }: { booking: BookingDTO }) {
   const grandTotal = bookingPackageGrandTotal(booking);
   const paid = bookingIsPaid(booking);
   const refund = booking.extra.refund as { amountPkr: number; percent: number; status: string } | undefined;
+  const visit = booking.extra.visit as { days: number; guests: number; rate: number; unit: string; guideFee?: number; guideUnit?: string; free: boolean } | undefined;
   const [paying, setPaying] = useState(false);
   const [payError, setPayError] = useState("");
 
   const state =
     booking.status === "cancelled" || booking.status === "declined"
       ? { label: "Cancelled", cls: "bg-sand/10 text-mist" }
+      : visit?.free
+        ? { label: "Free visit", cls: "bg-emerald-500/15 text-emerald-400" }
       : paid
         ? { label: "Paid", cls: "bg-emerald-500/15 text-emerald-400" }
         : booking.status === "pending_payment"
@@ -237,8 +241,33 @@ export function PaymentBlock({ booking }: { booking: BookingDTO }) {
         <p className={EYEBROW}>Payment</p>
         <span className={`rounded-full px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.1em] ${state.cls}`}>{state.label}</span>
       </div>
-      <p className="font-display mt-2 text-4xl leading-none">{money(grandTotal)}</p>
-      <p className="mt-1.5 text-sm text-mist">{payLabel[booking.payment] || booking.payment}</p>
+      <p className="font-display mt-2 text-4xl leading-none">{visit?.free ? "Free" : money(grandTotal)}</p>
+      <p className="mt-1.5 text-sm text-mist">{visit?.free ? "No payment needed" : payLabel[booking.payment] || booking.payment}</p>
+
+      {visit && !visit.free && (
+        <ul className="mt-3 space-y-1.5 border-t border-brass/10 pt-3 text-sm text-mist">
+          {visit.rate > 0 && (
+            <li className="flex justify-between gap-3">
+              <span>
+                Visit · {money(visit.rate)}
+                {visit.unit === "person" ? ` × ${visit.guests} guest${visit.guests === 1 ? "" : "s"}` : ""} × {visit.days} day{visit.days === 1 ? "" : "s"}
+              </span>
+              <span className="tabular-nums text-sand">
+                {money((visit.unit === "person" ? visit.rate * visit.guests : visit.rate) * visit.days)}
+              </span>
+            </li>
+          )}
+          {(visit.guideFee ?? 0) > 0 && (
+            <li className="flex justify-between gap-3">
+              <span>
+                Guide · {money(visit.guideFee ?? 0)}
+                {visit.guideUnit === "group" ? " flat" : ` × ${visit.guests} guest${visit.guests === 1 ? "" : "s"}`} × {visit.days} day{visit.days === 1 ? "" : "s"}
+              </span>
+              <span className="tabular-nums text-sand">{money(guideAmount(visit.guideFee, visit.guideUnit, visit.guests, visit.days))}</span>
+            </li>
+          )}
+        </ul>
+      )}
 
       {!isPackage && quote && (
         <ul className="mt-3 space-y-1.5 border-t border-brass/10 pt-3 text-sm text-mist">
@@ -309,6 +338,7 @@ export function BookingHero({ booking }: { booking: BookingDTO }) {
   const reservation = Boolean(booking.extra.reservation && booking.extra.time);
   const stay = booking.listing.kind === "STAY";
   const nights = nightsBetween(tripStart, tripEnd);
+  const visit = booking.extra.visit as { days: number; guests: number; rate: number; unit: string; guideFee?: number; guideUnit?: string; free: boolean } | undefined;
 
   const facts: { label: string; value: string; sub?: string }[] = reservation
     ? [
@@ -326,8 +356,9 @@ export function BookingHero({ booking }: { booking: BookingDTO }) {
         ]
       : [
           { label: "Date", value: tripStart === tripEnd ? formatDay(tripStart) : `${formatDay(tripStart)} — ${formatDay(tripEnd)}` },
+          ...(visit ? [{ label: "Length", value: `${visit.days} day${visit.days === 1 ? "" : "s"}` }] : []),
           { label: "Guests", value: `${booking.guests}` },
-          { label: "Total", value: money(grandTotal) },
+          { label: "Total", value: visit?.free ? "Free" : money(grandTotal) },
         ];
 
   return (

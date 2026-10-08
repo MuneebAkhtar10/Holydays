@@ -17,6 +17,16 @@ export const nightsBetween = (a: string, b: string) => {
   return Math.max(1, Math.round(ms / 86400000));
 };
 
+/** Number of calendar days from start to end, both included (a one-day visit is 1). */
+export const inclusiveDays = (a: string, b: string) => {
+  if (!a || !b) return 1;
+  const ms = new Date(`${b}T12:00:00`).getTime() - new Date(`${a}T12:00:00`).getTime();
+  return Math.max(1, Math.round(ms / 86400000) + 1);
+};
+
+/** Longest multi-day Ziyarat plan we take as one booking. */
+export const MAX_VISIT_DAYS = 14;
+
 export const datesInclusive = (start: string, end: string) => {
   const a = start || end;
   const b = end || start;

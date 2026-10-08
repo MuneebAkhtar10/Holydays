@@ -1032,9 +1032,20 @@ function BookingDetail({
               ) : (
                 <dl className="mt-3 grid grid-cols-2 gap-3 text-sm">
                   <div>
-                    <dt className="text-[10px] uppercase tracking-[0.14em] text-mist">Date</dt>
-                    <dd className="text-sand">{formatDay(booking.startDate)}</dd>
+                    <dt className="text-[10px] uppercase tracking-[0.14em] text-mist">{booking.startDate === booking.endDate ? "Date" : "Dates"}</dt>
+                    <dd className="text-sand">
+                      {formatDay(booking.startDate)}
+                      {booking.startDate !== booking.endDate ? ` — ${formatDay(booking.endDate)}` : ""}
+                    </dd>
                   </div>
+                  {d.visit && (
+                    <div>
+                      <dt className="text-[10px] uppercase tracking-[0.14em] text-mist">Length</dt>
+                      <dd className="text-sand">
+                        {d.visit.days} day{d.visit.days === 1 ? "" : "s"} · {booking.guests} guest{booking.guests === 1 ? "" : "s"}
+                      </dd>
+                    </div>
+                  )}
                   {d.reservation && (
                     <div>
                       <dt className="text-[10px] uppercase tracking-[0.14em] text-mist">Time</dt>
@@ -1112,7 +1123,7 @@ function BookingDetail({
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <p className="text-[11px] uppercase tracking-[0.16em] text-brass">Invoice for your listing</p>
                 <span className={`rounded-full px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.1em] ${d.paid ? "bg-emerald-500/15 text-emerald-400" : "bg-amber-500/15 text-amber-500"}`}>
-                  {d.paid ? "Paid online" : booking.status === "cancelled" ? (d.wasPaid ? "Paid · cancelled" : "Cancelled") : "Due at property"}
+                  {d.visit?.free ? "Free visit" : d.paid ? "Paid online" : booking.status === "cancelled" ? (d.wasPaid ? "Paid · cancelled" : "Cancelled") : booking.listing.kind === "STAY" ? "Due at property" : "Due on the day"}
                 </span>
               </div>
               <ul className="mt-3 divide-y divide-brass/10 text-sm">
@@ -1127,7 +1138,7 @@ function BookingDetail({
                 ))}
               </ul>
               <div className="mt-3 flex items-center justify-between rounded-xl bg-ink-2 px-4 py-3">
-                <span className="text-[11px] uppercase tracking-[0.16em] text-brass">{d.paid || d.wasPaid ? "Total paid" : booking.status === "cancelled" ? "Total" : "Total to collect"}</span>
+                <span className="text-[11px] uppercase tracking-[0.16em] text-brass">{d.visit?.free ? "Total" : d.paid || d.wasPaid ? "Total paid" : booking.status === "cancelled" ? "Total" : "Total to collect"}</span>
                 <span className="font-display text-2xl text-sand">{money(d.invoiceTotal)}</span>
               </div>
               {booking.status === "cancelled" && d.wasPaid && (
