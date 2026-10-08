@@ -111,6 +111,10 @@ export const authOptions: NextAuthOptions = {
             token.email = db.email;
             token.role = db.role;
             token.ownerKind = db.ownerKind;
+            token.deleted = false;
+          } else if (!user) {
+            // The account was deleted by an admin: this old sign-in no longer belongs to anyone.
+            token.deleted = true;
           }
         } catch {
           /* keep token if the database is briefly unavailable */
@@ -119,6 +123,7 @@ export const authOptions: NextAuthOptions = {
       return token;
     },
     async session({ session, token }) {
+      if (token.deleted) return { expires: session.expires } as typeof session;
       if (session.user) {
         session.user.id = String(token.id ?? "");
         session.user.role = String(token.role ?? "TRAVELER");

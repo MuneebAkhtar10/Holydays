@@ -320,6 +320,29 @@ export default function AdminPage() {
     setOverlay(null);
   };
 
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  useEffect(() => {
+    setConfirmDelete(false);
+    setDeleteError("");
+  }, [selectedId]);
+  const [deleteError, setDeleteError] = useState("");
+  const deleteUser = async (id: string) => {
+    setOverlay("Deleting account");
+    setDeleteError("");
+    const res = await fetch(`/api/admin/users/${id}`, { method: "DELETE" });
+    const data = await readJson<{ error?: string }>(res);
+    if (!res.ok) {
+      setDeleteError(data?.error || "Could not delete this account.");
+      setOverlay(null);
+      return;
+    }
+    setConfirmDelete(false);
+    setSelectedId(null);
+    setDetail(null);
+    await loadUsers();
+    setOverlay(null);
+  };
+
   const decideCancellation = async (id: string, approve: boolean, refundPercent?: number) => {
     setOverlay(approve ? "Approving cancellation" : "Denying cancellation");
     setLoadError("");
@@ -538,6 +561,41 @@ export default function AdminPage() {
                       </div>
                     ))}
                   </dl>
+
+                  {detail.user.role !== "ADMIN" && detail.user.id !== data?.user?.id && (
+                    <div className="mt-4 border-t border-brass/15 pt-3">
+                      {!confirmDelete ? (
+                        <button
+                          type="button"
+                          className="btn-subtle px-3! py-1.5! text-xs! text-rose!"
+                          onClick={() => {
+                            setDeleteError("");
+                            setConfirmDelete(true);
+                          }}
+                        >
+                          Delete account
+                        </button>
+                      ) : (
+                        <div className="rounded-xl border border-rose/40 bg-rose/10 px-3 py-3">
+                          <p className="text-sm font-semibold text-rose">Permanently delete {detail.user.email}?</p>
+                          <p className="mt-1 text-xs text-sand/90">
+                            This removes the account and everything under it
+                            {detail.user.role === "OWNER" ? " — all of their listings and the bookings on them" : " — their bookings and reviews"} — from the
+                            database. It cannot be undone. The person can sign up again with the same email as a new account.
+                          </p>
+                          {deleteError && <p className="mt-2 text-xs font-semibold text-rose">{deleteError}</p>}
+                          <div className="mt-3 flex gap-2">
+                            <button type="button" className="btn-primary px-3! py-1.5! text-xs!" onClick={() => void deleteUser(detail.user.id)}>
+                              Yes, delete permanently
+                            </button>
+                            <button type="button" className="btn-subtle px-3! py-1.5! text-xs!" onClick={() => setConfirmDelete(false)}>
+                              Keep account
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
 
                   <div className="mt-4 flex items-center justify-between border-t border-brass/15 pt-3">
                     <h3 className="text-[11px] uppercase tracking-[0.16em] text-brass">Listings ({detail.listings.length})</h3>

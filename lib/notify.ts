@@ -11,6 +11,16 @@ export function smsConfigured() {
   return smsReady();
 }
 
+/** MAIL_COPIES="owner@a.com=me@b.com;other@a.com=me@b.com" — everything emailed to the left address is also sent to the right one. For testing. */
+function copyRecipients(to: string) {
+  const wanted = to.trim().toLowerCase();
+  return String(process.env.MAIL_COPIES ?? "")
+    .split(/[;\n]/)
+    .map((pair) => pair.split("="))
+    .filter(([from, copy]) => from?.trim().toLowerCase() === wanted && copy?.includes("@"))
+    .map(([, copy]) => copy.trim());
+}
+
 /** Sends email when Resend or SMTP is set. Phone/WhatsApp stay logged unless Twilio is configured. */
 export async function notifyUser(note: Note) {
   const email = note.to.includes("@") && !note.to.startsWith("whatsapp:");
@@ -23,6 +33,15 @@ export async function notifyUser(note: Note) {
     });
     if (!sent.delivered) {
       console.info(`[holydays-notify] ${note.subject} -> ${note.to}\n${note.text}`);
+    }
+    for (const copy of copyRecipients(note.to)) {
+      if (copy.toLowerCase() === note.to.trim().toLowerCase()) continue;
+      await sendEmail({
+        to: copy,
+        subject: `[Copy for ${note.to}] ${note.subject}`,
+        text: note.text,
+        html: note.html,
+      }).catch((err) => console.error("[holydays-notify] copy failed", err));
     }
     return { delivered: sent.delivered, preview: sent.preview ?? note.code ?? null };
   }

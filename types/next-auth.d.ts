@@ -13,6 +13,7 @@ declare module "next-auth" {
     role?: string;
     ownerKind?: string | null;
     remember?: boolean;
+    deleted?: boolean;
   }
 }
 
