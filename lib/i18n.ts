@@ -1,7 +1,7 @@
 export const copy = {
   en: {
     stays: "Hotels",
-    attractions: "Ziyarat",
+    attractions: "Ziyarah",
     taxis: "Taxis",
     dining: "Food",
     experiences: "Experiences",

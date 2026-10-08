@@ -2,11 +2,7 @@ export type Vibe =
   | "Quiet courtyard"
   | "Mountain mist"
   | "Old-city rooftop"
-  | "Family haveli"
-  | "Desert silence"
-  | "Lakeside dawn"
-  | "Work-from-haveli"
-  | "Chef’s table";
+  | "Desert silence";
 
 export type MealPlan = "room_only" | "breakfast" | "half_board" | "full_board";
 export type PayPolicy = "now" | "later" | "property";

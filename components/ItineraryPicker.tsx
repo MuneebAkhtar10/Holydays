@@ -6,7 +6,7 @@ import { useMemo, useState, type ReactNode } from "react";
 import { datesInclusive, formatDay } from "@/lib/format";
 import { useSerai } from "@/lib/store";
 import { airportLabelOf, airportPickupTitle, taxisFor, tripTitle, type PackageTaxi, type PilgrimCountry, type TaxiPick } from "@/lib/package-plan";
-import { airportForCity } from "@/lib/pilgrim";
+import { airportForCity, pilgrimAirports } from "@/lib/pilgrim";
 import { ChevronIcon } from "@/components/icons";
 import { ZoomableImage } from "@/components/ZoomableImage";
 import { TaxiPhotos, taxiCarPhotos } from "@/components/TaxiPhotos";
@@ -46,7 +46,7 @@ function groupAirportRoutes(items: PackageTaxi[], hotel: string): RouteGroup[] {
       key: `in::${air}`,
       title: `${air} → ${hotel}`,
       cover,
-      plan: `On arrival we drop you at ${hotel}. One taxi listing covers every hotel in this city.`,
+      plan: `On arrival we drop you at ${hotel}.`,
       from,
       hours: "Airport pickup",
       drivers,
@@ -493,7 +493,8 @@ export function AirportTransferStep({
   title?: string;
   blurb?: string;
 }) {
-  const items = useMemo(() => {
+  // Cars that already serve this trip's hotel cities
+  const nearItems = useMemo(() => {
     const candidateCities = Array.from(new Set([city, ...(cities ?? [])].map((c) => c.trim()).filter(Boolean)));
     const needles = candidateCities.map((c) => c.toLowerCase());
     const airCities = candidateCities.map((c) => (country ? airportForCity(country, c).city : c).trim().toLowerCase());
@@ -510,8 +511,50 @@ export function AirportTransferStep({
       );
     });
   }, [catalog, country, city, cities]);
+
+  // The guest may land (or fly out) at a different airport than the hotel's city, e.g. land in Jeddah, stay in Madinah.
+  const airports = useMemo(() => {
+    const labels = country ? pilgrimAirports[country].map((a) => a.label) : [];
+    for (const t of catalog) if (t.service === "airport" && (!country || t.country === country)) labels.push(airportLabelOf(t));
+    return Array.from(new Set(labels)).map((label) => ({
+      label,
+      cars: catalog.filter((t) => t.service === "airport" && (!country || t.country === country) && airportLabelOf(t) === label),
+    }));
+  }, [catalog, country]);
+  const [chosen, setChosen] = useState<string>("near");
+  const firstWithCars = airports.find((a) => a.cars.length)?.label ?? "near";
+  const active = chosen === "near" && !nearItems.length ? firstWithCars : chosen;
+  const items = active === "near" ? nearItems : airports.find((a) => a.label === active)?.cars ?? [];
+  const farAway = active !== "near" && !nearItems.some((t) => airportLabelOf(t) === active);
+  const verb = airportLeg === "out" ? "Flying out from" : "Landing at";
+
   return (
+    <>
+      <div className="mt-4">
+        <p className="text-[11px] uppercase tracking-[0.18em] text-brass">{verb}</p>
+        <div className="mt-2 flex flex-wrap gap-2">
+          <button type="button" className="filter-chip" data-on={active === "near"} disabled={!nearItems.length} onClick={() => setChosen("near")}>
+            Near {city}
+            <span className="ml-1.5 opacity-60">{nearItems.length}</span>
+          </button>
+          {airports.map((a) => (
+            <button key={a.label} type="button" className="filter-chip" data-on={active === a.label} disabled={!a.cars.length} onClick={() => setChosen(a.label)}>
+              {a.label}
+              <span className="ml-1.5 opacity-60">{a.cars.length}</span>
+            </button>
+          ))}
+        </div>
+        {farAway && (
+          <p className="mt-2 rounded-xl border border-brass/25 bg-brass/10 px-3 py-2 text-sm text-sand">
+            {airportLeg === "out"
+              ? `You will leave from ${stayName}${city ? ` in ${city}` : ""} for ${active}.`
+              : `You will land at ${active} and be driven to ${stayName}${city ? ` in ${city}` : ""}.`}{" "}
+            This is a transfer between cities, so the driver confirms the pick-up time with you after booking.
+          </p>
+        )}
+      </div>
     <TripComposer
+      key={active}
       title={title || (airportLeg === "in" ? "Airport pick up" : airportLeg === "out" ? "Airport drop off" : "Airport transfer")}
       blurb={
         blurb ||
@@ -527,11 +570,12 @@ export function AirportTransferStep({
       start={start}
       end={end}
       onChange={onChange}
-      empty="No airport cars listed for this city yet. Partners add one transfer taxi per city."
+      empty="No airport cars are listed for this country yet. Partners add transfer taxis for each airport."
       stayName={stayName}
       airport
       airportLeg={airportLeg}
     />
+    </>
   );
 }
 
