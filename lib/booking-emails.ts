@@ -2,6 +2,10 @@ import { prisma } from "@/lib/prisma";
 import { toBookingDTO, type BookingDTO } from "@/lib/booking-dto";
 import { bookingInvoiceBreakdown, bookingIsPaid, bookingPackageGrandTotal, bookingPackageHotelNames } from "@/lib/booking-invoice";
 import { formatPKR, formatTime, nightsBetween } from "@/lib/format";
+import { bookingCurrency, formatMoney } from "@/lib/currency";
+
+/** Amounts in the currency the guest chose at checkout. */
+const fmt = (b: BookingDTO, n: number) => formatMoney(n, bookingCurrency(b.extra));
 import {
   badge,
   button,
@@ -85,17 +89,17 @@ function invoiceLines(b: BookingDTO): { lines: MailLine[]; grand: number } {
       lines.push({
         label: h.name,
         note: `${h.city} · ${shortDay(h.checkin)} – ${shortDay(h.checkout)}`,
-        amount: formatPKR(h.roomAmount),
+        amount: fmt(b, h.roomAmount),
       });
-      for (const m of h.mealLines) lines.push({ label: m.label, amount: formatPKR(m.amount), indent: true });
+      for (const m of h.mealLines) lines.push({ label: m.label, amount: fmt(b, m.amount), indent: true });
     }
-    for (const x of breakdown.extras) lines.push({ label: x.label, amount: formatPKR(x.amount) });
+    for (const x of breakdown.extras) lines.push({ label: x.label, amount: fmt(b, x.amount) });
   } else {
     const quote = b.extra.quote as { total?: number; taxes?: number } | undefined;
     const base = quote?.total ?? b.total;
     const taxes = quote?.taxes ?? 0;
-    lines.push({ label: isStay(b) ? "Accommodation" : b.listing.name, amount: formatPKR(base) });
-    if (taxes > 0) lines.push({ label: "Taxes & fees", amount: formatPKR(taxes) });
+    lines.push({ label: isStay(b) ? "Accommodation" : b.listing.name, amount: fmt(b, base) });
+    if (taxes > 0) lines.push({ label: "Taxes & fees", amount: fmt(b, taxes) });
   }
   return { lines, grand };
 }
@@ -105,7 +109,7 @@ function plainSummary(b: BookingDTO, grand: number) {
     `Booking ${b.number}`,
     b.listing.name,
     `${longDay(b.startDate)} – ${longDay(b.endDate)} · ${b.guests} guests`,
-    `Total ${formatPKR(grand)} (${paymentLabel(b)})`,
+    `Total ${fmt(b, grand)} (${paymentLabel(b)})`,
   ].join("\n");
 }
 
@@ -129,7 +133,7 @@ export function confirmationEmail(b: BookingDTO, origin: string): BuiltEmail {
 
   const next = [
     "Carry a valid passport or national ID for every guest.",
-    paid ? "Your payment is complete — nothing more to pay before you arrive." : `Bring ${formatPKR(grand)} to pay at the property on arrival.`,
+    paid ? "Your payment is complete — nothing more to pay before you arrive." : `Bring ${fmt(b, grand)} to pay at the property on arrival.`,
     "Open your booking any time to message the host, view your voucher, or make changes.",
   ];
 
@@ -143,13 +147,13 @@ export function confirmationEmail(b: BookingDTO, origin: string): BuiltEmail {
     ${sectionTitle(`Invoice · ${invoiceNo}`)}
     <p style="margin:0 0 6px;font-family:-apple-system,'Segoe UI',Helvetica,Arial,sans-serif;font-size:12px;color:#8a97a8">Issued ${esc(longDay(issued))}</p>
     ${lineTable(lines)}
-    ${totalBar(paid ? "Total paid" : "Total due", formatPKR(grand), paid ? "Paid in full" : "Payable at the property")}
+    ${totalBar(paid ? "Total paid" : "Total due", fmt(b, grand), paid ? "Paid in full" : "Payable at the property")}
 
     ${sectionTitle(`Receipt · ${receiptNo}`)}
     ${detailCard([
       ["Payment method", paymentLabel(b)],
       ["Status", paid ? "Paid" : "Due at check-in"],
-      [paid ? "Amount paid" : "Amount due", formatPKR(grand)],
+      [paid ? "Amount paid" : "Amount due", fmt(b, grand)],
       ["Paid on", paid && paidAt ? longDay(paidAt.slice(0, 10)) : ""],
       ["Reference", b.number],
     ])}
@@ -175,7 +179,7 @@ export function confirmationEmail(b: BookingDTO, origin: string): BuiltEmail {
       origin,
       eyebrow: `Booking ${b.number}`,
       title: "Your booking is confirmed",
-      preheader: `${b.listing.name} · ${longDay(b.startDate)} – ${longDay(b.endDate)} · ${formatPKR(grand)}`,
+      preheader: `${b.listing.name} · ${longDay(b.startDate)} – ${longDay(b.endDate)} · ${fmt(b, grand)}`,
       bodyHtml: body,
     }),
   };
@@ -206,13 +210,13 @@ export function reminderEmail(b: BookingDTO, origin: string, kind: ReminderKind)
       ? [
           "Check that your passport or national ID is valid for travel.",
           "Confirm your flight, transfer or driver pick-up times.",
-          paid ? "Payment is complete — nothing to pay on arrival." : `Plan to pay ${formatPKR(grand)} at the property.`,
+          paid ? "Payment is complete — nothing to pay on arrival." : `Plan to pay ${fmt(b, grand)} at the property.`,
           "Message the host from your booking if you have special requests.",
         ]
       : [
           "Keep your booking number and ID handy for check-in.",
           stay && b.listing.checkIn ? `Check-in opens at ${b.listing.checkIn}.` : "Be ready at the agreed meeting point.",
-          paid ? "Payment is complete — nothing to pay on arrival." : `Bring ${formatPKR(grand)} to pay at the property.`,
+          paid ? "Payment is complete — nothing to pay on arrival." : `Bring ${fmt(b, grand)} to pay at the property.`,
           "Use your voucher at reception — it has your booking number.",
         ];
 
@@ -288,8 +292,9 @@ function cancelFacts(b: BookingDTO): [string, string][] {
     [isPackage ? "Package" : isStay(b) ? "Property" : "Service", isPackage ? bookingPackageHotelNames(b).join(" · ") : b.listing.name],
     ["Dates", `${longDay(b.startDate)} – ${longDay(b.endDate)}`],
     ["Guests", `${b.guests} guest${b.guests === 1 ? "" : "s"}`],
-    ["Amount", formatPKR(bookingPackageGrandTotal(b))],
+    ["Amount", fmt(b, bookingPackageGrandTotal(b))],
     ["Payment", `${paymentLabel(b)}${wasPaid(b) ? " · paid" : ""}`],
+    ...(refundOf(b) && refundOf(b)!.status !== "failed" ? ([["Refund", refundOf(b)!.amountPkr > 0 ? `${fmt(b, refundOf(b)!.amountPkr)} (${refundOf(b)!.percent}%)` : "None"]] as [string, string][]) : []),
   ];
 }
 
@@ -298,10 +303,21 @@ function wasPaid(b: BookingDTO) {
   return b.extra.paymentStatus === "paid" || Boolean(b.extra.paidAt);
 }
 
+type RefundInfo = { percent: number; amountPkr: number; status: string };
+const refundOf = (b: BookingDTO) => (b.extra.refund && typeof b.extra.refund === "object" ? (b.extra.refund as RefundInfo) : null);
+
 function refundNote(b: BookingDTO) {
-  return wasPaid(b)
-    ? "You paid for this booking in advance. If a refund applies under the cancellation policy of your booking, it is returned to your original payment method, and we will email you once it is processed."
-    : "You had not paid for this booking yet, so there is nothing to refund.";
+  if (!wasPaid(b)) return "You had not paid for this booking yet, so there is nothing to refund.";
+  const r = refundOf(b);
+  if (r && r.status !== "failed") {
+    if (r.amountPkr > 0) {
+      const part = r.percent < 100 ? ` This is ${r.percent}% of what you paid; the rest is kept under the cancellation terms of your rate.` : "";
+      return `A refund of ${fmt(b, r.amountPkr)} has been sent to your original payment method.${part} Banks usually show it within 5 to 10 business days.`;
+    }
+    return "Under the cancellation terms of your rate, this booking is not eligible for a refund. If you think this is a mistake, reply to this email.";
+  }
+  const o = b.refundOutlook;
+  return `You paid for this booking in advance. ${o.note}. Once the cancellation is confirmed, any refund is sent to your original payment method and we will email you the amount.`;
 }
 
 export function cancellationRequestedEmail(b: BookingDTO, origin: string, reason: string): BuiltEmail {

@@ -1,4 +1,5 @@
 import { formatDay, formatPKR, todayIso } from "@/lib/format";
+import { formatMoney, type DisplayCurrency } from "@/lib/currency";
 import { parseListingMeta } from "@/lib/listing-meta";
 
 export type BookingBucket = "upcoming" | "current" | "completed" | "cancelled";
@@ -118,8 +119,10 @@ export function shareText(input: {
   endDate: string;
   total: number;
   url: string;
+  currency?: DisplayCurrency;
 }) {
-  return `HolyDays booking ${input.number}\n${input.name}\n${formatDay(input.startDate)} — ${formatDay(input.endDate)}\n${formatPKR(input.total)}\n${input.url}`;
+  const amount = input.currency ? formatMoney(input.total, input.currency) : formatPKR(input.total);
+  return `HolyDays booking ${input.number}\n${input.name}\n${formatDay(input.startDate)} — ${formatDay(input.endDate)}\n${amount}\n${input.url}`;
 }
 
 export function listingContact(meta: unknown) {

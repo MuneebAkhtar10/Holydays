@@ -200,8 +200,10 @@ export function BookingNotifyStrip({ booking }: { booking: BookingDTO }) {
         {rows.map((r) => (
           <li key={r.label} className="flex items-start gap-3 py-2">
             <span className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${dot[r.state]}`} />
-            <span className="min-w-0 flex-1 text-sm text-sand">{r.label}</span>
-            <span className={`shrink-0 text-xs ${r.state === "sent" ? "text-emerald-500" : "text-mist"}`}>{r.detail}</span>
+            <span className="min-w-0 flex-1">
+              <span className="block text-sm leading-snug text-sand">{r.label}</span>
+              <span className={`mt-0.5 block text-xs ${r.state === "sent" ? "text-emerald-500" : "text-mist"}`}>{r.detail}</span>
+            </span>
           </li>
         ))}
       </ul>
@@ -216,6 +218,7 @@ export function PaymentBlock({ booking }: { booking: BookingDTO }) {
   const isPackage = Boolean(booking.extra.package);
   const grandTotal = bookingPackageGrandTotal(booking);
   const paid = bookingIsPaid(booking);
+  const refund = booking.extra.refund as { amountPkr: number; percent: number; status: string } | undefined;
   const [paying, setPaying] = useState(false);
   const [payError, setPayError] = useState("");
 
@@ -251,6 +254,13 @@ export function PaymentBlock({ booking }: { booking: BookingDTO }) {
           )}
         </ul>
       )}
+      {booking.status === "cancelled" && refund ? (
+        <p className="mt-3 rounded-lg border border-brass/20 bg-brass/10 px-3 py-2 text-sm text-sand">
+          {refund.amountPkr > 0
+            ? `Refunded ${money(refund.amountPkr)} (${refund.percent}%) to your card. Banks usually show it within 5 to 10 business days.`
+            : "No refund applies under the cancellation terms of this rate."}
+        </p>
+      ) : null}
       {isPackage && <p className="mt-3 border-t border-brass/10 pt-3 text-xs text-mist">Itemised in your package above. Open the invoice for the full breakdown.</p>}
 
       {booking.status === "pending_payment" ? (

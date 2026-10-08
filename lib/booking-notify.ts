@@ -1,6 +1,7 @@
 import { notifyUser } from "@/lib/notify";
 import { bookingNumber, parseBookingExtras, shareText } from "@/lib/booking-view";
 import { formatDay, formatPKR, formatTime } from "@/lib/format";
+import { formatMoney, type DisplayCurrency } from "@/lib/currency";
 import { mailHtml } from "@/lib/mail";
 import { publicOrigin } from "@/lib/auth-tokens";
 import { prisma } from "@/lib/prisma";
@@ -54,6 +55,7 @@ export async function notifyBookingCreated(input: {
   origin: string;
   ownerEmail?: string;
   pending?: boolean;
+  currency?: DisplayCurrency;
 }) {
   const number = bookingNumber(input.id);
   const url = `${input.origin}/bookings/${input.id}`;
@@ -64,11 +66,12 @@ export async function notifyBookingCreated(input: {
     endDate: input.endDate,
     total: input.total,
     url,
+    currency: input.currency,
   });
   const dates = `${formatDay(input.startDate)} — ${formatDay(input.endDate)}`;
   const body = input.pending
     ? `Request ${number} sent to ${input.listing} for ${dates}. It is not confirmed yet — the driver needs to accept it first.`
-    : `Booking ${number} is confirmed for ${input.listing}. ${dates}. Total ${formatPKR(input.total)}.`;
+    : `Booking ${number} is confirmed for ${input.listing}. ${dates}. Total ${input.currency ? formatMoney(input.total, input.currency) : formatPKR(input.total)}.`;
 
   let rich: BuiltEmail | null = null;
   if (!input.pending) {

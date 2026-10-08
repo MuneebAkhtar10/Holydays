@@ -13,6 +13,7 @@ import { formatDay, minCheckoutIso } from "@/lib/format";
 import { PackageSnapshot } from "@/components/PackageSteps";
 import { packagePrimaryAmount, type StayPackage } from "@/lib/package-plan";
 import { CancelBookingModal } from "@/components/CancelBookingModal";
+import { refundHint } from "@/lib/refund-policy";
 
 export default function BookingDetailsPage() {
   const { id } = useParams<{ id: string }>();
@@ -27,7 +28,7 @@ export default function BookingDetailsPage() {
   const [guests, setGuests] = useState(1);
   const [origin, setOrigin] = useState("");
   const [siblings, setSiblings] = useState<BookingDTO[]>([]);
-  const [cancelModal, setCancelModal] = useState<{ ids: string[]; title: string } | null>(null);
+  const [cancelModal, setCancelModal] = useState<{ ids: string[]; title: string; refund?: string } | null>(null);
 
   const load = () =>
     fetch(`/api/bookings/${id}`)
@@ -232,7 +233,7 @@ export default function BookingDetailsPage() {
                     <button
                       type="button"
                       className="rounded-xl border border-rose/40 px-3.5 py-2 text-sm text-rose transition-colors hover:bg-rose/10"
-                      onClick={() => setCancelModal({ ids: [booking.id], title: `Cancel ${booking.listing.name}?` })}
+                      onClick={() => setCancelModal({ ids: [booking.id], title: `Cancel ${booking.listing.name}?`, refund: refundHint(booking) })}
                     >
                       {isPackage ? "Cancel this hotel" : "Cancel booking"}
                     </button>
@@ -240,7 +241,7 @@ export default function BookingDetailsPage() {
                       <button
                         type="button"
                         className="rounded-xl border border-rose/40 px-3.5 py-2 text-sm text-rose transition-colors hover:bg-rose/10"
-                        onClick={() => setCancelModal({ ids: siblings.map((b) => b.id), title: "Cancel the whole package?" })}
+                        onClick={() => setCancelModal({ ids: siblings.map((b) => b.id), title: "Cancel the whole package?", refund: refundHint(booking) })}
                       >
                         Cancel whole package
                       </button>
@@ -304,6 +305,7 @@ export default function BookingDetailsPage() {
         open={Boolean(cancelModal)}
         bookingIds={cancelModal?.ids ?? []}
         title={cancelModal?.title}
+        refundNote={cancelModal?.refund}
         onClose={() => setCancelModal(null)}
         onCancelled={() => void load()}
       />

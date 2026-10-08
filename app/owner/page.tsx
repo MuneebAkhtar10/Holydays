@@ -4,7 +4,7 @@ import { useSession } from "next-auth/react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useRef, useState } from "react";
-import { formatDay, nightsBetween, todayIso } from "@/lib/format";
+import { formatDay, formatTime, nightsBetween, todayIso } from "@/lib/format";
 import { useSerai } from "@/lib/store";
 import { kindPath, unitLabel, type ListingKind } from "@/lib/marketplace";
 import { ListingForm } from "@/components/ListingForm";
@@ -12,6 +12,8 @@ import { LoaderOverlay, PageLoader } from "@/components/PageLoader";
 import { MessageComposer, MessageThread } from "@/components/MessageThread";
 import { readJson } from "@/lib/readJson";
 import type { BookingMessage } from "@/lib/booking-view";
+import { RefundDecision } from "@/components/RefundDecision";
+import type { OwnerDetail } from "@/lib/owner-booking-detail";
 
 type Listing = {
   id: string;
@@ -46,6 +48,7 @@ type OwnerBooking = {
   bucket: "upcoming" | "past" | "cancelled";
   listing: { id: string; name: string; slug: string; kind: ListingKind; city: string; cover: string };
   guest: { name: string; email: string };
+  detail?: OwnerDetail;
   messages: BookingMessage[];
   unreadCount: number;
   lastPreview?: string;
@@ -368,13 +371,17 @@ function OwnerDesk() {
           onChatUpdated={(id, messages) =>
             setBookings((list) => list.map((row) => (row.id === id ? { ...row, messages, unreadCount: 0 } : row)))
           }
-          onCancelDecision={async (id, approve) => {
+          onCancelDecision={async (id, approve, refundPercent) => {
             setOverlay(approve ? "Approving cancellation" : "Denying cancellation");
-            await fetch(`/api/owner/bookings/${id}/cancel`, {
+            const res = await fetch(`/api/owner/bookings/${id}/cancel`, {
               method: "POST",
               headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ approve }),
+              body: JSON.stringify({ approve, refundPercent }),
             });
+            if (!res.ok) {
+              const data = (await res.json().catch(() => ({}))) as { error?: string };
+              window.alert(data.error || "Could not update this cancellation request.");
+            }
             await load();
             setOverlay(null);
           }}
@@ -800,7 +807,7 @@ function GuestBookingsDesk({
   money: (n: number) => string;
   onSelect: (id: string) => void;
   onChatUpdated: (id: string, messages: BookingMessage[]) => void;
-  onCancelDecision: (id: string, approve: boolean) => void;
+  onCancelDecision: (id: string, approve: boolean, refundPercent?: number) => void;
   onRespondRequest: (id: string, accept: boolean) => void;
 }) {
   const active = bookings.find((b) => b.id === selectedId) ?? bookings[0];
@@ -809,7 +816,7 @@ function GuestBookingsDesk({
   }
   return (
     <div className="mt-4 overflow-hidden rounded-2xl border border-brass/25 bg-ink-2 lg:grid lg:grid-cols-[minmax(17rem,21rem)_minmax(0,1fr)]">
-      <ul className="max-h-[38rem] overflow-y-auto border-b border-brass/20 lg:border-b-0 lg:border-r lg:border-brass/20">
+      <ul className="max-h-[32rem] overflow-y-auto border-b border-brass/20 lg:max-h-[64rem] lg:border-b-0 lg:border-r lg:border-brass/20">
         {bookings.map((b) => {
           const on = active?.id === b.id;
           return (
@@ -869,10 +876,11 @@ function BookingDetail({
   booking: OwnerBooking;
   money: (n: number) => string;
   onChatUpdated: (id: string, messages: BookingMessage[]) => void;
-  onCancelDecision: (id: string, approve: boolean) => void;
+  onCancelDecision: (id: string, approve: boolean, refundPercent?: number) => void;
   onRespondRequest: (id: string, accept: boolean) => void;
 }) {
   const nights = nightsBetween(booking.startDate, booking.endDate);
+  const d = booking.detail;
   return (
     <div className="grid min-h-[38rem] lg:grid-cols-[minmax(0,1fr)_minmax(16rem,20rem)]">
       <div className="flex flex-col border-b border-brass/20 p-5 lg:border-b-0 lg:border-r">
@@ -882,8 +890,13 @@ function BookingDetail({
             <p className="mt-1 text-sm text-mist">
               {formatDay(booking.startDate)} — {formatDay(booking.endDate)}
               {booking.listing.city ? ` · ${booking.listing.city}` : ""}
-              {` · ${nights} night${nights === 1 ? "" : "s"}`}
+              {booking.listing.kind === "STAY" ? ` · ${nights} night${nights === 1 ? "" : "s"}` : ""}
             </p>
+            {booking.detail && (
+              <p className="mt-0.5 text-xs text-mist">
+                Booking {booking.detail.number} · placed {formatDay(booking.detail.placedAt.slice(0, 10))}
+              </p>
+            )}
           </div>
           <OwnerBookingStatusBadge booking={booking} />
         </div>
@@ -915,40 +928,257 @@ function BookingDetail({
               {booking.guest.name} wants to cancel this booking
               {booking.cancelReason ? <>: <span className="italic">“{booking.cancelReason}”</span></> : "."}
             </p>
-            <div className="mt-3 flex flex-wrap gap-2">
-              <button type="button" className="btn-primary px-3 py-1.5 text-sm" onClick={() => onCancelDecision(booking.id, true)}>
-                Approve cancellation
-              </button>
-              <button type="button" className="btn-ghost px-3 py-1.5 text-sm" onClick={() => onCancelDecision(booking.id, false)}>
-                Deny — keep booking
-              </button>
+            <div className="mt-3">
+              {d ? (
+                <RefundDecision
+                  outlook={d.refundOutlook}
+                  approveClass="btn-primary px-3 py-1.5 text-sm"
+                  denyClass="btn-ghost px-3 py-1.5 text-sm"
+                  denyLabel="Deny — keep booking"
+                  onApprove={(pct) => onCancelDecision(booking.id, true, pct)}
+                  onDeny={() => onCancelDecision(booking.id, false)}
+                />
+              ) : (
+                <div className="flex flex-wrap gap-2">
+                  <button type="button" className="btn-primary px-3 py-1.5 text-sm" onClick={() => onCancelDecision(booking.id, true)}>
+                    Approve cancellation
+                  </button>
+                  <button type="button" className="btn-ghost px-3 py-1.5 text-sm" onClick={() => onCancelDecision(booking.id, false)}>
+                    Deny — keep booking
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         )}
 
+        {/* Guest */}
         <div className="mt-5 flex items-center gap-3 rounded-2xl border border-brass/20 bg-ink/25 px-4 py-3">
           <span className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-flame/20 text-sm font-semibold">
             {initials(booking.guest.name)}
           </span>
-          <div className="min-w-0">
+          <div className="min-w-0 flex-1">
             <p className="font-medium text-sand">{booking.guest.name}</p>
             <p className="truncate text-xs text-mist">{booking.guest.email}</p>
+            {booking.phone && <p className="text-xs text-mist">{booking.phone}</p>}
+          </div>
+          <div className="text-right">
+            <p className="text-[10px] uppercase tracking-[0.14em] text-mist">Party</p>
+            <p className="text-sm text-sand">
+              {booking.guests} guest{booking.guests === 1 ? "" : "s"}
+            </p>
           </div>
         </div>
 
-        <dl className="mt-4 grid grid-cols-2 gap-3">
-          {[
-            ["Total", money(booking.total)],
-            ["Payment", payLabel(booking.payment)],
-            ["Party", `${booking.guests} guest${booking.guests === 1 ? "" : "s"}`],
-            ["Phone", booking.phone || "—"],
-          ].map(([label, value]) => (
-            <div key={label} className="rounded-xl border border-brass/15 bg-ink/20 px-3 py-2.5">
-              <dt className="text-[10px] uppercase tracking-[0.16em] text-brass">{label}</dt>
-              <dd className="mt-1 truncate text-sm text-sand">{value}</dd>
-            </div>
-          ))}
-        </dl>
+        {d && (
+          <>
+            {/* Stay / reservation / trip details */}
+            <section className="mt-4 rounded-2xl border border-brass/20 bg-ink/20 p-4">
+              <p className="text-[11px] uppercase tracking-[0.16em] text-brass">{booking.listing.kind === "STAY" ? "Stay & rooms" : d.reservation ? "Reservation" : "Trip details"}</p>
+              {booking.listing.kind === "STAY" ? (
+                <>
+                  <dl className="mt-3 grid grid-cols-3 gap-3 text-sm">
+                    <div>
+                      <dt className="text-[10px] uppercase tracking-[0.14em] text-mist">Check-in</dt>
+                      <dd className="text-sand">{formatDay(booking.startDate)}</dd>
+                      {d.checkIn && <dd className="text-xs text-mist">from {d.checkIn}</dd>}
+                    </div>
+                    <div>
+                      <dt className="text-[10px] uppercase tracking-[0.14em] text-mist">Check-out</dt>
+                      <dd className="text-sand">{formatDay(booking.endDate)}</dd>
+                      {d.checkOut && <dd className="text-xs text-mist">by {d.checkOut}</dd>}
+                    </div>
+                    <div>
+                      <dt className="text-[10px] uppercase tracking-[0.14em] text-mist">Length</dt>
+                      <dd className="text-sand">
+                        {d.nights} night{d.nights === 1 ? "" : "s"}
+                      </dd>
+                    </div>
+                  </dl>
+                  <div className="mt-3 space-y-2">
+                    {d.rooms.length === 0 && <p className="text-sm text-mist">Room details were not recorded for this booking.</p>}
+                    {d.rooms.map((r, i) => (
+                      <div key={`${r.name}-${i}`} className="rounded-xl border border-brass/15 bg-ink/25 px-3 py-2.5">
+                        <div className="flex items-start justify-between gap-3">
+                          <p className="font-medium text-sand">{r.name}</p>
+                          <span className="shrink-0 rounded-full bg-brass/20 px-2.5 py-0.5 text-[11px] font-semibold text-brass">
+                            {r.count} room{r.count === 1 ? "" : "s"}
+                          </span>
+                        </div>
+                        <p className="mt-0.5 text-xs text-mist">
+                          {[r.sleeps ? `Sleeps ${r.sleeps}` : "", r.size ? `${r.size} m²` : "", r.beds].filter(Boolean).join(" · ")}
+                        </p>
+                        {(r.rate || r.meal) && (
+                          <div className="mt-2 flex flex-wrap gap-1.5">
+                            {[r.rate, r.meal !== r.rate ? r.meal : "", r.cancellation, r.payment].filter(Boolean).map((t) => (
+                              <span key={t} className="rounded-full border border-brass/25 px-2 py-0.5 text-[11px] text-sand/90">
+                                {t}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                  {(d.extraBeds > 0 || d.cribs > 0 || d.airportTransfer || d.promo) && (
+                    <div className="mt-3 flex flex-wrap gap-1.5">
+                      {d.extraBeds > 0 && <span className="rounded-full bg-sand/10 px-2.5 py-1 text-xs text-sand">{d.extraBeds} extra bed{d.extraBeds === 1 ? "" : "s"}</span>}
+                      {d.cribs > 0 && <span className="rounded-full bg-sand/10 px-2.5 py-1 text-xs text-sand">{d.cribs} crib{d.cribs === 1 ? "" : "s"}</span>}
+                      {d.airportTransfer && <span className="rounded-full bg-sand/10 px-2.5 py-1 text-xs text-sand">Airport transfer requested</span>}
+                      {d.promo && <span className="rounded-full bg-sand/10 px-2.5 py-1 text-xs text-sand">Promo {d.promo}</span>}
+                    </div>
+                  )}
+                </>
+              ) : (
+                <dl className="mt-3 grid grid-cols-2 gap-3 text-sm">
+                  <div>
+                    <dt className="text-[10px] uppercase tracking-[0.14em] text-mist">Date</dt>
+                    <dd className="text-sand">{formatDay(booking.startDate)}</dd>
+                  </div>
+                  {d.reservation && (
+                    <div>
+                      <dt className="text-[10px] uppercase tracking-[0.14em] text-mist">Time</dt>
+                      <dd className="text-sand">{formatTime(d.reservation.time)}</dd>
+                    </div>
+                  )}
+                  {d.taxiMode && (
+                    <div>
+                      <dt className="text-[10px] uppercase tracking-[0.14em] text-mist">Booking type</dt>
+                      <dd className="text-sand">{d.taxiMode === "private" ? "Private vehicle" : d.taxiMode === "custom" ? "Custom trip" : "Shared seats"}</dd>
+                    </div>
+                  )}
+                </dl>
+              )}
+            </section>
+
+            {/* Package */}
+            {d.package && (
+              <section className="mt-4 rounded-2xl border border-brass/20 bg-ink/20 p-4">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <p className="text-[11px] uppercase tracking-[0.16em] text-brass">Package</p>
+                  <span className="rounded-full bg-flame/20 px-2.5 py-0.5 text-[11px] font-semibold text-sand">{d.package.type}</span>
+                </div>
+                <ul className="mt-3 space-y-2 text-sm">
+                  <li className="flex gap-3">
+                    <span className="w-20 shrink-0 text-mist">Hotels</span>
+                    <span className="min-w-0 text-sand">
+                      {d.package.hotels.map((h) => `${h.name} (${formatDay(h.checkin)} — ${formatDay(h.checkout)})`).join(" · ")}
+                    </span>
+                  </li>
+                  {d.package.meals.breakfast + d.package.meals.lunch + d.package.meals.dinner > 0 && (
+                    <li className="flex gap-3">
+                      <span className="w-20 shrink-0 text-mist">Meals</span>
+                      <span className="text-sand">
+                        {[
+                          d.package.meals.breakfast ? `Breakfast × ${d.package.meals.breakfast} day${d.package.meals.breakfast === 1 ? "" : "s"}` : "",
+                          d.package.meals.lunch ? `Lunch × ${d.package.meals.lunch}` : "",
+                          d.package.meals.dinner ? `Dinner × ${d.package.meals.dinner}` : "",
+                        ]
+                          .filter(Boolean)
+                          .join(" · ")}
+                      </span>
+                    </li>
+                  )}
+                  {d.package.ziyarat.length > 0 && (
+                    <li className="flex gap-3">
+                      <span className="w-20 shrink-0 text-mist">Ziyarat</span>
+                      <span className="text-sand">{d.package.ziyarat.join(" · ")}</span>
+                    </li>
+                  )}
+                  {d.package.transfers.length > 0 && (
+                    <li className="flex gap-3">
+                      <span className="w-20 shrink-0 text-mist">Transfers</span>
+                      <span className="min-w-0 space-y-0.5 text-sand">
+                        {d.package.transfers.map((t) => (
+                          <span key={`${t.label}-${t.date}`} className="block">
+                            {t.label} <span className="text-mist">· {formatDay(t.date)} · {t.mode}</span>
+                          </span>
+                        ))}
+                      </span>
+                    </li>
+                  )}
+                  {(d.package.insurance || d.package.esim > 0) && (
+                    <li className="flex gap-3">
+                      <span className="w-20 shrink-0 text-mist">Extras</span>
+                      <span className="text-sand">{[d.package.insurance ? "Travel insurance" : "", d.package.esim ? `${d.package.esim} eSIM` : ""].filter(Boolean).join(" · ")}</span>
+                    </li>
+                  )}
+                </ul>
+              </section>
+            )}
+
+            {/* Invoice */}
+            <section className="mt-4 rounded-2xl border border-brass/20 bg-ink/20 p-4">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <p className="text-[11px] uppercase tracking-[0.16em] text-brass">Invoice for your listing</p>
+                <span className={`rounded-full px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.1em] ${d.paid ? "bg-emerald-500/15 text-emerald-400" : "bg-amber-500/15 text-amber-500"}`}>
+                  {d.paid ? "Paid online" : booking.status === "cancelled" ? (d.wasPaid ? "Paid · cancelled" : "Cancelled") : "Due at property"}
+                </span>
+              </div>
+              <ul className="mt-3 divide-y divide-brass/10 text-sm">
+                {d.invoice.map((l, i) => (
+                  <li key={`${l.label}-${i}`} className={`flex items-start justify-between gap-3 ${l.indent ? "py-1 pl-4 text-xs text-mist" : "py-2 text-sand"}`}>
+                    <span className="min-w-0">
+                      {l.label}
+                      {l.note && <span className="block text-xs text-mist">{l.note}</span>}
+                    </span>
+                    <span className="shrink-0 tabular-nums">{money(l.amount)}</span>
+                  </li>
+                ))}
+              </ul>
+              <div className="mt-3 flex items-center justify-between rounded-xl bg-ink-2 px-4 py-3">
+                <span className="text-[11px] uppercase tracking-[0.16em] text-brass">{d.paid || d.wasPaid ? "Total paid" : booking.status === "cancelled" ? "Total" : "Total to collect"}</span>
+                <span className="font-display text-2xl text-sand">{money(d.invoiceTotal)}</span>
+              </div>
+              {booking.status === "cancelled" && d.wasPaid && (
+                <div className="mt-3 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-3">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <span className="text-[11px] font-semibold uppercase tracking-[0.16em] text-emerald-500">
+                      {d.refund && d.refund.amountPkr > 0 ? "Refunded to guest" : d.refund ? "No refund" : "Refund"}
+                    </span>
+                    {d.refund && d.refund.amountPkr > 0 ? (
+                      <span className="font-display text-2xl text-sand">
+                        {money(d.refund.amountPkr)} <span className="text-base text-mist">· {d.refund.percent}%</span>
+                      </span>
+                    ) : null}
+                  </div>
+                  <p className="mt-1 text-xs text-mist">
+                    {d.refund && d.refund.amountPkr > 0
+                      ? `${d.refund.percent}% of the card payment went back to the guest${d.refund.at ? ` on ${formatDay(d.refund.at.slice(0, 10))}` : ""}.${d.refund.percent < 100 ? " The rest is kept under the cancellation terms of the rate." : ""}`
+                      : d.refund
+                        ? "The cancellation terms of this rate did not return any of the payment."
+                        : "No refund was recorded for this cancellation in HolyDays."}
+                  </p>
+                </div>
+              )}
+              <p className="mt-2 text-xs text-mist">
+                Payment: {payLabel(booking.payment)}
+                {booking.listing.kind === "STAY" && booking.total !== d.invoiceTotal ? ` · full booking total ${money(booking.total)} includes other services in the package` : ""}
+              </p>
+            </section>
+
+            {d.requests && (
+              <section className="mt-4 rounded-2xl border border-brass/20 bg-ink/20 p-4">
+                <p className="text-[11px] uppercase tracking-[0.16em] text-brass">Guest requests</p>
+                <p className="mt-2 text-sm italic text-sand/90">“{d.requests}”</p>
+              </section>
+            )}
+          </>
+        )}
+
+        {!d && (
+          <dl className="mt-4 grid grid-cols-2 gap-3">
+            {[
+              ["Total", money(booking.total)],
+              ["Payment", payLabel(booking.payment)],
+            ].map(([label, value]) => (
+              <div key={label} className="rounded-xl border border-brass/15 bg-ink/20 px-3 py-2.5">
+                <dt className="text-[10px] uppercase tracking-[0.16em] text-brass">{label}</dt>
+                <dd className="mt-1 truncate text-sm text-sand">{value}</dd>
+              </div>
+            ))}
+          </dl>
+        )}
 
         {booking.review && (
           <p className="mt-4 rounded-xl border border-brass/20 px-3 py-2 text-sm text-sand">
@@ -962,19 +1192,13 @@ function BookingDetail({
               Call
             </a>
           )}
-          <a
-            href={`mailto:${booking.guest.email}?subject=${encodeURIComponent(`HolyDays booking ${booking.listing.name}`)}`}
-            className="btn-ghost px-3 py-1.5 text-sm"
-          >
-            Email
-          </a>
           <Link href={`/${kindPath[booking.listing.kind]}/${booking.listing.slug}`} className="btn-ghost px-3 py-1.5 text-sm">
             Listing
           </Link>
         </div>
       </div>
 
-      <div className="flex min-h-[22rem] flex-col p-4">
+      <div className="flex min-h-[22rem] flex-col p-4 lg:sticky lg:top-20 lg:h-[min(40rem,calc(100vh-6rem))] lg:self-start">
         <div className="mb-3 flex items-center justify-between gap-2">
           <p className="text-[11px] uppercase tracking-[0.16em] text-brass">Guest chat</p>
           {(booking.unreadCount || 0) > 0 ? (

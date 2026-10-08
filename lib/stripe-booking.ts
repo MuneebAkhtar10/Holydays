@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { toBookingDTO } from "@/lib/booking-dto";
+import { bookingCurrency } from "@/lib/currency";
 import { notifyBookingCreated, recordEmailSent } from "@/lib/booking-notify";
 import { parseBookingExtras } from "@/lib/booking-view";
 import { getStripe, stripeConfigured } from "@/lib/stripe";
@@ -131,6 +132,7 @@ export async function markBookingsPaid(bookingId: string, sessionId: string, ori
     total: saved.total,
     origin,
     ownerEmail: saved.listing.owner?.email,
+    currency: bookingCurrency(extra),
   });
   if (notice.sentEmail) await recordEmailSent(saved.id, notice.sentEmail.type, notice.sentEmail.to);
 

@@ -1,10 +1,7 @@
 import { getServerSession } from "next-auth";
 import { NextResponse } from "next/server";
 import { authOptions } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
-import { toBookingDTO } from "@/lib/booking-dto";
-import { notifyCancellationDecision } from "@/lib/booking-notify";
-import { parseBookingExtras } from "@/lib/booking-view";
+import { CancelDecisionError, decideCancellation } from "@/lib/refunds";
 
 type Ctx = { params: Promise<{ id: string }> };
 
@@ -18,24 +15,16 @@ export async function POST(req: Request, { params }: Ctx) {
       return NextResponse.json({ error: "Admin only" }, { status: 403 });
     }
     const { id } = await params;
-    const booking = await prisma.booking.findUnique({ where: { id }, include: { listing: true, user: true } });
-    if (!booking) return NextResponse.json({ error: "Booking not found" }, { status: 404 });
-    if (booking.status !== "cancel_requested") {
-      return NextResponse.json({ error: "This booking has no pending cancellation request." }, { status: 400 });
-    }
     const body = await req.json().catch(() => ({}));
-    const approve = Boolean(body.approve);
-    const extra = parseBookingExtras(booking.extras);
-    extra.cancelDecision = approve ? "approved" : "denied";
-    extra.cancelDecidedAt = new Date().toISOString();
-    const updated = await prisma.booking.update({
-      where: { id },
-      data: { status: approve ? "cancelled" : "confirmed", extras: JSON.stringify(extra) },
-      include: { listing: true, user: true },
+    const dto = await decideCancellation({
+      id,
+      approve: Boolean(body.approve),
+      by: "admin",
+      refundPercent: body.refundPercent,
     });
-    await notifyCancellationDecision(updated.id, approve);
-    return NextResponse.json(toBookingDTO(updated));
+    return NextResponse.json(dto);
   } catch (err) {
+    if (err instanceof CancelDecisionError) return NextResponse.json({ error: err.message }, { status: err.status });
     console.error(err);
     return NextResponse.json({ error: "Could not update this cancellation request." }, { status: 500 });
   }

@@ -7,12 +7,15 @@ export function CancelBookingModal({
   open,
   bookingIds,
   title,
+  refundNote,
   onClose,
   onCancelled,
 }: {
   open: boolean;
   bookingIds: string[];
   title?: string;
+  /** Shown when the guest has already paid, e.g. what the rate's cancellation terms return. */
+  refundNote?: string;
   onClose: () => void;
   onCancelled: () => void;
 }) {
@@ -64,6 +67,12 @@ export function CancelBookingModal({
         <p className="mt-2 text-sm text-mist">
           This isn't cancelled right away — we send your request to our team, and you'll be notified once it's reviewed.
         </p>
+        {refundNote ? (
+          <p className="mt-3 rounded-lg border border-brass/25 bg-brass/10 px-3 py-2 text-sm text-sand">
+            <span className="font-semibold text-brass">Refund · </span>
+            {refundNote}
+          </p>
+        ) : null}
         <textarea
           className="paper-field mt-4 min-h-24 w-full"
           placeholder="Why are you cancelling? (required)"

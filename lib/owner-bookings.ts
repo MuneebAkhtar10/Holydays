@@ -21,6 +21,9 @@ export type OwnerBookingRow = {
   extras: string;
   reviewRating: number | null;
   reviewBody: string | null;
+  region: string;
+  listingMeta: string | null;
+  userId: string;
 };
 
 export async function fetchOwnerBookings(ownerId: string): Promise<OwnerBookingRow[]> {
@@ -41,6 +44,9 @@ export async function fetchOwnerBookings(ownerId: string): Promise<OwnerBookingR
       l.kind AS kind,
       l.city AS city,
       l.cover AS cover,
+      l.region AS region,
+      l.meta AS "listingMeta",
+      b.userId AS "userId",
       u.name AS "guestName",
       u.email AS "guestEmail",
       b.extras AS extras,

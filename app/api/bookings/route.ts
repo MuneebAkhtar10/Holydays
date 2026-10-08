@@ -212,6 +212,7 @@ async function createBooking(req: Request) {
         specialRequests: String(body.specialRequests ?? ""),
         terms: true,
         quote: { start: quote.start, total: quote.total, taxes: quote.taxes, grand: quote.grand, rules: quote.rulesApplied },
+        cancelPolicy: quote.cancelPolicy,
         extraBeds: input.extraBeds,
         cribs: input.cribs,
         promo: input.promo,
@@ -243,6 +244,9 @@ async function createBooking(req: Request) {
   const method = String(body.payment ?? "property");
   const wantsCard = isCardPayment(method) && !customTaxi && total > 0;
   const storedMethod = wantsCard ? "card" : isCardPayment(method) ? "property" : method;
+  // Remember the currency the guest checked out in so every email and receipt uses it.
+  const guestCurrency = displayCurrencyFromRequest(req, body);
+  extras = JSON.stringify({ ...parseBookingExtras(extras), currency: guestCurrency });
   const booking = await prisma.booking.create({
     data: {
       userId: session.user.id,
@@ -275,6 +279,7 @@ async function createBooking(req: Request) {
         origin,
         ownerEmail: booking.listing.owner?.email,
         pending: customTaxi,
+        currency: guestCurrency,
       });
   const extraObj = parseBookingExtras(booking.extras);
   extraObj.packageId = booking.id;

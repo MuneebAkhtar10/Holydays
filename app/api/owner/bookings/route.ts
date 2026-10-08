@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { authOptions } from "@/lib/auth";
 import { isPastBooking } from "@/lib/format";
 import { fetchOwnerBookings } from "@/lib/owner-bookings";
+import { buildOwnerDetail } from "@/lib/owner-booking-detail";
 import { asMessages, chatReadOf, parseBookingExtras, unreadCount } from "@/lib/booking-view";
 
 export const dynamic = "force-dynamic";
@@ -55,6 +56,7 @@ export async function GET() {
             cover: b.cover,
           },
           guest: { name: b.guestName, email: b.guestEmail },
+          detail: buildOwnerDetail(b),
           review:
             b.reviewRating != null
               ? { rating: Number(b.reviewRating), body: b.reviewBody || "" }

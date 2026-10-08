@@ -51,3 +51,9 @@ export function formatMoney(amountPkr: number, currency: DisplayCurrency = "USD"
     minimumFractionDigits: currency === "PKR" ? 0 : 2,
   }).format(value);
 }
+
+/** The currency the guest picked at checkout, stored on the booking. Emails and texts use it. */
+export function bookingCurrency(extra: Record<string, unknown> | null | undefined): DisplayCurrency {
+  const c = String(extra?.currency ?? "").toUpperCase();
+  return isDisplayCurrency(c) ? c : "PKR";
+}

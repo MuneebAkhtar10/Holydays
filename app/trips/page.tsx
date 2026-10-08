@@ -13,6 +13,7 @@ import type { BookingDTO } from "@/lib/booking-dto";
 import type { BookingBucket } from "@/lib/booking-view";
 import { kindLabel, type ListingKind } from "@/lib/marketplace";
 import { CancelBookingModal } from "@/components/CancelBookingModal";
+import { refundHint } from "@/lib/refund-policy";
 
 type TripGroup = { key: string; primary: BookingDTO; bookings: BookingDTO[]; isPackage: boolean };
 
@@ -90,7 +91,7 @@ export default function TripsPage() {
   const [kindFilter, setKindFilter] = useState<"all" | ListingKind>("all");
   const [statusFilter, setStatusFilter] = useState<BookingBucket | "all">("all");
   const [reviewFor, setReviewFor] = useState<string | null>(null);
-  const [cancelModal, setCancelModal] = useState<{ ids: string[]; title: string } | null>(null);
+  const [cancelModal, setCancelModal] = useState<{ ids: string[]; title: string; refund?: string } | null>(null);
 
   const load = async () => {
     const res = await fetch("/api/bookings");
@@ -267,6 +268,7 @@ export default function TripsPage() {
                             setCancelModal({
                               ids,
                               title: isMultiHotel ? "Cancel the whole package?" : `Cancel ${primary.listing.name}?`,
+                              refund: refundHint(primary),
                             })
                           }
                         >
@@ -343,6 +345,7 @@ export default function TripsPage() {
         open={Boolean(cancelModal)}
         bookingIds={cancelModal?.ids ?? []}
         title={cancelModal?.title}
+        refundNote={cancelModal?.refund}
         onClose={() => setCancelModal(null)}
         onCancelled={() => void load()}
       />

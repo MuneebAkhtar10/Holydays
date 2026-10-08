@@ -1,6 +1,7 @@
 import { asMessages, bookingBucket, bookingNumber, chatReadOf, listingContact, parseBookingExtras, unreadCount, type BookingBucket, type BookingMessage } from "@/lib/booking-view";
 import { kindPath, type ListingKind } from "@/lib/marketplace";
 import { isPastBooking } from "@/lib/format";
+import { refundOutlook, type RefundOutlook } from "@/lib/refund-policy";
 
 export type BookingDTO = {
   id: string;
@@ -42,6 +43,8 @@ export type BookingDTO = {
     hostContactRevealed: boolean;
   };
   myReview?: { id: string; rating: number; body: string } | null;
+  /** What the guest gets back if they cancel (and what the approver should refund). */
+  refundOutlook: RefundOutlook;
 };
 
 export function toBookingDTO(row: {
@@ -113,5 +116,6 @@ export function toBookingDTO(row: {
       hostContactRevealed,
     },
     myReview: row.myReview ?? null,
+    refundOutlook: refundOutlook({ extra, kind: row.listing.kind, startDate: row.startDate, listingMeta: row.listing.meta }),
   };
 }

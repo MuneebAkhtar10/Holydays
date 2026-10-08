@@ -10,6 +10,8 @@ import { LoaderMark, LoaderOverlay, PageLoader } from "@/components/PageLoader";
 import { readJson } from "@/lib/readJson";
 import { formatDay } from "@/lib/format";
 import type { BookingDTO } from "@/lib/booking-dto";
+import { RefundDecision } from "@/components/RefundDecision";
+import { bookingPackageGrandTotal } from "@/lib/booking-invoice";
 
 type QueueItem = {
   id: string;
@@ -318,13 +320,16 @@ export default function AdminPage() {
     setOverlay(null);
   };
 
-  const decideCancellation = async (id: string, approve: boolean) => {
+  const decideCancellation = async (id: string, approve: boolean, refundPercent?: number) => {
     setOverlay(approve ? "Approving cancellation" : "Denying cancellation");
-    await fetch(`/api/admin/bookings/${id}/cancel`, {
+    setLoadError("");
+    const res = await fetch(`/api/admin/bookings/${id}/cancel`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ approve }),
-    }).then((r) => readJson(r));
+      body: JSON.stringify({ approve, refundPercent }),
+    });
+    const data = await readJson<{ error?: string }>(res);
+    if (!res.ok) setLoadError(data?.error || "Could not update this cancellation request.");
     await Promise.all([loadCancellations(), loadUsers()]);
     setOverlay(null);
   };
@@ -602,13 +607,15 @@ export default function AdminPage() {
                   <Link href={`/bookings/${b.id}`} className="btn-ghost px-3! py-1.5! text-xs!">
                     Details
                   </Link>
-                  <button type="button" className="btn-primary px-3! py-1.5! text-xs!" onClick={() => decideCancellation(b.id, true)}>
-                    Approve
-                  </button>
-                  <button type="button" className="btn-subtle px-3! py-1.5! text-xs!" onClick={() => decideCancellation(b.id, false)}>
-                    Deny
-                  </button>
                 </div>
+              </div>
+              <div className="mt-2">
+                <RefundDecision
+                  outlook={b.refundOutlook}
+                  paidPkr={bookingPackageGrandTotal(b)}
+                  onApprove={(pct) => decideCancellation(b.id, true, pct)}
+                  onDeny={() => decideCancellation(b.id, false)}
+                />
               </div>
               {b.extra?.cancelReason ? <p className="mt-1.5 rounded-lg bg-rose/10 px-3 py-1.5 text-xs text-rose">“{String(b.extra.cancelReason)}”</p> : null}
             </article>
