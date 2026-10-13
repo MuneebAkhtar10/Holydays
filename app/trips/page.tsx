@@ -14,6 +14,7 @@ import type { BookingBucket } from "@/lib/booking-view";
 import { kindLabel, type ListingKind } from "@/lib/marketplace";
 import { CancelBookingModal } from "@/components/CancelBookingModal";
 import { refundHint } from "@/lib/refund-policy";
+import { InProgressBookings } from "@/components/InProgressBookings";
 
 type TripGroup = { key: string; primary: BookingDTO; bookings: BookingDTO[]; isPackage: boolean };
 
@@ -142,7 +143,9 @@ export default function TripsPage() {
     <div className="mx-auto max-w-6xl px-5 py-8">
       <p className="text-[11px] uppercase tracking-[0.3em] text-brass">My bookings</p>
       <h1 className="font-display mt-1 text-3xl">Your trips</h1>
-      <p className="mt-1.5 max-w-xl text-sm text-mist">Upcoming, current, completed, and cancelled hotels — with invoices, changes, and help.</p>
+      <p className="mt-1.5 max-w-xl text-sm text-mist">Upcoming, current, completed, and cancelled bookings — with invoices, changes, and help.</p>
+
+      <InProgressBookings />
 
       {status !== "authenticated" && (
         <div className="mt-10 rounded-2xl border border-brass/30 bg-ink-2 p-8">

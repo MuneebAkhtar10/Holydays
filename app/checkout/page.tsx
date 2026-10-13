@@ -3,7 +3,7 @@
 import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useSession } from "next-auth/react";
-import { Suspense, useEffect, useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { stayById } from "@/lib/stays";
 import { hydrateCatalogStay } from "@/lib/search-index";
 import { addDaysIso, clampCheckoutIso, formatDay, minCheckoutIso, nightsBetween, stayNightDates } from "@/lib/format";
@@ -47,6 +47,7 @@ import { PackageHotelPicker } from "@/components/PackageHotelPicker";
 import { HotelStrip, PackageBill, TransferTimeline, type ReviewHotel } from "@/components/PackageReview";
 import { PoliciesConsent } from "@/components/PoliciesConsent";
 import { CheckoutAuth } from "@/components/CheckoutAuth";
+import { DRAFT_PREFIX, DRAFT_TTL_MS, type DraftSummary } from "@/lib/checkout-drafts";
 import { BedIcon, CarIcon, CheckIcon, GuestsIcon, LandmarkIcon, ShieldIcon, SimIcon, TableIcon, WalletIcon } from "@/components/icons";
 
 const ZIYARAT_STEPS = ["Guests", "Meals", "Airport Transfer", "Day trips", "Pay", "Confirm"] as const;
@@ -430,31 +431,55 @@ function CheckoutInner() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [packageStay, stay?.id, extraStaysKey, legOrder, input.checkin, input.checkout, input.rooms]);
 
-  // Google sends the browser away to sign in, so the choices made so far are kept here and put back on return.
-  const draftKey = "holydays-checkout-draft";
+  // Progress is saved on this device after every change, so a refresh (or a Google sign-in round trip) picks up where the guest left off.
+  const draftKeyFor = () => `${DRAFT_PREFIX}${window.location.pathname}${window.location.search}`;
+  const draftData = { step, phone, specialRequests, promo, roomsOv, picksOv, adultsOv, childrenOv, childAgesOv, insurance, esimSelections, airport, extras, meals, taxiPicks, firstEnd, primaryCheckin, extraStays, legOrder, method, terms };
   const saveDraft = () => {
     try {
-      sessionStorage.setItem(
-        draftKey,
-        JSON.stringify({
-          url: `${window.location.pathname}${window.location.search}`,
-          data: { step, phone, specialRequests, promo, roomsOv, picksOv, adultsOv, childrenOv, childAgesOv, insurance, esimSelections, airport, extras, meals, taxiPicks, firstEnd, primaryCheckin, extraStays, legOrder, method, terms },
-        }),
-      );
+      const summary: Omit<DraftSummary, "savedAt"> | undefined = stay
+        ? {
+            url: `${window.location.pathname}${window.location.search}`,
+            kind: !packageStay ? "hotel" : buildPackage ? "package" : "ziyarat",
+            title: stay.name,
+            city: stay.city,
+            cover: stay.cover,
+            checkin: input.checkin,
+            checkout: input.checkout,
+            guests: input.adults + input.children,
+            step,
+            stepCount: steps.length,
+            stepLabel: steps[step] ?? "",
+            started: step > 0 || phone.trim().length > 0,
+          }
+        : undefined;
+      localStorage.setItem(draftKeyFor(), JSON.stringify({ savedAt: Date.now(), data: draftData, summary }));
     } catch {
-      /* private mode: the guest just starts the last step again */
+      /* private mode or full storage: progress just is not remembered */
+    }
+  };
+  const clearDraft = () => {
+    discardDraft.current = true;
+    try {
+      localStorage.removeItem(draftKeyFor());
+    } catch {
+      /* nothing to clear */
     }
   };
   const [restored, setRestored] = useState(false);
+  const discardDraft = useRef(false);
+  const [savedNote, setSavedNote] = useState(false);
   useEffect(() => {
     if (restored || !liveReady) return;
     setRestored(true);
     try {
-      const raw = sessionStorage.getItem(draftKey);
+      const raw = localStorage.getItem(draftKeyFor());
       if (!raw) return;
-      sessionStorage.removeItem(draftKey);
-      const saved = JSON.parse(raw) as { url?: string; data?: Record<string, unknown> };
-      if (saved.url !== `${window.location.pathname}${window.location.search}` || !saved.data) return;
+      const saved = JSON.parse(raw) as { savedAt?: number; data?: Record<string, unknown> };
+      // Drafts older than a week are dropped.
+      if (!saved.data || !saved.savedAt || Date.now() - saved.savedAt > DRAFT_TTL_MS) {
+        localStorage.removeItem(draftKeyFor());
+        return;
+      }
       const d = saved.data as Record<string, never>;
       if ("phone" in d) setPhone(d.phone);
       if ("specialRequests" in d) setSpecialRequests(d.specialRequests);
@@ -481,6 +506,18 @@ function CheckoutInner() {
       /* a broken draft is simply ignored */
     }
   }, [restored, liveReady]);
+
+  // Autosave a moment after any change (step, guests, meals, trips, hotels...).
+  useEffect(() => {
+    if (!restored || !liveReady || discardDraft.current) return;
+    const t = window.setTimeout(() => {
+      if (discardDraft.current) return;
+      saveDraft();
+      setSavedNote(true);
+    }, 400);
+    return () => window.clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [restored, liveReady, JSON.stringify(draftData)]);
 
   if (status === "loading" || !liveReady) return <PageLoader label="Preparing checkout" />;
   if (!stay || !quote) return <div className="p-10">No ticket to stamp.</div>;
@@ -869,6 +906,25 @@ function CheckoutInner() {
             );
           })}
         </ol>
+
+        {savedNote && (
+          <p className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-mist">
+            <span className="inline-flex items-center gap-1.5 text-emerald-500">
+              <CheckIcon className="h-3.5 w-3.5" /> Progress saved
+            </span>
+            <span>Refresh any time and you will pick up right here.</span>
+            <button
+              type="button"
+              className="text-sand underline decoration-brass/50 underline-offset-4"
+              onClick={() => {
+                clearDraft();
+                window.location.reload();
+              }}
+            >
+              Start over
+            </button>
+          </p>
+        )}
 
         {step === 0 && (
           <div className="mt-6 space-y-3 rounded-2xl border border-sand/[0.08] bg-ink-2 p-5 shadow-[0_12px_40px_rgba(11,28,52,0.05)]">
@@ -1410,6 +1466,7 @@ function CheckoutInner() {
                     setError(data?.error || "Could not place reservation");
                     return;
                   }
+                  clearDraft();
                   if (data?.payUrl) {
                     window.location.assign(data.payUrl);
                     return;
