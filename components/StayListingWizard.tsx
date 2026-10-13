@@ -246,20 +246,31 @@ export function StayListingWizard({
                 {galleries[bucket.id].length > 0 ? (
                   <div className="mt-3 flex flex-wrap gap-2">
                     {galleries[bucket.id].map((src) => (
-                      <button
-                        key={src}
-                        type="button"
-                        className={`relative h-16 w-20 overflow-hidden rounded-lg border ${bucket.id === "property" && galleries.property[0] === src ? "border-flame" : "border-ink/15"}`}
-                        title="Click to set as cover (exterior only). Double-click to remove."
-                        onClick={() => {
-                          if (bucket.id !== "property") return;
-                          setGalleries((g) => ({ ...g, property: [src, ...g.property.filter((x) => x !== src)] }));
-                          set("cover", src);
-                        }}
-                        onDoubleClick={() => removeFromBucket(bucket.id, src)}
-                      >
-                        <Image src={src} alt="" fill className="object-cover" />
-                      </button>
+                      <div key={src} className="group relative h-16 w-20">
+                        <button
+                          type="button"
+                          className={`relative h-full w-full overflow-hidden rounded-lg border ${bucket.id === "property" && galleries.property[0] === src ? "border-flame" : "border-ink/15"}`}
+                          title={bucket.id === "property" ? "Click to set as cover" : undefined}
+                          onClick={() => {
+                            if (bucket.id !== "property") return;
+                            setGalleries((g) => ({ ...g, property: [src, ...g.property.filter((x) => x !== src)] }));
+                            set("cover", src);
+                          }}
+                        >
+                          <Image src={src} alt="" fill className="object-cover" />
+                        </button>
+                        <button
+                          type="button"
+                          aria-label="Remove this photo"
+                          title="Remove this photo"
+                          className="absolute -right-2 -top-2 z-10 grid h-6 w-6 place-items-center rounded-full bg-[#b3261e] text-white shadow-[0_2px_6px_rgba(0,0,0,0.45)] ring-2 ring-white transition-transform hover:scale-110 hover:bg-[#8c1d18] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-white"
+                          onClick={() => removeFromBucket(bucket.id, src)}
+                        >
+                          <svg viewBox="0 0 12 12" className="h-3 w-3" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" aria-hidden>
+                            <path d="M2.5 2.5l7 7M9.5 2.5l-7 7" />
+                          </svg>
+                        </button>
+                      </div>
                     ))}
                   </div>
                 ) : (

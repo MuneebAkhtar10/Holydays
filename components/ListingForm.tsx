@@ -906,6 +906,19 @@ export function ListingForm({
                 <button type="button" className="btn-ghost text-sm" onClick={() => fileRef.current?.click()}>
                   {uploading ? "Uploading…" : "Choose from computer"}
                 </button>
+                {form.cover && form.cover !== "/images/hero-hunza-dusk.png" && (
+                  <button
+                    type="button"
+                    className="btn-subtle px-3! py-1.5! text-xs!"
+                    onClick={() => {
+                      const old = form.cover;
+                      setGallery((g) => g.filter((x) => x !== old));
+                      set("cover", "/images/hero-hunza-dusk.png");
+                    }}
+                  >
+                    Remove photo
+                  </button>
+                )}
                 <p className="text-xs text-ink/45">PNG, JPG, or WebP · under 6MB</p>
               </div>
             </div>
