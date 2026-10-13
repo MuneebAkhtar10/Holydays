@@ -46,6 +46,7 @@ import { MealPlanStep, AirportTransferStep, DayTripsStep } from "@/components/Pa
 import { PackageHotelPicker } from "@/components/PackageHotelPicker";
 import { HotelStrip, PackageBill, TransferTimeline, type ReviewHotel } from "@/components/PackageReview";
 import { PoliciesConsent } from "@/components/PoliciesConsent";
+import { CheckoutAuth } from "@/components/CheckoutAuth";
 import { BedIcon, CarIcon, CheckIcon, GuestsIcon, LandmarkIcon, ShieldIcon, SimIcon, TableIcon, WalletIcon } from "@/components/icons";
 
 const ZIYARAT_STEPS = ["Guests", "Meals", "Airport Transfer", "Day trips", "Pay", "Confirm"] as const;
@@ -429,8 +430,59 @@ function CheckoutInner() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [packageStay, stay?.id, extraStaysKey, legOrder, input.checkin, input.checkout, input.rooms]);
 
+  // Google sends the browser away to sign in, so the choices made so far are kept here and put back on return.
+  const draftKey = "holydays-checkout-draft";
+  const saveDraft = () => {
+    try {
+      sessionStorage.setItem(
+        draftKey,
+        JSON.stringify({
+          url: `${window.location.pathname}${window.location.search}`,
+          data: { step, phone, specialRequests, promo, roomsOv, picksOv, adultsOv, childrenOv, childAgesOv, insurance, esimSelections, airport, extras, meals, taxiPicks, firstEnd, primaryCheckin, extraStays, legOrder, method, terms },
+        }),
+      );
+    } catch {
+      /* private mode: the guest just starts the last step again */
+    }
+  };
+  const [restored, setRestored] = useState(false);
+  useEffect(() => {
+    if (restored || !liveReady) return;
+    setRestored(true);
+    try {
+      const raw = sessionStorage.getItem(draftKey);
+      if (!raw) return;
+      sessionStorage.removeItem(draftKey);
+      const saved = JSON.parse(raw) as { url?: string; data?: Record<string, unknown> };
+      if (saved.url !== `${window.location.pathname}${window.location.search}` || !saved.data) return;
+      const d = saved.data as Record<string, never>;
+      if ("phone" in d) setPhone(d.phone);
+      if ("specialRequests" in d) setSpecialRequests(d.specialRequests);
+      if ("promo" in d) setPromo(d.promo);
+      if ("roomsOv" in d) setRoomsOv(d.roomsOv);
+      if ("picksOv" in d) setPicksOv(d.picksOv);
+      if ("adultsOv" in d) setAdultsOv(d.adultsOv);
+      if ("childrenOv" in d) setChildrenOv(d.childrenOv);
+      if ("childAgesOv" in d) setChildAgesOv(d.childAgesOv);
+      if ("insurance" in d) setInsurance(d.insurance);
+      if ("esimSelections" in d) setEsimSelections(d.esimSelections);
+      if ("airport" in d) setAirport(d.airport);
+      if ("extras" in d) setExtras(d.extras);
+      if ("meals" in d) setMeals(d.meals);
+      if ("taxiPicks" in d) setTaxiPicks(d.taxiPicks);
+      if ("firstEnd" in d) setFirstEnd(d.firstEnd);
+      if ("primaryCheckin" in d) setPrimaryCheckin(d.primaryCheckin);
+      if ("extraStays" in d) setExtraStays(d.extraStays);
+      if ("legOrder" in d) setLegOrder(d.legOrder);
+      if ("method" in d) setMethod(d.method);
+      if ("terms" in d) setTerms(d.terms);
+      if ("step" in d) setStep(d.step);
+    } catch {
+      /* a broken draft is simply ignored */
+    }
+  }, [restored, liveReady]);
+
   if (status === "loading" || !liveReady) return <PageLoader label="Preparing checkout" />;
-  if (status === "unauthenticated") return <PageLoader label="Redirecting to sign in" />;
   if (!stay || !quote) return <div className="p-10">No ticket to stamp.</div>;
 
   const addons = stay.experienceIds.map(experienceById);
@@ -821,7 +873,9 @@ function CheckoutInner() {
         {step === 0 && (
           <div className="mt-6 space-y-3 rounded-2xl border border-sand/[0.08] bg-ink-2 p-5 shadow-[0_12px_40px_rgba(11,28,52,0.05)]">
             <p className="text-sm text-mist">
-              Booking as {session?.user?.name} · {session?.user?.email}
+              {status === "authenticated"
+                ? `Booking as ${session?.user?.name} · ${session?.user?.email}`
+                : "Booking as a guest. You will sign in or create an account at the very end, just before you confirm."}
             </p>
             <div className="space-y-2">
               <GuestStepper
@@ -1282,6 +1336,17 @@ function CheckoutInner() {
             <div className="pane space-y-4 p-5">
               <PoliciesConsent href={policyHref} cancelLabel={CANCEL_LABEL[quote.cancelPolicy]} checked={terms} onChange={setTerms} />
               {error && <p className="text-sm text-rose">{error}</p>}
+              {status !== "authenticated" ? (
+                <CheckoutAuth
+                  returnTo={typeof window === "undefined" ? "/checkout" : `${window.location.pathname}${window.location.search}`}
+                  onBeforeGoogle={saveDraft}
+                />
+              ) : (
+                <p className="text-sm text-mist">
+                  Signed in as <span className="text-sand">{session?.user?.name || session?.user?.email}</span>. Your booking is ready to confirm.
+                </p>
+              )}
+              {status === "authenticated" && (
               <button
                 type="button"
                 className="btn-primary w-full py-3.5"
@@ -1354,6 +1419,7 @@ function CheckoutInner() {
               >
                 {method === "card" ? "Pay with card" : packageStay ? "Confirm package" : "Confirm booking"} · {money(grand)}
               </button>
+              )}
             </div>
           </div>
         )}

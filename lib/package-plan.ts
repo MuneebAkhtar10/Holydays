@@ -246,21 +246,9 @@ export function listingToTaxi(row: PackageListing): PackageTaxi {
       : cities;
   const driverPhoto = String(meta.driverPhoto || "");
   const vehiclePhoto = String(meta.vehiclePhoto || "");
-  const galleryBag = meta.galleries && typeof meta.galleries === "object" ? (meta.galleries as Record<string, unknown>) : {};
-  const galleryUrls = [
-    ...(Array.isArray(meta.gallery) ? meta.gallery : []),
-    ...(Array.isArray(galleryBag.property) ? galleryBag.property : []),
-    ...(Array.isArray(galleryBag.room) ? galleryBag.room : []),
-    ...(Array.isArray(galleryBag.bathroom) ? galleryBag.bathroom : []),
-    ...(Array.isArray(galleryBag.facilities) ? galleryBag.facilities : []),
-  ]
-    .map((u) => String(u || "").trim())
-    .filter(Boolean);
   const vehicleName = String(meta.vehicle || row.name);
-  // Without a partner-uploaded vehicle photo, the gallery/cover are trip scenery — show a stock photo of the vehicle instead.
-  const vehiclePhotos = vehiclePhoto
-    ? [...new Set([vehiclePhoto, ...galleryUrls, row.cover].filter(Boolean))].filter((u) => u !== driverPhoto)
-    : [defaultVehiclePhoto(vehicleName)];
+  // The gallery and cover are trip scenery, not the car. Show the partner's own vehicle photo plus a stock photo of that vehicle type.
+  const vehiclePhotos = [...new Set([vehiclePhoto, defaultVehiclePhoto(vehicleName)].filter(Boolean))].filter((u) => u !== driverPhoto);
   return {
     id: row.slug,
     country,

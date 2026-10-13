@@ -232,7 +232,7 @@ export function ListingBook({ fallbackSlug }: { fallbackSlug?: string }) {
     guideFee,
     guideFeeUnit: guideGroup ? "group" : "person",
   });
-  const freeVisit = ziyarat && tripTotal <= 0;
+  const unpriced = ziyarat && tripTotal <= 0;
   const perPerson = listing.priceUnit === "person";
   const visitFee = (perPerson ? Number(listing.price) * guests : Number(listing.price)) * visitDays;
   const guideTotal = guideAmount(guideFee, guideGroup ? "group" : "person", guests, visitDays);
@@ -585,8 +585,8 @@ export function ListingBook({ fallbackSlug }: { fallbackSlug?: string }) {
               </div>
             ) : (
               <div>
-                <p className="font-display text-3xl">Free visit</p>
-                <p className="mt-1 text-sm text-mist">No charge for this Ziyarat. Reserve your day or days so the host expects you.</p>
+                <p className="font-display text-2xl">Price coming soon</p>
+                <p className="mt-1 text-sm text-mist">The host has not set the guide fee yet. Booking opens as soon as they do.</p>
               </div>
             )
           ) : (
@@ -815,8 +815,8 @@ export function ListingBook({ fallbackSlug }: { fallbackSlug?: string }) {
                   {formatDay(start)}
                   {lastDay !== start ? ` — ${formatDay(lastDay)}` : ""} · {visitDays} {visitDays === 1 ? "day" : "days"} · {guests} {guests === 1 ? "guest" : "guests"}
                 </p>
-                {freeVisit ? (
-                  <p className="mt-1 text-mist">Free visit · nothing to pay</p>
+                {unpriced ? (
+                  <p className="mt-1 text-mist">No price set yet, so this Ziyarat cannot be booked.</p>
                 ) : (
                   <>
                     <ul className="mt-2 space-y-1 text-xs text-mist">
@@ -865,7 +865,7 @@ export function ListingBook({ fallbackSlug }: { fallbackSlug?: string }) {
                   : `Total ${money(tripTotal)} · ${taxiMode === "shared" ? `${guests} guest${guests === 1 ? "" : "s"}` : "private vehicle"}`}
               </p>
             )}
-            <button type="submit" className="btn-primary w-full" disabled={Boolean(clash) || Boolean(overlay)}>
+            <button type="submit" className="btn-primary w-full" disabled={Boolean(clash) || Boolean(overlay) || unpriced}>
               {status !== "authenticated"
                 ? "Sign in to request"
                 : taxiMode === "custom"
@@ -873,9 +873,7 @@ export function ListingBook({ fallbackSlug }: { fallbackSlug?: string }) {
                   : payingNow
                     ? `Pay with card · ${money(tripTotal)}`
                     : ziyarat
-                      ? freeVisit
-                        ? visitDays > 1 ? `Reserve ${visitDays} days` : "Reserve this day"
-                        : visitDays > 1 ? `Book ${visitDays} days · pay on the day` : "Book this day · pay on the day"
+                      ? visitDays > 1 ? `Book ${visitDays} days · pay on the day` : "Book this day · pay on the day"
                       : oneDay
                         ? "Book this day"
                         : "Book these dates"}

@@ -434,7 +434,7 @@ async function main() {
       published: true,
       status: "approved",
       rejectReason: "",
-      meta: JSON.stringify({ country: countryCode[region], hours }),
+      meta: JSON.stringify({ country: countryCode[region], hours, guideFee: 5000, guideFeeUnit: "person" }),
     });
   }
 

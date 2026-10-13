@@ -4,7 +4,7 @@ import { signIn } from "next-auth/react";
 import { useEffect, useState } from "react";
 import { LoaderOverlay } from "@/components/PageLoader";
 
-export function GoogleAuthButton({ callbackUrl, google }: { callbackUrl: string; google: boolean }) {
+export function GoogleAuthButton({ callbackUrl, google, onBeforeStart }: { callbackUrl: string; google: boolean; onBeforeStart?: () => void }) {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -21,6 +21,7 @@ export function GoogleAuthButton({ callbackUrl, google }: { callbackUrl: string;
       return;
     }
     setError("");
+    onBeforeStart?.();
     setLoading(true);
     try {
       await signIn("google", { callbackUrl });

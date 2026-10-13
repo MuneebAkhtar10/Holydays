@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { useSerai } from "@/lib/store";
 import { kindPath } from "@/lib/marketplace";
+import { guideFeeOf, guideUnitOf } from "@/lib/trip-total";
 import { listingToZiyarat, type ZiyaratStop } from "@/lib/package-plan";
 import { pilgrimCountries, pilgrimCountryName, type PilgrimCountry } from "@/lib/pilgrim";
 import { PageLoader } from "@/components/PageLoader";
@@ -34,7 +35,6 @@ export function ZiyaratCatalog() {
   const [country, setCountry] = useState<PilgrimCountry | "all">("all");
   const [city, setCity] = useState("all");
   const [duration, setDuration] = useState("all");
-  const [entry, setEntry] = useState<"all" | "free" | "paid">("all");
 
   useEffect(() => {
     fetch("/api/listings?kind=ATTRACTION", { cache: "no-store" })
@@ -64,11 +64,9 @@ export function ZiyaratCatalog() {
         if (country !== "all" && stop.country !== country) return false;
         if (city !== "all" && stop.city !== city) return false;
         if (duration !== "all" && stop.hours !== duration) return false;
-        if (entry === "free" && stop.price > 0) return false;
-        if (entry === "paid" && stop.price <= 0) return false;
         return true;
       }),
-    [withStop, country, city, duration, entry],
+    [withStop, country, city, duration],
   );
 
   const selectClass = "mt-1 w-full rounded-xl bg-ink/30 px-3 py-2 text-sm text-sand outline-none ring-1 ring-sand/[0.08]";
@@ -76,7 +74,7 @@ export function ZiyaratCatalog() {
   return (
     <div className="mx-auto max-w-6xl px-5 py-8">
       <p className="font-urdu text-brass">زیارت</p>
-      <h1 className="font-display mt-1 text-3xl">Ziyarat</h1>
+      <h1 className="font-display mt-1 text-3xl">Ziyarah</h1>
       <p className="mt-1.5 max-w-xl text-sm text-mist">
         Shrine plans for Saudi Arabia, Iraq, and Iran. Pick a visit and it folds into your hotel package at checkout.
       </p>
@@ -133,14 +131,6 @@ export function ZiyaratCatalog() {
               ))}
             </select>
           </label>
-          <label className="text-[11px] uppercase tracking-[0.14em] text-mist">
-            Entry
-            <select className={selectClass} value={entry} onChange={(e) => setEntry(e.target.value as "all" | "free" | "paid")}>
-              <option value="all">Free & guided</option>
-              <option value="free">Free entry</option>
-              <option value="paid">Guided / paid</option>
-            </select>
-          </label>
         </div>
       </div>
 
@@ -168,7 +158,12 @@ function ZiyaratCard({
   stop: ZiyaratStop;
   money: (n: number) => string;
 }) {
-  const free = stop.price <= 0;
+  // What a guest pays per day: entry (if any) plus the guide, per guest or as one fee for the group.
+  const guide = guideFeeOf(item.meta);
+  const guideGroup = guideUnitOf(item.meta) === "group";
+  const entryPerGuest = item.priceUnit === "person" ? Number(item.price) || 0 : 0;
+  const perGuest = entryPerGuest + (guideGroup ? 0 : guide);
+  const perGroup = (item.priceUnit === "person" ? 0 : Number(item.price) || 0) + (guideGroup ? guide : 0);
   return (
     <Link
       href={`/${kindPath.ATTRACTION}/${item.slug}`}
@@ -193,14 +188,20 @@ function ZiyaratCard({
 
         <div className="mt-auto flex items-end justify-between pt-3">
           <div>
-            {free ? (
-              <p className="font-display text-lg leading-none">Free entry</p>
-            ) : (
+            {perGuest > 0 ? (
               <p className="font-display text-lg leading-none">
-                {money(stop.price)} <span className="text-xs font-sans font-normal text-mist">/ person</span>
+                {money(perGuest)} <span className="text-xs font-sans font-normal text-mist">/ guest · day</span>
               </p>
+            ) : perGroup > 0 ? (
+              <p className="font-display text-lg leading-none">
+                {money(perGroup)} <span className="text-xs font-sans font-normal text-mist">/ day · whole group</span>
+              </p>
+            ) : (
+              <p className="font-display text-lg leading-none text-mist">Price coming soon</p>
             )}
-            <p className="mt-1 text-xs text-mist">{free ? "Walking plan included" : "Guided visit"}</p>
+            <p className="mt-1 text-xs text-mist">
+              {perGuest > 0 && perGroup > 0 ? `+ ${money(perGroup)} per day for the group · ` : ""}Guided visit
+            </p>
           </div>
           <p className="flex items-center gap-1 text-xs text-mist">
             <StarIcon className="h-3.5 w-3.5 text-brass" />

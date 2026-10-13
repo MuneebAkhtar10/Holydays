@@ -249,6 +249,9 @@ async function createBooking(req: Request) {
       guideFeeUnit: guideUnitOf(listing.meta),
     });
   }
+  if (listing.kind === "ATTRACTION" && total <= 0) {
+    return NextResponse.json({ error: "This Ziyarat has no price set yet, so it cannot be booked." }, { status: 400 });
+  }
   const method = String(body.payment ?? "property");
   const wantsCard = isCardPayment(method) && !customTaxi && total > 0;
   const storedMethod = wantsCard ? "card" : isCardPayment(method) ? "property" : method;

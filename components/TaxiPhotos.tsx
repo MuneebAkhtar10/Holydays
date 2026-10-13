@@ -34,8 +34,9 @@ export function taxiCarPhotos(input: {
 }): string[] {
   const seen = new Set<string>();
   const out: string[] = [];
-  // Partner's own vehicle photos first, then a stock photo of that vehicle type, and the listing cover only as a last resort.
-  for (const url of [...(input.vehiclePhotos ?? []), input.vehiclePhoto, defaultVehiclePhoto(input.vehicle), input.cover]) {
+  // Only pictures of the vehicle: the partner's own photo first, then a stock photo of that vehicle type.
+  // The listing cover is trip scenery, so it is never shown here.
+  for (const url of [...(input.vehiclePhotos ?? []), input.vehiclePhoto, defaultVehiclePhoto(input.vehicle)]) {
     const next = String(url || "").trim();
     if (!next || next === input.driverPhoto || seen.has(next)) continue;
     seen.add(next);

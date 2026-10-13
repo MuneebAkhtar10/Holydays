@@ -641,11 +641,7 @@ function StayInner() {
                 const nextParams = new URLSearchParams(p);
                 if (flow) nextParams.set("flow", flow);
                 const next = `/checkout?${nextParams.toString()}`;
-                if (status !== "authenticated") {
-                  const backHere = `${window.location.pathname}${window.location.search}`;
-                  router.push(`/login?callbackUrl=${encodeURIComponent(backHere)}`);
-                  return;
-                }
+                // Guests can go through the whole checkout; they sign in just before confirming.
                 router.push(next);
               };
               const soldOut = roomsLeft === 0 || roomCount < 1 || (roomsLeft != null && roomCount > roomsLeft);
@@ -662,13 +658,6 @@ function StayInner() {
                   <p className="mt-4 rounded-xl bg-ink/5 px-4 py-3 text-sm text-ink/55">
                     Booking opens once this listing is approved and live.
                   </p>
-                );
-              }
-              if (status !== "authenticated") {
-                return (
-                  <button type="button" disabled={soldOut} className="btn-primary mt-4 w-full py-3 disabled:cursor-not-allowed disabled:opacity-50" onClick={() => go()}>
-                    {soldOut ? blockedLabel : "Sign in to book"}
-                  </button>
                 );
               }
               if (!pilgrimStay) {
