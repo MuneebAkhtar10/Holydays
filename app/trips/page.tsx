@@ -140,7 +140,7 @@ export default function TripsPage() {
   }
 
   return (
-    <div className="mx-auto max-w-6xl px-5 py-8">
+    <div className="mx-auto max-w-6xl px-4 sm:px-5 py-8">
       <p className="text-[11px] uppercase tracking-[0.3em] text-brass">My bookings</p>
       <h1 className="font-display mt-1 text-3xl">Your trips</h1>
       <p className="mt-1.5 max-w-xl text-sm text-mist">Upcoming, current, completed, and cancelled bookings — with invoices, changes, and help.</p>

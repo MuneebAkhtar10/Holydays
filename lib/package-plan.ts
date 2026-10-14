@@ -1,5 +1,5 @@
 import { defaultVehiclePhoto } from "@/lib/vehicle-photos";
-import { formatPKR, formatDay, clampIsoDate, nightsBetween, stayNightDates } from "@/lib/format";
+import { formatPKR, formatDay, formatTime, clampIsoDate, nightsBetween, stayNightDates } from "@/lib/format";
 import { parseRoomPicksBody } from "@/lib/room-picks";
 import type { RoomPick } from "@/lib/pricing";
 import { airportForCity, cityNamedIn, pilgrimAirports, pilgrimCountryForPlace, type PilgrimCountry } from "@/lib/pilgrim";
@@ -351,7 +351,7 @@ function transferAndZiyaratLines(input: {
   for (const p of input.taxis) {
     const t = input.taxiList.find((x) => x.id === p.id);
     if (!t) continue;
-    const when = p.date ? ` · ${formatDay(p.date)}` : "";
+    const when = p.date ? ` · ${formatDay(p.date)}${p.time ? ` at ${formatTime(p.time)}` : ""}` : "";
     const hotel =
       p.hotelName ||
       input.stayName ||
@@ -461,6 +461,8 @@ export type TaxiPick = {
   seats: number;
   mode: TaxiMode;
   date: string;
+  /** Airport pick-up / drop-off time, "HH:MM". */
+  time?: string;
   leg?: "in" | "out";
   hotelName?: string;
 };
@@ -615,6 +617,7 @@ export function sanitizePackage(
       seats,
       mode,
       date,
+      time: /^([01]\d|2[0-3]):[0-5]\d$/.test(String(r.time ?? "")) ? String(r.time) : undefined,
       leg: r.leg === "out" ? "out" : r.leg === "in" ? "in" : undefined,
       hotelName: r.hotelName ? String(r.hotelName) : undefined,
     });

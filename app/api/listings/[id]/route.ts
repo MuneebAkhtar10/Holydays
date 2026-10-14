@@ -5,7 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { withReviewStats } from "@/lib/moderation";
 import { isPastBooking } from "@/lib/format";
 import { fetchListingByKey, fetchListingReviews, isPublishedLive, userHasReview } from "@/lib/listing-query";
-import { encodeStayMeta, parseListingMeta } from "@/lib/listing-meta";
+import { encodeStayMeta, lowestRoomPrice, parseListingMeta } from "@/lib/listing-meta";
 import { todayIso } from "@/lib/format";
 
 type Ctx = { params: Promise<{ id: string }> };
@@ -108,7 +108,10 @@ export async function PATCH(req: Request, { params }: Ctx) {
         region: body.region ?? listing.region,
         cover: body.cover ?? listing.cover,
         description: body.description ?? listing.description,
-        price: body.price !== undefined ? Number(body.price) : Number(listing.price),
+        price:
+          listing.kind === "STAY"
+            ? lowestRoomPrice(meta) ?? (body.price !== undefined ? Number(body.price) : Number(listing.price))
+            : body.price !== undefined ? Number(body.price) : Number(listing.price),
         priceUnit: body.priceUnit ?? listing.priceUnit,
         published: false,
         meta,

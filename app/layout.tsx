@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Manrope, Noto_Nastaliq_Urdu } from "next/font/google";
 import "./globals.css";
 import { AppProviders } from "@/components/AppProviders";
@@ -21,6 +21,16 @@ const nastaliq = Noto_Nastaliq_Urdu({
 export const metadata: Metadata = {
   title: `${APP_NAME} — hotels for Ziyarah`,
   description: APP_TAGLINE,
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
+  themeColor: [
+    { media: "(prefers-color-scheme: dark)", color: "#102948" },
+    { media: "(prefers-color-scheme: light)", color: "#f3eadc" },
+  ],
 };
 
 const themeBoot = `(function(){try{var t=localStorage.getItem("serai-theme");if(t!=="light"&&t!=="dark"){t=window.matchMedia("(prefers-color-scheme: light)").matches?"light":"dark";}document.documentElement.setAttribute("data-theme",t);}catch(e){}})();`;

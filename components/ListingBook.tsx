@@ -332,12 +332,12 @@ export function ListingBook({ fallbackSlug }: { fallbackSlug?: string }) {
         void book();
       }}
     >
-      <div className="grid grid-cols-2 gap-3">
-        <label className="auth-label">
+      <div className="grid grid-cols-1 gap-3 min-[26rem]:grid-cols-2">
+        <label className="auth-label min-w-0">
           Date
           <input type="date" className="auth-field" min={today} value={start} onChange={(e) => setStart(e.target.value)} />
         </label>
-        <label className="auth-label">
+        <label className="auth-label min-w-0">
           Time
           <select className="auth-field" value={slotValue} onChange={(e) => setSlot(e.target.value)} disabled={slots.length === 0}>
             {slots.length === 0 && <option>No times left today</option>}
@@ -466,7 +466,7 @@ export function ListingBook({ fallbackSlug }: { fallbackSlug?: string }) {
         </div>
       </div>
 
-      <div className="mx-auto grid max-w-6xl gap-10 px-5 py-12 lg:grid-cols-[minmax(0,1fr)_440px]">
+      <div className="mx-auto grid max-w-6xl gap-8 px-4 py-8 sm:px-5 lg:grid-cols-[minmax(0,1fr)_440px] lg:gap-10 lg:py-12">
         <div>
           {(mine || asAdmin) && listing.status && listing.status !== "approved" && (
             <div className="mb-8 rounded-2xl border border-brass/35 bg-ink-2/70 px-5 py-4 text-sm text-sand">
@@ -568,7 +568,7 @@ export function ListingBook({ fallbackSlug }: { fallbackSlug?: string }) {
           )}
         </div>
 
-        <aside className="h-fit rounded-2xl border border-brass/30 bg-ink-2 p-6 shadow-[0_20px_60px_rgba(0,0,0,0.28)]">
+        <aside className="h-fit rounded-2xl border border-brass/30 bg-ink-2 p-4 shadow-[0_20px_60px_rgba(0,0,0,0.28)] sm:p-6">
           {reservation && <p className="mb-1 text-[11px] uppercase tracking-[0.18em] text-brass">Reserve a table</p>}
           {taxi && taxiMode === "custom" ? (
             <p className="font-display text-2xl">Customize this trip</p>
@@ -648,7 +648,7 @@ export function ListingBook({ fallbackSlug }: { fallbackSlug?: string }) {
             }}
           >
             {taxi && (
-              <div className="grid grid-cols-3 gap-2">
+              <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
                 <button
                   type="button"
                   className={`rounded-xl border px-3 py-3 text-left text-sm ${taxiMode === "shared" ? "border-flame bg-flame/10" : "border-brass/30"}`}
@@ -678,7 +678,7 @@ export function ListingBook({ fallbackSlug }: { fallbackSlug?: string }) {
             {taxiMode === "custom" && (
               <div className="space-y-3 rounded-xl border border-brass/25 bg-ink/20 p-3">
                 <p className="text-xs text-mist">Hire this driver for as long as you need — no fixed route or stops. How much time do you need?</p>
-                <div className="grid grid-cols-4 gap-1.5">
+                <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-4">
                   {[6, 12, 24].map((h) => (
                     <button
                       key={h}
@@ -716,8 +716,8 @@ export function ListingBook({ fallbackSlug }: { fallbackSlug?: string }) {
             )}
             {ziyarat ? (
               <div>
-                <div className="grid grid-cols-2 gap-3">
-                  <label className="auth-label">
+                <div className="grid grid-cols-1 gap-3 min-[26rem]:grid-cols-2">
+                  <label className="auth-label min-w-0">
                     First day
                     <input
                       type="date"
@@ -730,7 +730,7 @@ export function ListingBook({ fallbackSlug }: { fallbackSlug?: string }) {
                       }}
                     />
                   </label>
-                  <label className="auth-label">
+                  <label className="auth-label min-w-0">
                     Last day
                     <input
                       type="date"

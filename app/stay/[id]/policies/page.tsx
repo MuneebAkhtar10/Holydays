@@ -19,7 +19,7 @@ export default async function StayPoliciesPage({ params }: { params: Promise<{ i
   const rates = rooms.flatMap((r) => r.rates ?? []);
 
   return (
-    <div className="mx-auto max-w-3xl px-5 py-10">
+    <div className="mx-auto max-w-3xl px-4 sm:px-5 py-10">
       <p className="text-[11px] uppercase tracking-[0.28em] text-brass">Policies</p>
       <h1 className="font-display mt-2 text-4xl">{stay.name}</h1>
       <p className="mt-2 text-sm text-mist">

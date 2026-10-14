@@ -11,7 +11,7 @@ const SIZE: Record<
 > = {
   sm: { face: "h-9 w-9", car: "h-9 w-14", cars: 1, wrap: "gap-2" },
   md: { face: "h-14 w-14", car: "h-14 w-[5.5rem]", cars: 1, wrap: "gap-2.5" },
-  lg: { face: "h-[72px] w-[72px]", car: "h-[72px] w-[108px]", cars: 2, wrap: "gap-2.5" },
+  lg: { face: "h-[72px] w-[72px]", car: "h-[72px] w-[92px] sm:w-[108px]", cars: 2, wrap: "gap-2.5" },
 };
 
 function initials(name: string) {
@@ -90,12 +90,13 @@ export function TaxiPhotos({
       )}
       {showVehicle ? (
         cars.length ? (
-          cars.map((src) => (
+          cars.map((src, i) => (
             <ZoomableImage
               key={src}
               src={src}
               alt={vehicle || "Vehicle"}
-              className={`${dim.car} shrink-0 overflow-hidden rounded-xl border border-brass/25 bg-ink/40`}
+              // Driver + two 108px cars is wider than a phone, so the extra shot waits for a bigger screen.
+              className={`${dim.car} shrink-0 overflow-hidden rounded-xl border border-brass/25 bg-ink/40 ${i > 0 ? "hidden sm:block" : ""}`}
             />
           ))
         ) : (

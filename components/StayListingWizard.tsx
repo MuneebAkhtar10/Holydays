@@ -203,7 +203,12 @@ export function StayListingWizard({
               <textarea className="paper-field min-h-28 resize-y" rows={4} placeholder="What guests should know" value={String(form.description)} onChange={(e) => set("description", e.target.value)} />
             </label>
             <div className="grid gap-2.5 sm:grid-cols-[1fr_auto]">
-              <MoneyInput compact label="Guide price per night" pkr={String(form.price)} onPkr={(v) => set("price", v)} />
+              <div className="form-label">
+                From price per night
+                <p className="paper-field flex min-h-[2.6rem] items-center bg-ink/5 text-ink/70">
+                  {rooms.some((r) => Number(r.price) > 0) ? "Set automatically from your cheapest room (Rooms step)" : "Add a room price in the Rooms step"}
+                </p>
+              </div>
               <label className="form-label">
                 Charged
                 <select className="paper-field" value={String(form.priceUnit)} onChange={(e) => set("priceUnit", e.target.value)}>

@@ -437,7 +437,9 @@ export function applyFilters(list: SearchStay[], query: SearchQuery, filters: Fi
     const hay = `${s.name} ${s.city} ${s.region} ${s.landmark} ${s.airport} ${s.type}`.toLowerCase();
     if (query.city) {
       const c = query.city.toLowerCase();
-      if (s.city.toLowerCase() !== c && s.region.toLowerCase() !== c && !hay.includes(c)) return false;
+      // A city search shows hotels in that city only. Matching the hotel's text too let a Karbala hotel appear for Najaf
+      // just because it mentions the Najaf airport.
+      if (s.city.toLowerCase() !== c && s.region.toLowerCase() !== c) return false;
     } else if (needle && !["iraq", "iran", "saudi", "saudi arabia"].includes(needle) && !hay.includes(needle)) return false;
     if (query.landmark && s.landmark.toLowerCase() !== query.landmark.toLowerCase() && !hay.includes(query.landmark.toLowerCase())) return false;
     if (query.airport && !s.airport.toLowerCase().includes(query.airport.toLowerCase())) return false;

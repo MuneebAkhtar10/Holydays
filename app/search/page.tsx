@@ -99,7 +99,7 @@ function SearchInner() {
         : "Saudi Arabia, Iraq & Iran");
 
   return (
-    <div className="mx-auto max-w-[1440px] px-5 py-8">
+    <div className="mx-auto max-w-[1440px] px-4 sm:px-5 py-8">
       <SearchPass compact />
       <div className="mt-8 grid gap-6 xl:grid-cols-[280px_minmax(0,1fr)_380px]">
         <aside className={`h-fit rounded-2xl border border-brass/30 bg-ink-2/70 p-4 xl:sticky xl:top-24 ${openFilters ? "" : "hidden xl:block"}`}>
@@ -168,7 +168,7 @@ function SearchInner() {
           ) : null}
 
           {list.length === 0 ? (
-            <div className="rounded-2xl border border-brass/30 bg-ink-2 p-12">
+            <div className="rounded-2xl border border-brass/30 bg-ink-2 p-6 sm:p-12">
               <p className="font-display text-3xl">No hotels match.</p>
               <p className="mt-2 text-mist">
                 {matchesIgnoringGuests

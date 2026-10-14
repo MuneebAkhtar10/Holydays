@@ -33,6 +33,8 @@ export type BookingMessage = {
   at: string;
   message: string;
   from: "guest" | "owner";
+  /** Set when the HolyDays team wrote it on the host's side of the thread. */
+  by?: "admin";
 };
 
 export function asMessages(extra: Record<string, unknown>): BookingMessage[] {
@@ -48,6 +50,7 @@ export function asMessages(extra: Record<string, unknown>): BookingMessage[] {
         at: String(item.at ?? ""),
         message,
         from: item.from === "owner" ? ("owner" as const) : ("guest" as const),
+        ...(item.by === "admin" ? { by: "admin" as const } : {}),
       };
     })
     .filter((row): row is BookingMessage => Boolean(row));

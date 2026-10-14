@@ -255,17 +255,30 @@ export function ListingReviews({
         {count > 0 ? (
           <p className="flex items-center gap-2 text-sm text-mist">
             <StarIcon className="h-4 w-4 text-brass" />
-            {avg} · {Number(count).toLocaleString("en-GB")} review{count === 1 ? "" : "s"}
+            {avg} · {Number(count).toLocaleString("en-GB")} review{count === 1 ? "" : "s"} on HolyDays
           </p>
         ) : (
-          <p className="text-sm text-mist">No reviews yet</p>
+          <p className="text-sm text-mist">No HolyDays reviews yet</p>
         )}
       </div>
 
+      {/* The partner records their score elsewhere as a number only — we hold no review text from that site. */}
       {externalRating?.source && bookingCount > 0 ? (
-        <p className="mt-2 text-sm text-mist">
-          Rated {externalRating.score} on {externalRating.source} ({bookingCount.toLocaleString("en-GB")} reviews)
-        </p>
+        <div className="mt-3">
+          <p className="inline-flex flex-wrap items-center gap-x-2 gap-y-1 rounded-full border border-brass/25 bg-brass/10 px-3.5 py-1.5 text-sm text-sand">
+            <StarIcon className="h-4 w-4 shrink-0 text-brass" />
+            <span className="font-semibold">{externalRating.score}</span>
+            <span className="text-mist">
+              on {externalRating.source} · {bookingCount.toLocaleString("en-GB")} reviews there
+            </span>
+          </p>
+          {count === 0 ? (
+            <p className="mt-2 text-sm text-mist">
+              That score is what the property reports from {externalRating.source}; those reviews are not published here. Guests who book through
+              HolyDays can write the first review on this page after their stay.
+            </p>
+          ) : null}
+        </div>
       ) : null}
 
       {filled.length > 0 ? (

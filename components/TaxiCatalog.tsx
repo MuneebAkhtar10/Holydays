@@ -73,7 +73,7 @@ export function TaxiCatalog() {
   }, [withTaxi, country, from, to, service]);
 
   return (
-    <div className="mx-auto max-w-6xl px-5 py-8">
+    <div className="mx-auto max-w-6xl px-4 sm:px-5 py-8">
       <p className="font-urdu text-brass">کرایہ</p>
       <h1 className="font-display mt-1 text-3xl">Taxis</h1>
       <p className="mt-1.5 max-w-xl text-sm text-mist">

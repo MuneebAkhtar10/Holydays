@@ -32,7 +32,7 @@ export default async function CheckoutPoliciesPage({
   }
 
   return (
-    <div className="mx-auto max-w-3xl px-5 py-10">
+    <div className="mx-auto max-w-3xl px-4 sm:px-5 py-10">
       <p className="text-[11px] uppercase tracking-[0.28em] text-brass">Package policies</p>
       <h1 className="font-display mt-2 text-4xl">Cancellation and hotel policies</h1>
       <p className="mt-2 text-sm text-mist">These rules apply to every hotel in this package. Read them before you confirm.</p>

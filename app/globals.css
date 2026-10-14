@@ -8,7 +8,7 @@
   --color-brass: var(--serai-brass);
   --color-flame: var(--serai-flame);
   --color-line: var(--serai-line);
-  --color-sage: #6b8f71;
+  --color-sage: var(--serai-sage, #6b8f71);
   --color-rose: var(--serai-rose);
   --color-mist: var(--serai-mist);
   --font-display: var(--font-manrope), Manrope, system-ui, sans-serif;
@@ -27,7 +27,8 @@ html[data-theme="dark"] {
   --serai-brass: #c5a46a;
   --serai-flame: #c5a46a;
   --serai-rose: #d92027;
-  --serai-mist: #9aa3b5;
+  --serai-mist: #b9c1d0;
+  --serai-sage: #4fd17a;
   --serai-line: rgba(197, 164, 106, 0.22);
   --serai-card: linear-gradient(180deg, #163456, #102948);
   --serai-shadow: 0 30px 80px rgba(8, 20, 40, 0.55);
@@ -42,7 +43,8 @@ html[data-theme="light"] {
   --serai-brass: #6a4e18;
   --serai-flame: #c5a46a;
   --serai-rose: #d92027;
-  --serai-mist: #3f4756;
+  --serai-mist: #2d3544;
+  --serai-sage: #15733f;
   --serai-line: rgba(11, 28, 52, 0.08);
   --serai-card: linear-gradient(180deg, #fff8ee, #f3eadc);
   --serai-shadow: 0 24px 50px rgba(11, 28, 52, 0.1);
@@ -50,6 +52,8 @@ html[data-theme="light"] {
 
 html {
   scroll-behavior: smooth;
+  /* A touch larger than the browser default so every rem-based size reads better. */
+  font-size: 103.125%;
 }
 
 body {
@@ -57,8 +61,10 @@ body {
   color: var(--serai-sand);
   font-family: var(--font-ui), sans-serif;
   font-size: 1rem;
+  font-weight: 500;
   line-height: 1.6;
-  letter-spacing: 0.01em;
+  letter-spacing: 0.005em;
+  -webkit-font-smoothing: antialiased;
   font-feature-settings: "kern" 1, "liga" 1;
 }
 
@@ -128,12 +134,12 @@ html[data-theme="light"] .brand-logo {
   --serai-ink: #0b1c34;
   --serai-ink-2: #ebe3d4;
   --serai-sand: #0b1c34;
-  --serai-mist: #3a4454;
+  --serai-mist: #2d3544;
   --serai-sage: #1f6b38;
   --color-ink: #0b1c34;
   --color-ink-2: #ebe3d4;
   --color-sand: #0b1c34;
-  --color-mist: #3a4454;
+  --color-mist: #2d3544;
   --color-sage: #1f6b38;
   border: 1px solid rgba(11, 28, 52, 0.08);
   border-radius: 1.25rem;
@@ -156,12 +162,12 @@ html[data-theme="light"] .brand-logo {
   --serai-ink: #0b1c34;
   --serai-ink-2: #ebe3d4;
   --serai-sand: #0b1c34;
-  --serai-mist: #3a4454;
+  --serai-mist: #2d3544;
   --serai-sage: #1f6b38;
   --color-ink: #0b1c34;
   --color-ink-2: #ebe3d4;
   --color-sand: #0b1c34;
-  --color-mist: #3a4454;
+  --color-mist: #2d3544;
   --color-sage: #1f6b38;
 }
 
@@ -172,12 +178,12 @@ html[data-theme="dark"] .paper {
   --serai-ink: #f4f6fa;
   --serai-ink-2: #163456;
   --serai-sand: #f4f6fa;
-  --serai-mist: #9aa3b5;
+  --serai-mist: #b9c1d0;
   --serai-sage: #4fd17a;
   --color-ink: #f4f6fa;
   --color-ink-2: #163456;
   --color-sand: #f4f6fa;
-  --color-mist: #9aa3b5;
+  --color-mist: #b9c1d0;
   --color-sage: #4fd17a;
   border: 1px solid rgba(197, 164, 106, 0.32);
   box-shadow:
@@ -194,12 +200,12 @@ html[data-theme="dark"] .paper {
     --serai-ink: #f4f6fa;
     --serai-ink-2: #163456;
     --serai-sand: #f4f6fa;
-    --serai-mist: #9aa3b5;
+    --serai-mist: #b9c1d0;
     --serai-sage: #4fd17a;
     --color-ink: #f4f6fa;
     --color-ink-2: #163456;
     --color-sand: #f4f6fa;
-    --color-mist: #9aa3b5;
+    --color-mist: #b9c1d0;
     --color-sage: #4fd17a;
     border: 1px solid rgba(197, 164, 106, 0.32);
   }
@@ -248,6 +254,10 @@ html[data-theme="dark"] .inset-card {
 .auth-field {
   display: block;
   width: 100%;
+  /* Date and number inputs carry a wide intrinsic minimum; without this they refuse to
+     shrink inside a narrow grid cell and push the whole page sideways on a phone. */
+  min-width: 0;
+  max-width: 100%;
   margin-top: 0.45rem;
   padding: 0.95rem 1.1rem;
   border: 1px solid color-mix(in srgb, var(--serai-brass) 28%, transparent);
@@ -270,10 +280,14 @@ html[data-theme="dark"] .inset-card {
 /* Native date inputs that sit on cream/white chips — keep dark glyphs in both themes. */
 .date-chip {
   color-scheme: light;
+  /* Native date inputs carry a wide intrinsic minimum that breaks narrow grid cells. */
+  min-width: 0;
+  max-width: 100%;
   background: #ffffff;
   color: #0b1c34;
-  border-radius: 0.5rem;
-  padding: 0.25rem 0.5rem;
+  font-weight: 600;
+  border-radius: 0.6rem;
+  padding: 0.45rem 0.6rem;
   outline: none;
   box-shadow: inset 0 0 0 1px rgba(11, 28, 52, 0.12);
 }
@@ -784,11 +798,19 @@ html[data-theme="dark"] .btn-outline {
   flex-direction: column;
   align-items: center;
   gap: 0.2rem;
-  min-width: 4.4rem;
-  padding: 0.35rem 0.4rem;
+  /* Icon-only on phones: 4 tabs at 4.4rem each left no room for the logo or the account menu. */
+  min-width: 2.6rem;
+  padding: 0.4rem 0.3rem;
   border-radius: 0.75rem;
   color: var(--serai-mist);
   font-size: 0.72rem;
+}
+
+@media (min-width: 640px) {
+  .header-link {
+    min-width: 4.4rem;
+    padding: 0.35rem 0.4rem;
+  }
 }
 
 .header-link:hover,
@@ -838,12 +860,155 @@ html[data-theme="dark"] .btn-outline {
     --serai-ink: #0b1c34;
     --serai-ink-2: #ebe3d4;
     --serai-sand: #0b1c34;
-    --serai-mist: #3a4454;
+    --serai-mist: #2d3544;
     --serai-sage: #1f6b38;
     --color-ink: #0b1c34;
     --color-ink-2: #ebe3d4;
     --color-sand: #0b1c34;
-    --color-mist: #3a4454;
+    --color-mist: #2d3544;
     --color-sage: #1f6b38;
   }
+}
+
+
+/* ---- Typography: heavier, larger and higher-contrast small text ---------------------------------
+   Manrope at 400 looks thin on both themes, and many labels were 9-11px. These rules sit outside
+   Tailwind's layers on purpose so they apply everywhere without touching each component. */
+.font-normal {
+  font-weight: 500;
+}
+.font-medium {
+  font-weight: 600;
+}
+.font-semibold {
+  font-weight: 700;
+}
+.font-bold {
+  font-weight: 800;
+}
+[class*="text-[9px]"] {
+  font-size: 11px;
+}
+[class*="text-[10px]"] {
+  font-size: 11.5px;
+}
+[class*="text-[11px]"] {
+  font-size: 12.5px;
+}
+[class*="text-[12px]"] {
+  font-size: 13px;
+}
+/* Small caps-style labels read better a little heavier. */
+.uppercase {
+  font-weight: 600;
+}
+/* Faint helper text on cream/white cards (text-ink/40 ... /65) was too pale. */
+[class*="text-ink/4"],
+[class*="text-ink/5"],
+[class*="text-ink/6"] {
+  color: color-mix(in srgb, var(--color-ink) 80%, transparent);
+}
+input::placeholder,
+textarea::placeholder {
+  color: color-mix(in srgb, currentColor 58%, transparent);
+  opacity: 1;
+}
+
+
+/* ---- Form controls ------------------------------------------------------------------------------
+   Native checkboxes render as small grey OS squares that look out of place on the dark cards
+   (package extras, insurance, eSIM, policy consent). These give them the site's own look. */
+input[type="checkbox"] {
+  appearance: none;
+  -webkit-appearance: none;
+  flex: none;
+  width: 1.2rem;
+  height: 1.2rem;
+  border-radius: 0.375rem;
+  border: 1.5px solid color-mix(in srgb, var(--serai-brass) 60%, transparent);
+  background-color: color-mix(in srgb, var(--serai-sand) 7%, transparent);
+  cursor: pointer;
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease;
+}
+
+input[type="checkbox"]:hover:not(:disabled) {
+  border-color: var(--serai-brass);
+}
+
+input[type="checkbox"]:checked {
+  background-color: var(--serai-brass);
+  border-color: var(--serai-brass);
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='%230b1c34' stroke-width='2.6' stroke-linecap='round' stroke-linejoin='round'><path d='M3 8.4l3.4 3.4L13 5'/></svg>");
+  background-size: 76%;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
+input[type="checkbox"]:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--serai-brass) 30%, transparent);
+}
+
+input[type="checkbox"]:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+input[type="radio"] {
+  accent-color: var(--serai-brass);
+  flex: none;
+  width: 1.05rem;
+  height: 1.05rem;
+  cursor: pointer;
+}
+
+
+/* ---- Success green on the light theme -----------------------------------------------------------
+   Tailwind's emerald shades are picked for dark surfaces; on the cream light theme they read as pale
+   mint and all but disappear (availability strips, "Paid" pills, verification notices). Redefining the
+   shade variables fixes every text-/bg-emerald utility at once, in one place. */
+html[data-theme="light"] {
+  --color-emerald-400: #15733f;
+  --color-emerald-500: #116035;
+  --color-emerald-600: #0e532d;
+  --serai-sage: #15733f;
+}
+
+@media print {
+  .paper,
+  html[data-theme="dark"] .paper,
+  html:not([data-theme="light"]) .paper {
+    --color-emerald-400: #15733f;
+    --color-emerald-500: #116035;
+    --color-emerald-600: #0e532d;
+  }
+}
+
+
+/* ---- Mobile ---------------------------------------------------------------------------------- */
+
+@media (max-width: 640px) {
+  /* iOS zooms the whole page in when a focused field's text is under 16px. */
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+  select,
+  textarea {
+    font-size: max(16px, 1em);
+  }
+
+  /* Headings sized for the desktop grid were running off narrow screens. */
+  .font-display {
+    letter-spacing: -0.02em;
+    overflow-wrap: break-word;
+  }
+}
+
+
+/* No field may set the width of its container — they stretch, they never push. */
+input,
+select,
+textarea {
+  min-width: 0;
+  max-width: 100%;
 }

@@ -197,7 +197,7 @@ function OwnerDesk() {
 
   if (data?.user?.role === "ADMIN") {
     return (
-      <div className="mx-auto max-w-lg px-5 py-20">
+      <div className="mx-auto max-w-lg px-4 sm:px-5 py-20">
         <h1 className="font-display text-4xl">Admin desk</h1>
         <p className="mt-3 text-mist">Approvals live on the admin queue, not the partner desk.</p>
         <Link href="/admin" className="btn-primary mt-6 inline-flex">
@@ -209,7 +209,7 @@ function OwnerDesk() {
 
   if (data?.user && data.user.role !== "OWNER") {
     return (
-      <div className="mx-auto max-w-lg px-5 py-20">
+      <div className="mx-auto max-w-lg px-4 sm:px-5 py-20">
         <h1 className="font-display text-4xl">Become a partner</h1>
         <p className="mt-3 text-mist">This login is a traveller account. Choose taxi, hotel, Ziyarah, or food to open an owner desk.</p>
         <BecomeOwner />
@@ -235,7 +235,7 @@ function OwnerDesk() {
   const mine = listings.filter((l) => l.kind === kind);
 
   return (
-    <div className="mx-auto max-w-6xl px-5 py-6">
+    <div className="mx-auto max-w-6xl px-4 sm:px-5 py-6">
       <LoaderOverlay show={Boolean(overlay)} label={overlay ?? "Updating"} />
       <p className="text-[11px] uppercase tracking-[0.3em] text-brass">Partner desk · {kind}</p>
       <div className="mt-1 flex flex-wrap items-center justify-between gap-3">
@@ -319,6 +319,7 @@ function OwnerDesk() {
           <OwnerInbox
             bookings={bookings.filter((b) => b.status !== "cancelled")}
             selectedId={openChat}
+            onBack={() => setOpenChat(null)}
             onSelect={async (ids) => {
               setOpenChat(ids[0]);
               const unreadIds = ids.filter((id) => bookings.find((b) => b.id === id)?.unreadCount);
@@ -368,6 +369,7 @@ function OwnerDesk() {
           selectedId={openBooking}
           money={money}
           onSelect={setOpenBooking}
+          onBack={() => setOpenBooking(null)}
           onChatUpdated={(id, messages) =>
             setBookings((list) => list.map((row) => (row.id === id ? { ...row, messages, unreadCount: 0 } : row)))
           }
@@ -633,11 +635,13 @@ function OwnerInbox({
   selectedId,
   onSelect,
   onUpdated,
+  onBack,
 }: {
   bookings: OwnerBooking[];
   selectedId: string | null;
   onSelect: (ids: string[]) => void;
   onUpdated: (id: string, messages: BookingMessage[]) => void;
+  onBack: () => void;
 }) {
   const threads = groupInboxThreads(bookings);
   const unreadOf = (t: InboxThread) => t.bookings.reduce((s, b) => s + (b.unreadCount || 0), 0);
@@ -660,7 +664,7 @@ function OwnerInbox({
 
   return (
     <div className="mt-3 grid overflow-hidden rounded-2xl border border-brass/25 bg-ink-2 lg:grid-cols-[minmax(16rem,20rem)_minmax(0,1fr)]">
-      <ul className="max-h-[32rem] overflow-y-auto border-b border-brass/20 lg:border-b-0 lg:border-r">
+      <ul className={`max-h-[26rem] overflow-y-auto border-b border-brass/20 lg:max-h-[64rem] lg:border-b-0 lg:border-r ${selectedId ? "hidden lg:block" : ""}`}>
         {sorted.map((t) => {
           const on = active?.key === t.key;
           const unread = unreadOf(t);
@@ -700,7 +704,10 @@ function OwnerInbox({
         })}
       </ul>
       {active ? (
-        <div className="flex h-[32rem] flex-col p-4">
+        <div className={`flex h-[32rem] flex-col p-4 lg:h-[36rem] ${selectedId ? "" : "hidden lg:flex"}`}>
+          <button type="button" className="mb-2 self-start text-sm text-mist hover:text-sand lg:hidden" onClick={onBack}>
+            ← All messages
+          </button>
           <div className="mb-3 flex items-start justify-between gap-3">
             <div className="min-w-0">
               <p className="font-display text-xl">{active.primary.guest.name}</p>
@@ -801,6 +808,7 @@ function GuestBookingsDesk({
   onChatUpdated,
   onCancelDecision,
   onRespondRequest,
+  onBack,
 }: {
   bookings: OwnerBooking[];
   selectedId: string | null;
@@ -809,6 +817,7 @@ function GuestBookingsDesk({
   onChatUpdated: (id: string, messages: BookingMessage[]) => void;
   onCancelDecision: (id: string, approve: boolean, refundPercent?: number) => void;
   onRespondRequest: (id: string, accept: boolean) => void;
+  onBack: () => void;
 }) {
   const active = bookings.find((b) => b.id === selectedId) ?? bookings[0];
   if (bookings.length === 0) {
@@ -816,7 +825,7 @@ function GuestBookingsDesk({
   }
   return (
     <div className="mt-4 overflow-hidden rounded-2xl border border-brass/25 bg-ink-2 lg:grid lg:grid-cols-[minmax(17rem,21rem)_minmax(0,1fr)]">
-      <ul className="max-h-[32rem] overflow-y-auto border-b border-brass/20 lg:max-h-[64rem] lg:border-b-0 lg:border-r lg:border-brass/20">
+      <ul className={`max-h-[26rem] overflow-y-auto border-b border-brass/20 lg:max-h-[64rem] lg:border-b-0 lg:border-r lg:border-brass/20 ${selectedId ? "hidden lg:block" : ""}`}>
         {bookings.map((b) => {
           const on = active?.id === b.id;
           return (
@@ -854,13 +863,18 @@ function GuestBookingsDesk({
         })}
       </ul>
       {active ? (
-        <BookingDetail
-          booking={active}
-          money={money}
-          onChatUpdated={onChatUpdated}
-          onCancelDecision={onCancelDecision}
-          onRespondRequest={onRespondRequest}
-        />
+        <div className={selectedId ? "" : "hidden lg:block"}>
+          <button type="button" className="px-5 pt-4 text-sm text-mist hover:text-sand lg:hidden" onClick={onBack}>
+            ← All bookings
+          </button>
+          <BookingDetail
+            booking={active}
+            money={money}
+            onChatUpdated={onChatUpdated}
+            onCancelDecision={onCancelDecision}
+            onRespondRequest={onRespondRequest}
+          />
+        </div>
       ) : null}
     </div>
   );
@@ -1102,7 +1116,7 @@ function BookingDetail({
                       <span className="min-w-0 space-y-0.5 text-sand">
                         {d.package.transfers.map((t) => (
                           <span key={`${t.label}-${t.date}`} className="block">
-                            {t.label} <span className="text-mist">· {formatDay(t.date)} · {t.mode}</span>
+                            {t.label} <span className="text-mist">· {formatDay(t.date)}{t.time ? ` at ${formatTime(t.time)}` : ""} · {t.mode}</span>
                           </span>
                         ))}
                       </span>

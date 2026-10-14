@@ -47,7 +47,7 @@ export function CatalogGrid({ kind, title, urdu, blurb }: { kind: ListingKind; t
   }, [kind]);
 
   return (
-    <div className="mx-auto max-w-6xl px-5 py-16">
+    <div className="mx-auto max-w-6xl px-4 sm:px-5 py-10 sm:py-16">
       <p className="font-urdu text-brass">{urdu}</p>
       <h1 className="font-display mt-2 text-5xl">{title}</h1>
       <p className="mt-3 max-w-xl text-mist">{blurb}</p>

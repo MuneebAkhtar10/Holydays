@@ -83,7 +83,7 @@ export default function BookingDetailsPage() {
   const card = "rounded-2xl border border-brass/25 bg-ink-2/70 p-5";
 
   return (
-    <div className="mx-auto max-w-6xl px-5 py-8">
+    <div className="mx-auto max-w-6xl px-4 sm:px-5 py-8">
       <LoaderOverlay show={Boolean(overlay)} label={overlay ?? "Updating"} />
       <Link href="/trips" className="text-sm text-mist hover:text-sand">
         ← My bookings

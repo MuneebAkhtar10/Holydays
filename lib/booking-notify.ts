@@ -303,7 +303,7 @@ export async function notifyProvidersOfBooking(bookingId: string, opts: { pendin
         add(l?.owner, {
           label: l?.name ?? (t ? `${t.origin} to ${t.destination}` : pick.id),
           type: pick.leg === "out" ? "Airport drop-off" : pick.leg === "in" ? "Airport pick-up" : "Taxi trip",
-          when: longDay(pick.date),
+          when: `${longDay(pick.date)}${pick.time ? ` at ${formatTime(pick.time)}` : ""}`,
           detail: pick.mode === "private" ? "Private vehicle" : `${pick.seats} seat${pick.seats === 1 ? "" : "s"} (shared)`,
           amount: t ? (pick.mode === "private" ? t.privateRate : t.ratePerPerson * Math.max(1, pick.seats)) : undefined,
         });

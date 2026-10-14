@@ -52,7 +52,7 @@ export function BookingPrint({ kind }: { kind: "invoice" | "receipt" | "voucher"
       : null;
 
   return (
-    <div className="mx-auto max-w-2xl px-5 py-10 text-sand print:text-black">
+    <div className="mx-auto max-w-2xl px-4 sm:px-5 py-10 text-sand print:text-black">
       <div className="flex items-start justify-between gap-4 print:hidden">
         <Link href={`/bookings/${booking.id}`} className="btn-ghost">
           Back

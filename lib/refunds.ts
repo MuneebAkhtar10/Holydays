@@ -1,9 +1,10 @@
 import { prisma } from "@/lib/prisma";
 import { toBookingDTO } from "@/lib/booking-dto";
-import { notifyCancellationDecision } from "@/lib/booking-notify";
-import { parseBookingExtras } from "@/lib/booking-view";
+import { notifyBookingUpdate, notifyCancellationDecision } from "@/lib/booking-notify";
+import { bookingNumber, parseBookingExtras } from "@/lib/booking-view";
+import { publicOrigin } from "@/lib/auth-tokens";
 import { getStripe } from "@/lib/stripe";
-import { packageChargePkr } from "@/lib/stripe-booking";
+import { packageBookingIds, packageChargePkr } from "@/lib/stripe-booking";
 
 export type RefundRecord = {
   percent: number;
@@ -68,6 +69,13 @@ async function refundCardPayment(row: Row, percent: number, by: "owner" | "admin
   };
 }
 
+/** The share to refund: what the approver typed, else what the booking's cancellation policy says. */
+function resolvePercent(asked: unknown, fallback: number) {
+  const n = Number(asked);
+  if (asked === undefined || asked === null || asked === "" || !Number.isFinite(n)) return fallback;
+  return Math.min(100, Math.max(0, Math.round(n)));
+}
+
 export class CancelDecisionError extends Error {
   constructor(message: string, readonly status = 400) {
     super(message);
@@ -95,8 +103,7 @@ export async function decideCancellation(input: {
 
   if (input.approve) {
     const outlook = toBookingDTO(booking).refundOutlook;
-    const asked = Number(input.refundPercent);
-    const percent = Number.isFinite(asked) && input.refundPercent !== undefined && input.refundPercent !== "" ? Math.min(100, Math.max(0, Math.round(asked))) : outlook.percent;
+    const percent = resolvePercent(input.refundPercent, outlook.percent);
     try {
       const refund = await refundCardPayment(booking, percent, input.by);
       if (refund) extra.refund = refund;
@@ -115,5 +122,71 @@ export async function decideCancellation(input: {
     include: { listing: true, user: true },
   });
   await notifyCancellationDecision(updated.id, input.approve);
+  return toBookingDTO(updated);
+}
+
+
+/**
+ * Admin ends a booking outright, without the guest having asked. The card payment is refunded first,
+ * then the booking (and the rest of its package) is cancelled and everyone is told.
+ */
+export async function adminCancelBooking(input: { id: string; reason: string; refundPercent?: unknown }) {
+  const booking = await loadRow(input.id);
+  if (!booking) throw new CancelDecisionError("Booking not found", 404);
+  if (booking.status === "cancelled") throw new CancelDecisionError("This booking is already cancelled.");
+  const reason = String(input.reason ?? "").trim();
+  if (!reason) throw new CancelDecisionError("Give a reason so the guest and the partner know why.");
+
+  const now = new Date().toISOString();
+  const extra = parseBookingExtras(booking.extras);
+  extra.cancelReason = reason;
+  extra.cancelRequestedAt = typeof extra.cancelRequestedAt === "string" ? extra.cancelRequestedAt : now;
+  extra.cancelDecision = "approved";
+  extra.cancelDecidedAt = now;
+  extra.cancelDecidedBy = "admin";
+  extra.cancelledByAdmin = true;
+
+  const percent = resolvePercent(input.refundPercent, toBookingDTO(booking).refundOutlook.percent);
+  try {
+    const refund = await refundCardPayment(booking, percent, "admin");
+    if (refund) extra.refund = refund;
+  } catch (err) {
+    console.error("[refund] admin cancel failed", err);
+    throw new CancelDecisionError(
+      `The refund could not be sent, so the booking was not cancelled. ${err instanceof Error ? err.message : ""}`.trim(),
+      502,
+    );
+  }
+
+  const updated = await prisma.booking.update({
+    where: { id: input.id },
+    data: { status: "cancelled", extras: JSON.stringify(extra) },
+    include: { listing: true, user: true },
+  });
+
+  // The card payment covers the whole package, so the other legs cannot stay live on their own.
+  const siblings = (await packageBookingIds(input.id)).filter((id) => id !== input.id);
+  if (siblings.length) {
+    await prisma.booking.updateMany({
+      where: { id: { in: siblings }, NOT: { status: "cancelled" } },
+      data: { status: "cancelled" },
+    });
+  }
+
+  await notifyCancellationDecision(updated.id, true);
+  try {
+    const owner = await prisma.user.findUnique({ where: { id: updated.listing.ownerId }, select: { email: true } });
+    if (owner?.email?.includes("@")) {
+      await notifyBookingUpdate(
+        owner.email,
+        `Booking cancelled by HolyDays · ${updated.listing.name}`,
+        `Booking ${bookingNumber(updated.id)} for ${updated.listing.name} (${updated.startDate} — ${updated.endDate}) has been cancelled by the HolyDays team.\n\nReason: ${reason}\n\nThe dates are free again.`,
+        `${publicOrigin()}/owner?tab=bookings`,
+      );
+    }
+  } catch (err) {
+    console.error("[refund] partner cancel notice failed", err);
+  }
+
   return toBookingDTO(updated);
 }

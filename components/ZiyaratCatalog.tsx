@@ -72,7 +72,7 @@ export function ZiyaratCatalog() {
   const selectClass = "mt-1 w-full rounded-xl bg-ink/30 px-3 py-2 text-sm text-sand outline-none ring-1 ring-sand/[0.08]";
 
   return (
-    <div className="mx-auto max-w-6xl px-5 py-8">
+    <div className="mx-auto max-w-6xl px-4 sm:px-5 py-8">
       <p className="font-urdu text-brass">زیارت</p>
       <h1 className="font-display mt-1 text-3xl">Ziyarah</h1>
       <p className="mt-1.5 max-w-xl text-sm text-mist">

@@ -1,7 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { formatDay, nightsBetween, stayNightDates } from "@/lib/format";
+import { formatDay, formatTime, nightsBetween, stayNightDates } from "@/lib/format";
 import { useSerai } from "@/lib/store";
 import { TaxiPhotos } from "@/components/TaxiPhotos";
 import {
@@ -117,7 +117,7 @@ export function TransferTimeline({
         <li key={r.p.slotId} className="relative pb-5 last:pb-0">
           <span className="absolute -left-[1.4rem] top-1 h-2.5 w-2.5 rounded-full bg-flame" />
           <p className="text-[11px] uppercase tracking-[0.16em] text-brass">
-            {kindLabel(r.kind)} · {formatDay(r.p.date)}
+            {kindLabel(r.kind)} · {formatDay(r.p.date)}{r.p.time ? ` at ${formatTime(r.p.time)}` : ""}
           </p>
           <div className="mt-1 flex items-start justify-between gap-3">
             <div className="flex min-w-0 items-start gap-3">
@@ -167,7 +167,7 @@ function BillRow({
         <span className="block">{label}</span>
         {hint ? <span className={`mt-0.5 block text-[11px] leading-snug ${mist}`}>{hint}</span> : null}
       </span>
-      <span className={`shrink-0 pt-0.5 tabular-nums ${num}`}>{money(amount)}</span>
+      <span className={`shrink-0 pt-0.5 font-semibold tabular-nums ${num}`}>{money(amount)}</span>
     </li>
   );
 }
@@ -175,8 +175,14 @@ function BillRow({
 function BillGroup({ title, compact, children }: { title: string; compact?: boolean; children: ReactNode }) {
   return (
     <div>
-      <p className={`text-[10px] uppercase tracking-[0.16em] ${compact ? "text-ink/40" : "text-brass"}`}>{title}</p>
-      <ul className="mt-2 space-y-2.5">{children}</ul>
+      <p
+        className={`border-b pb-1.5 text-[11px] font-bold uppercase tracking-[0.16em] ${
+          compact ? "border-ink/10 text-ink/70" : "border-brass/20 text-brass"
+        }`}
+      >
+        {title}
+      </p>
+      <ul className="mt-2.5 space-y-2.5">{children}</ul>
     </div>
   );
 }
@@ -234,7 +240,7 @@ export function PackageBill({
         id: p.slotId,
         kind,
         title,
-        hint: `${formatDay(p.date)} · ${t.vehicle}`,
+        hint: `${formatDay(p.date)}${p.time ? ` at ${formatTime(p.time)}` : ""} · ${t.vehicle}`,
         amount: taxiPickCost(t, p, guests),
         date: p.date,
         order,

@@ -95,7 +95,7 @@ export default function BookedPage() {
     <div className="relative min-h-[80vh]">
       <Image src={booking.listing.cover || "/images/hero-hunza-dusk.png"} alt="" fill className="object-cover opacity-40" />
       <div className="absolute inset-0 bg-ink/75" />
-      <div className="relative mx-auto max-w-2xl px-5 py-20">
+      <div className="relative mx-auto max-w-2xl px-4 sm:px-5 py-12 sm:py-20">
         <p
           className={`inline-flex rounded-full border px-3 py-1 text-[11px] uppercase tracking-[0.18em] ${
             isDeclined

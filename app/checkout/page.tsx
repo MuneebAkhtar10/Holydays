@@ -48,7 +48,7 @@ import { HotelStrip, PackageBill, TransferTimeline, type ReviewHotel } from "@/c
 import { PoliciesConsent } from "@/components/PoliciesConsent";
 import { CheckoutAuth } from "@/components/CheckoutAuth";
 import { DRAFT_PREFIX, DRAFT_TTL_MS, type DraftSummary } from "@/lib/checkout-drafts";
-import { BedIcon, CarIcon, CheckIcon, GuestsIcon, LandmarkIcon, ShieldIcon, SimIcon, TableIcon, WalletIcon } from "@/components/icons";
+import { BedIcon, CarIcon, CheckIcon, ChevronIcon, GuestsIcon, LandmarkIcon, MinusIcon, PlusIcon, ShieldIcon, SimIcon, TableIcon, WalletIcon } from "@/components/icons";
 
 const ZIYARAT_STEPS = ["Guests", "Meals", "Airport Transfer", "Day trips", "Pay", "Confirm"] as const;
 const BUILD_STEPS = ["Guests", "Hotels & trips", "Meals", "Airport pick up", "Airport drop off", "Insurance", "eSIM", "Pay", "Confirm"] as const;
@@ -132,105 +132,148 @@ function TripOrderEditor({
   onRoomsChange: (id: string, rooms: number) => void;
 }) {
   return (
-    <div className="space-y-2">
+    <div className="space-y-3">
       {legs.map((leg, i) => {
         const status = availability[leg.id];
         const unavailable = status && status.roomsLeft !== null && status.roomsLeft < leg.rooms;
+        const nights = nightsBetween(leg.checkin, leg.checkout);
         return (
-          <div key={leg.id} className="rounded-2xl bg-sand/[0.03] p-3 ring-1 ring-sand/[0.08]">
-            <div className="flex items-center gap-3">
-              <div className="flex shrink-0 flex-col gap-1">
-                <button
-                  type="button"
-                  disabled={i === 0}
-                  aria-label="Move earlier"
-                  className="grid h-6 w-6 place-items-center rounded-full text-sand ring-1 ring-sand/20 disabled:opacity-20"
-                  onClick={() => onMove(leg.id, -1)}
-                >
-                  ▲
-                </button>
-                <button
-                  type="button"
-                  disabled={i === legs.length - 1}
-                  aria-label="Move later"
-                  className="grid h-6 w-6 place-items-center rounded-full text-sand ring-1 ring-sand/20 disabled:opacity-20"
-                  onClick={() => onMove(leg.id, 1)}
-                >
-                  ▼
-                </button>
-              </div>
-              <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-flame/20 text-xs font-medium text-sand">{i + 1}</span>
-              <div className="min-w-0 flex-1">
-                <p className="font-display truncate text-lg leading-tight">
-                  {leg.name}
-                  {leg.isPrimary ? <span className="ml-2 text-[10px] uppercase tracking-wide text-brass">First booked</span> : null}
-                </p>
-                <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-mist">
-                  <span>{leg.city}</span>
-                  <input
-                    type="date"
-                    className="date-chip text-xs"
-                    min={minCheckoutIso()}
-                    value={leg.checkin}
-                    onChange={(e) => onEditDates(leg.id, e.target.value, clampCheckoutIso(leg.checkout, e.target.value))}
-                  />
-                  <span>–</span>
-                  <input
-                    type="date"
-                    className="date-chip text-xs"
-                    min={minCheckoutIso(leg.checkin)}
-                    value={leg.checkout}
-                    onChange={(e) => onEditDates(leg.id, leg.checkin, clampCheckoutIso(e.target.value, leg.checkin))}
-                  />
+          <article key={leg.id} className="overflow-hidden rounded-2xl bg-sand/[0.03] ring-1 ring-sand/[0.08]">
+            {/* Title row: order, hotel, price */}
+            <div className="flex items-start gap-3 p-4 pb-3">
+              {legs.length > 1 ? (
+                <div className="flex shrink-0 flex-col gap-1 pt-0.5">
+                  <button
+                    type="button"
+                    disabled={i === 0}
+                    aria-label={`Move ${leg.name} earlier`}
+                    title="Move earlier"
+                    className="grid h-6 w-6 place-items-center rounded-md text-sand ring-1 ring-sand/20 transition-colors hover:bg-sand/10 disabled:opacity-20 disabled:hover:bg-transparent"
+                    onClick={() => onMove(leg.id, -1)}
+                  >
+                    <ChevronIcon open className="h-3.5 w-3.5" />
+                  </button>
+                  <button
+                    type="button"
+                    disabled={i === legs.length - 1}
+                    aria-label={`Move ${leg.name} later`}
+                    title="Move later"
+                    className="grid h-6 w-6 place-items-center rounded-md text-sand ring-1 ring-sand/20 transition-colors hover:bg-sand/10 disabled:opacity-20 disabled:hover:bg-transparent"
+                    onClick={() => onMove(leg.id, 1)}
+                  >
+                    <ChevronIcon className="h-3.5 w-3.5" />
+                  </button>
                 </div>
-              </div>
-              <p className="shrink-0 text-sm text-sand">{money(leg.amount)}</p>
-              {!leg.isPrimary ? (
-                <button type="button" className="shrink-0 text-xs text-mist underline hover:text-sand" onClick={() => onRemove(leg.id)}>
-                  Remove
-                </button>
               ) : null}
-            </div>
-            <div className="mt-2 flex items-center gap-2 text-xs text-mist">
-              {leg.mixed ? (
-                <span>{leg.room || `${leg.rooms} rooms`}</span>
-              ) : (
-                <>
-              <span>Rooms</span>
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  disabled={leg.rooms <= 1}
-                  className="grid h-6 w-6 place-items-center rounded-full text-sand ring-1 ring-sand/20 disabled:opacity-30"
-                  onClick={() => onRoomsChange(leg.id, Math.max(1, leg.rooms - 1))}
-                >
-                  −
-                </button>
-                <span className="w-4 text-center text-sand">{leg.rooms}</span>
-                <button
-                  type="button"
-                  disabled={leg.rooms >= 8}
-                  className="grid h-6 w-6 place-items-center rounded-full text-sand ring-1 ring-sand/20 disabled:opacity-30"
-                  onClick={() => onRoomsChange(leg.id, Math.min(8, leg.rooms + 1))}
-                >
-                  +
-                </button>
+              <span className="mt-0.5 grid h-8 w-8 shrink-0 place-items-center rounded-full bg-flame/20 text-sm font-bold text-sand">
+                {i + 1}
+              </span>
+              <div className="min-w-0 flex-1">
+                <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                  <h3 className="font-display truncate text-lg leading-tight">{leg.name}</h3>
+                  {leg.isPrimary ? (
+                    <span className="rounded-full bg-brass/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.1em] text-brass">
+                      First booked
+                    </span>
+                  ) : null}
+                </div>
+                <p className="mt-0.5 truncate text-sm text-mist">
+                  {leg.city}
+                  {leg.room ? ` · ${leg.room}` : ""}
+                </p>
               </div>
-                </>
-              )}
+              <div className="shrink-0 text-right">
+                <p className="font-display text-lg leading-none text-sand">{money(leg.amount)}</p>
+                {!leg.isPrimary ? (
+                  <button
+                    type="button"
+                    className="mt-1.5 text-xs text-mist underline decoration-mist/40 underline-offset-2 hover:text-rose"
+                    onClick={() => onRemove(leg.id)}
+                  >
+                    Remove
+                  </button>
+                ) : null}
+              </div>
             </div>
+
+            {/* Dates, rooms and nights on one aligned row */}
+            <div className="grid grid-cols-2 gap-x-4 gap-y-3 border-t border-sand/[0.06] px-4 py-3 sm:grid-cols-4">
+              <label className="col-span-2 block min-w-0 sm:col-span-1">
+                <span className="block text-[10px] font-semibold uppercase tracking-[0.14em] text-mist">Check-in</span>
+                <input
+                  type="date"
+                  className="date-chip mt-1.5 w-full text-sm"
+                  min={minCheckoutIso()}
+                  value={leg.checkin}
+                  onChange={(e) => onEditDates(leg.id, e.target.value, clampCheckoutIso(leg.checkout, e.target.value))}
+                />
+              </label>
+              <label className="col-span-2 block min-w-0 sm:col-span-1">
+                <span className="block text-[10px] font-semibold uppercase tracking-[0.14em] text-mist">Check-out</span>
+                <input
+                  type="date"
+                  className="date-chip mt-1.5 w-full text-sm"
+                  min={minCheckoutIso(leg.checkin)}
+                  value={leg.checkout}
+                  onChange={(e) => onEditDates(leg.id, leg.checkin, clampCheckoutIso(e.target.value, leg.checkin))}
+                />
+              </label>
+              <div className="min-w-0">
+                <span className="block text-[10px] font-semibold uppercase tracking-[0.14em] text-mist">Rooms</span>
+                {leg.mixed ? (
+                  <p className="mt-1.5 py-1 text-sm text-sand">{leg.room || `${leg.rooms} rooms`}</p>
+                ) : (
+                  <div className="mt-1.5 inline-flex items-center gap-1 rounded-lg bg-sand/[0.05] p-0.5 ring-1 ring-sand/10">
+                    <button
+                      type="button"
+                      disabled={leg.rooms <= 1}
+                      aria-label="Fewer rooms"
+                      className="grid h-7 w-7 place-items-center rounded-md text-sand transition-colors hover:bg-sand/10 disabled:opacity-30 disabled:hover:bg-transparent"
+                      onClick={() => onRoomsChange(leg.id, Math.max(1, leg.rooms - 1))}
+                    >
+                      <MinusIcon className="h-3.5 w-3.5" />
+                    </button>
+                    <span className="w-5 text-center text-sm font-semibold text-sand">{leg.rooms}</span>
+                    <button
+                      type="button"
+                      disabled={leg.rooms >= 8}
+                      aria-label="More rooms"
+                      className="grid h-7 w-7 place-items-center rounded-md text-sand transition-colors hover:bg-sand/10 disabled:opacity-30 disabled:hover:bg-transparent"
+                      onClick={() => onRoomsChange(leg.id, Math.min(8, leg.rooms + 1))}
+                    >
+                      <PlusIcon className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                )}
+              </div>
+              <div className="min-w-0">
+                <span className="block text-[10px] font-semibold uppercase tracking-[0.14em] text-mist">Length</span>
+                <p className="mt-1.5 py-1 text-sm text-sand">
+                  {nights} night{nights === 1 ? "" : "s"}
+                </p>
+              </div>
+            </div>
+
             {status ? (
-              <p className={`mt-2 text-xs font-medium ${status.checking ? "text-mist" : unavailable ? "text-red-600" : "text-emerald-600"}`}>
+              <p
+                className={`flex items-center gap-1.5 border-t px-4 py-2.5 text-xs font-medium ${
+                  status.checking
+                    ? "border-sand/[0.06] text-mist"
+                    : unavailable || status.error
+                      ? "border-rose/25 bg-rose/10 text-rose"
+                      : "border-emerald-500/20 bg-emerald-500/10 text-emerald-400"
+                }`}
+              >
                 {status.checking
                   ? "Checking availability…"
                   : status.error
                     ? status.error
                     : unavailable
-                      ? `✗ Only ${status.roomsLeft} room${status.roomsLeft === 1 ? "" : "s"} left for these dates — need ${leg.rooms}`
-                      : `✓ Available — ${status.roomsLeft} room${status.roomsLeft === 1 ? "" : "s"} left for these dates`}
+                      ? `Only ${status.roomsLeft} room${status.roomsLeft === 1 ? "" : "s"} left for these dates — you need ${leg.rooms}`
+                      : `Available — ${status.roomsLeft} room${status.roomsLeft === 1 ? "" : "s"} left for these dates`}
               </p>
             ) : null}
-          </div>
+          </article>
         );
       })}
     </div>
@@ -853,7 +896,7 @@ function CheckoutInner() {
   );
 
   return (
-    <div className="mx-auto grid max-w-7xl gap-8 px-5 py-6 lg:grid-cols-[minmax(0,1fr)_minmax(22rem,26rem)] lg:py-8">
+    <div className="mx-auto grid max-w-7xl gap-8 px-4 py-6 sm:px-5 lg:grid-cols-[minmax(0,1fr)_minmax(22rem,26rem)] lg:py-8">
       <LoaderOverlay show={Boolean(overlay)} label={overlay ?? "Updating"} />
       {confirmDialog ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/70 p-5">
@@ -871,7 +914,7 @@ function CheckoutInner() {
           </div>
         </div>
       ) : null}
-      <div>
+      <div className="min-w-0">
         <p className="text-[11px] uppercase tracking-[0.3em] text-brass">{buildPackage ? "Package" : packageStay ? "Ziyarah package" : "Hotel"}</p>
         <h1 className="font-display mt-1 text-3xl md:text-4xl">
           {buildPackage && country ? `Preparing ${pilgrimCountryName(country)} Ziyarah package` : packageStay ? `${stay.name}` : "Confirm your hotel"}
@@ -881,50 +924,83 @@ function CheckoutInner() {
             ? `${stay.city}, ${pilgrimCountryName(country)} · ${formatDay(input.checkin)} — ${formatDay(tripEnd)}`
             : "Room and payment only. Package extras are for Saudi, Iraq, and Iran listings."}
         </p>
-        <ol className="mt-5 flex flex-wrap gap-2">
-          {steps.map((label, i) => {
-            const Icon = stepIcons[i];
-            return (
-            <li key={label}>
-              <button
-                type="button"
-                className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[11px] uppercase tracking-[0.12em] ${
-                  i === step
-                    ? "bg-flame text-ink shadow-[0_8px_18px_rgba(154,122,58,0.28)]"
-                    : i < step
-                      ? "bg-flame/15 text-sand"
-                      : "text-mist ring-1 ring-brass/25"
-                }`}
-                onClick={() => {
-                  if (i <= step || (i > 0 && phone)) setStep(i);
-                }}
-              >
-                {Icon ? <Icon className="h-3.5 w-3.5" /> : null}
-                {label}
-              </button>
-            </li>
-            );
-          })}
-        </ol>
+        <div className="mt-5 rounded-2xl border border-sand/[0.08] bg-ink-2/60 p-3 sm:p-4">
+          <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1.5">
+            <p className="text-sm">
+              <span className="text-mist">Step {step + 1} of {steps.length}</span>
+              <span className="mx-2 text-brass/50">·</span>
+              <span className="font-semibold text-sand">{steps[step]}</span>
+            </p>
+            {/* The full bill sits in the sidebar, which drops below the form on phones — keep the number in view. */}
+            <p className="text-sm lg:hidden">
+              <span className="text-mist">You pay </span>
+              <span className="font-display text-lg text-sand">{money(grand)}</span>
+            </p>
+            {savedNote && (
+              <p className="flex items-center gap-x-3 text-xs text-mist">
+                <span className="inline-flex items-center gap-1.5 text-emerald-500">
+                  <CheckIcon className="h-3.5 w-3.5" /> Progress saved
+                </span>
+                <button
+                  type="button"
+                  className="underline decoration-brass/50 underline-offset-4 hover:text-sand"
+                  onClick={() => {
+                    clearDraft();
+                    window.location.reload();
+                  }}
+                >
+                  Start over
+                </button>
+              </p>
+            )}
+          </div>
 
-        {savedNote && (
-          <p className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-mist">
-            <span className="inline-flex items-center gap-1.5 text-emerald-500">
-              <CheckIcon className="h-3.5 w-3.5" /> Progress saved
-            </span>
-            <span>Refresh any time and you will pick up right here.</span>
-            <button
-              type="button"
-              className="text-sand underline decoration-brass/50 underline-offset-4"
-              onClick={() => {
-                clearDraft();
-                window.location.reload();
-              }}
-            >
-              Start over
-            </button>
-          </p>
-        )}
+          <div className="mt-2.5 h-1 overflow-hidden rounded-full bg-sand/10">
+            <div
+              className="h-full rounded-full bg-flame transition-[width] duration-300"
+              style={{ width: `${((step + 1) / steps.length) * 100}%` }}
+            />
+          </div>
+
+          <ol className="-mx-1 mt-3 flex gap-1.5 overflow-x-auto px-1 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            {steps.map((label, i) => {
+              const Icon = stepIcons[i];
+              const done = i < step;
+              const here = i === step;
+              const reachable = i <= step || Boolean(phone);
+              return (
+                <li key={label} className="shrink-0">
+                  <button
+                    type="button"
+                    disabled={!reachable}
+                    aria-current={here ? "step" : undefined}
+                    className={`inline-flex items-center gap-2 rounded-full py-1.5 pl-1.5 pr-3.5 text-[11px] uppercase tracking-[0.1em] transition-colors ${
+                      here
+                        ? "bg-flame text-ink shadow-[0_8px_18px_rgba(154,122,58,0.28)]"
+                        : done
+                          ? "bg-flame/15 text-sand hover:bg-flame/25"
+                          : reachable
+                            ? "text-mist ring-1 ring-brass/25 hover:text-sand"
+                            : "text-mist/60 ring-1 ring-brass/15"
+                    }`}
+                    onClick={() => {
+                      if (reachable) setStep(i);
+                    }}
+                  >
+                    <span
+                      className={`grid h-5 w-5 shrink-0 place-items-center rounded-full text-[10px] font-bold ${
+                        here ? "bg-ink/15 text-ink" : done ? "bg-flame/30 text-sand" : "bg-sand/[0.06] text-mist"
+                      }`}
+                    >
+                      {done ? <CheckIcon className="h-3 w-3" /> : Icon ? <Icon className="h-3 w-3" /> : i + 1}
+                    </span>
+                    {label}
+                  </button>
+                </li>
+              );
+            })}
+          </ol>
+        </div>
 
         {step === 0 && (
           <div className="mt-6 space-y-3 rounded-2xl border border-sand/[0.08] bg-ink-2 p-5 shadow-[0_12px_40px_rgba(11,28,52,0.05)]">
@@ -1045,89 +1121,133 @@ function CheckoutInner() {
         )}
 
         {buildPackage && step === 1 && (
-          <div className="mt-4">
-            <p className="text-[11px] uppercase tracking-[0.28em] text-brass">Itinerary</p>
-            <h2 className="font-display mt-1 text-3xl">Hotels and day trips</h2>
-            <p className="mt-1 max-w-xl text-sm text-mist">
-              Add city-to-city trips from any hotel already in this package. When a trip ends in a new city we ask if you want a hotel there. You can also add another hotel, reorder the trip, or edit the first hotel's dates.
-            </p>
-            {orderedLegs.length > 1 ? <p className="mt-3 text-xs text-mist">Use ▲ ▼ to change the order you visit these hotels in. Each hotel checks its own room availability.</p> : null}
-            <div className="mt-3">
-              <TripOrderEditor
-                legs={orderedLegs}
-                money={money}
-                availability={legAvailability}
-                onMove={moveLeg}
-                onRemove={removeExtraStay}
-                onEditDates={onEditLegDates}
-                onRoomsChange={onLegRoomsChange}
-              />
-            </div>
-            <DayTripsStep
-              country={country}
-              city={stay.city}
-              cities={tripCities}
-              catalog={taxiList}
-              picks={taxiPicks}
-              start={input.checkin}
-              end={tripEnd}
-              onChange={setTaxiPicks}
-              title="City-to-city trips"
-              blurb="Choose a trip such as Karbala → Baghdad. After you pick the car we ask if you want a hotel at the destination. Add another trip from the next city when you are ready."
-              onTripAdded={(taxi, pick) => {
-                const dest = tripDestinationCity(taxi);
-                const originCity = cityNamedIn(taxi.origin, country) || taxi.origin.trim();
-                if (!dest || dest.toLowerCase() === originCity.toLowerCase()) return;
-                const have = tripCities.some((c) => c.toLowerCase() === dest.toLowerCase());
-                if (have) return;
-                setHotelAsk({ city: dest, date: pick.date || input.checkin });
-                setAddingHotel(false);
-              }}
-            />
-            {hotelAsk && !addingHotel ? (
-              <div className="mt-5 rounded-2xl border border-brass/30 bg-flame/[0.07] p-4">
-                <p className="font-display text-xl">Would you like to book a hotel in {hotelAsk.city}?</p>
-                <p className="mt-1 text-sm text-mist">
-                  Your trip goes to {hotelAsk.city}. If yes, pick a hotel and dates for that stay. You can still add more cities after this.
-                </p>
-                <div className="mt-3 flex flex-wrap gap-2">
-                  <button type="button" className="btn-primary rounded-full" onClick={() => setAddingHotel(true)}>
-                    Yes, add a hotel
-                  </button>
-                  <button
-                    type="button"
-                    className="btn-ghost rounded-full"
-                    onClick={() => {
-                      setHotelAsk(null);
-                      setAddingHotel(false);
-                    }}
-                  >
-                    No, skip hotel
-                  </button>
+          <div className="mt-6 space-y-6">
+            {/* Hotels */}
+            <section>
+              <div className="flex flex-wrap items-end justify-between gap-x-4 gap-y-1">
+                <div>
+                  <p className="text-[11px] uppercase tracking-[0.28em] text-brass">Itinerary</p>
+                  <h2 className="font-display mt-1 text-2xl md:text-3xl">Your hotels</h2>
                 </div>
+                <p className="text-sm text-mist">
+                  {orderedLegs.length} hotel{orderedLegs.length === 1 ? "" : "s"} · {formatDay(input.checkin)} — {formatDay(tripEnd)}
+                </p>
               </div>
-            ) : null}
-            {addingHotel ? (
-              <PackageHotelPicker
+              <p className="mt-1.5 max-w-2xl text-sm text-mist">
+                Edit dates and room counts here. {orderedLegs.length > 1 ? "Use the arrows to change the order you visit them in — each hotel checks its own availability." : "Add more cities with a trip below, or add another hotel directly."}
+              </p>
+              <div className="mt-4">
+                <TripOrderEditor
+                  legs={orderedLegs}
+                  money={money}
+                  availability={legAvailability}
+                  onMove={moveLeg}
+                  onRemove={removeExtraStay}
+                  onEditDates={onEditLegDates}
+                  onRoomsChange={onLegRoomsChange}
+                />
+              </div>
+              {addingHotel && !hotelAsk ? (
+                <div className="mt-4">
+                  <PackageHotelPicker
+                    country={country}
+                    city={lastHotel.city}
+                    excludeIds={[stay.id, ...extraStays.map((s) => s.listingId)]}
+                    defaultCheckin={lastHotel.checkout || addDaysIso(input.checkin, nightsBetween(input.checkin, input.checkout))}
+                    rooms={input.rooms}
+                    adults={input.adults}
+                    children={input.children}
+                    childAges={input.childAges}
+                    onAdd={addExtraStay}
+                    onCancel={() => {
+                      setAddingHotel(false);
+                      setHotelAsk(null);
+                    }}
+                  />
+                </div>
+              ) : !addingHotel ? (
+                <button
+                  type="button"
+                  className="mt-3 flex w-full items-center justify-center gap-2 rounded-2xl border border-dashed border-brass/35 bg-sand/[0.02] py-4 text-sm font-semibold text-sand transition-colors hover:border-brass/60 hover:bg-flame/[0.06]"
+                  onClick={() => setAddingHotel(true)}
+                >
+                  <span className="grid h-5 w-5 place-items-center rounded-full bg-flame/20 text-brass">
+                    <PlusIcon className="h-3 w-3" />
+                  </span>
+                  Add another hotel
+                </button>
+              ) : null}
+            </section>
+
+            <div className="h-px bg-sand/[0.08]" />
+
+            {/* City-to-city trips */}
+            <section>
+              <DayTripsStep
                 country={country}
-                city={hotelAsk?.city || lastHotel.city}
-                excludeIds={[stay.id, ...extraStays.map((s) => s.listingId)]}
-                defaultCheckin={hotelAsk?.date || lastHotel.checkout || addDaysIso(input.checkin, nightsBetween(input.checkin, input.checkout))}
-                rooms={input.rooms}
-                adults={input.adults}
-                children={input.children}
-                childAges={input.childAges}
-                onAdd={addExtraStay}
-                onCancel={() => {
+                city={stay.city}
+                cities={tripCities}
+                catalog={taxiList}
+                picks={taxiPicks}
+                start={input.checkin}
+                end={tripEnd}
+                onChange={setTaxiPicks}
+                title="City-to-city trips"
+                blurb="Choose a trip such as Karbala → Baghdad. After you pick the car we ask if you want a hotel at the destination. Add another trip from the next city when you are ready."
+                onTripAdded={(taxi, pick) => {
+                  const dest = tripDestinationCity(taxi);
+                  const originCity = cityNamedIn(taxi.origin, country) || taxi.origin.trim();
+                  if (!dest || dest.toLowerCase() === originCity.toLowerCase()) return;
+                  const have = tripCities.some((c) => c.toLowerCase() === dest.toLowerCase());
+                  if (have) return;
+                  setHotelAsk({ city: dest, date: pick.date || input.checkin });
                   setAddingHotel(false);
-                  setHotelAsk(null);
                 }}
               />
-            ) : (
-              <button type="button" className="btn-ghost mt-4 w-full rounded-2xl py-3.5 text-sm" onClick={() => setAddingHotel(true)}>
-                Add another hotel
-              </button>
-            )}
+              {hotelAsk && !addingHotel ? (
+                <div className="mt-5 rounded-2xl border border-brass/30 bg-flame/[0.07] p-4 sm:p-5">
+                  <p className="text-[11px] uppercase tracking-[0.18em] text-brass">New city on your trip</p>
+                  <p className="font-display mt-1 text-xl">Would you like to book a hotel in {hotelAsk.city}?</p>
+                  <p className="mt-1.5 max-w-xl text-sm text-mist">
+                    Your trip goes to {hotelAsk.city}. If yes, pick a hotel and dates for that stay. You can still add more cities after this.
+                  </p>
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    <button type="button" className="btn-primary rounded-full" onClick={() => setAddingHotel(true)}>
+                      Yes, add a hotel
+                    </button>
+                    <button
+                      type="button"
+                      className="btn-ghost rounded-full"
+                      onClick={() => {
+                        setHotelAsk(null);
+                        setAddingHotel(false);
+                      }}
+                    >
+                      No, skip hotel
+                    </button>
+                  </div>
+                </div>
+              ) : null}
+              {hotelAsk && addingHotel ? (
+                <div className="mt-5">
+                  <PackageHotelPicker
+                    country={country}
+                    city={hotelAsk.city}
+                    excludeIds={[stay.id, ...extraStays.map((s) => s.listingId)]}
+                    defaultCheckin={hotelAsk.date || lastHotel.checkout || addDaysIso(input.checkin, nightsBetween(input.checkin, input.checkout))}
+                    rooms={input.rooms}
+                    adults={input.adults}
+                    children={input.children}
+                    childAges={input.childAges}
+                    onAdd={addExtraStay}
+                    onCancel={() => {
+                      setAddingHotel(false);
+                      setHotelAsk(null);
+                    }}
+                  />
+                </div>
+              ) : null}
+            </section>
           </div>
         )}
 
@@ -1481,34 +1601,45 @@ function CheckoutInner() {
           </div>
         )}
 
-        <div className="mt-5 flex gap-3">
-          {step > 0 && (
-            <button type="button" className="btn-ghost" onClick={() => setStep((s) => s - 1)}>
-              Back
-            </button>
-          )}
-          {step < lastStep && (
-            <button
-              type="button"
-              disabled={step === 1 && anyLegUnavailable}
-              className="btn-primary disabled:cursor-not-allowed disabled:opacity-50"
-              onClick={() => {
-                if (step === 0 && !isValidPhone(phone)) {
-                  setPhoneError(true);
-                  return;
-                }
-                setStep((s) => s + 1);
-              }}
-            >
-              Continue
-            </button>
-          )}
-          {step === 1 && anyLegUnavailable ? (
-            <p className="self-center text-sm text-red-600">One of your hotels isn’t available for its current dates — fix the dates or remove it to continue.</p>
-          ) : null}
-        </div>
+        {step < lastStep && (
+          <div className="mt-6 border-t border-sand/[0.08] pt-5">
+            {step === 1 && anyLegUnavailable ? (
+              <p className="mb-3 rounded-xl border border-rose/30 bg-rose/10 px-3.5 py-2.5 text-sm text-rose">
+                One of your hotels isn’t available for its current dates — fix the dates or remove it to continue.
+              </p>
+            ) : null}
+            <div className="flex items-center justify-between gap-3">
+              {step > 0 ? (
+                <button type="button" className="btn-ghost inline-flex items-center gap-1.5" onClick={() => setStep((s) => s - 1)}>
+                  <ChevronIcon className="h-4 w-4 rotate-90" />
+                  Back
+                </button>
+              ) : (
+                <span />
+              )}
+              <button
+                type="button"
+                disabled={step === 1 && anyLegUnavailable}
+                className="btn-primary inline-flex items-center gap-2 px-6 disabled:cursor-not-allowed disabled:opacity-50"
+                onClick={() => {
+                  if (step === 0 && !isValidPhone(phone)) {
+                    setPhoneError(true);
+                    return;
+                  }
+                  setStep((s) => s + 1);
+                }}
+              >
+                <span>
+                  Continue
+                  <span className="hidden text-ink/60 sm:inline"> · {steps[step + 1]}</span>
+                </span>
+                <ChevronIcon className="h-4 w-4 -rotate-90" />
+              </button>
+            </div>
+          </div>
+        )}
       </div>
-      <aside className="paper h-fit lg:sticky lg:top-20">
+      <aside className="paper h-fit min-w-0 lg:sticky lg:top-20">
         <Image src={stay.cover} alt="" width={640} height={360} className="h-28 w-full object-cover" />
         <div className="p-5">
           <p className="text-[11px] uppercase tracking-[0.16em] text-ink/45">{packageStay ? "Package" : "Hotel"}</p>
@@ -1539,9 +1670,14 @@ function CheckoutInner() {
                 compact
                 showTotal={false}
               />
-              <div className="mt-4 rounded-xl bg-[#c5a46a]/18 px-3 py-3">
-                <p className="text-[11px] uppercase tracking-[0.16em] text-ink/50">You pay</p>
-                <p className="font-display text-2xl text-ink">{money(grand)}</p>
+              <div className="mt-4 flex items-end justify-between gap-3 rounded-xl bg-[#c5a46a]/18 px-4 py-3.5">
+                <div>
+                  <p className="text-[11px] uppercase tracking-[0.16em] text-ink/55">You pay</p>
+                  <p className="mt-0.5 text-xs text-ink/55">
+                    {party} guest{party === 1 ? "" : "s"} · {orderedLegs.length} hotel{orderedLegs.length === 1 ? "" : "s"}
+                  </p>
+                </div>
+                <p className="font-display text-2xl leading-none text-ink">{money(grand)}</p>
               </div>
             </div>
           ) : (

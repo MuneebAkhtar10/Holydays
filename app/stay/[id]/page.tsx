@@ -264,7 +264,7 @@ function StayInner() {
 
   return (
     <div>
-      <div className="mx-auto max-w-7xl px-5 pt-6">
+      <div className="mx-auto max-w-7xl px-4 sm:px-5 pt-6">
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div>
             {stay.nastaliq ? <p className="font-urdu text-lg text-brass">{stay.nastaliq}</p> : null}
@@ -373,11 +373,11 @@ function StayInner() {
         </nav>
       </div>
 
-      <div className="relative mx-auto max-w-7xl px-5 pt-6">
+      <div className="relative mx-auto max-w-7xl px-4 sm:px-5 pt-6">
         <SearchPass compact stayCity={stay.city} />
       </div>
 
-      <div className="mx-auto grid max-w-7xl gap-8 px-5 py-6 pb-12 lg:grid-cols-[minmax(0,1fr)_320px]">
+      <div className="mx-auto grid max-w-7xl gap-8 px-4 sm:px-5 py-6 pb-12 lg:grid-cols-[minmax(0,1fr)_320px]">
         <div>
           <div id="gallery">
             <PropertyGallery stay={stay} />
@@ -669,10 +669,10 @@ function StayInner() {
               }
               return (
                 <div className="mt-4 space-y-2">
-                  <button type="button" disabled={soldOut} className="btn-primary w-full py-3 disabled:cursor-not-allowed disabled:opacity-50" onClick={() => go()}>
+                  <button type="button" disabled={soldOut} className="btn-ghost w-full py-3 disabled:cursor-not-allowed disabled:opacity-50" onClick={() => go()}>
                     {soldOut ? blockedLabel : "Book Now"}
                   </button>
-                  <button type="button" disabled={soldOut} className="btn-ghost w-full py-3 disabled:cursor-not-allowed disabled:opacity-50" onClick={() => go("package")}>
+                  <button type="button" disabled={soldOut} className="btn-primary w-full py-3 disabled:cursor-not-allowed disabled:opacity-50" onClick={() => go("package")}>
                     Build a package
                   </button>
                 </div>

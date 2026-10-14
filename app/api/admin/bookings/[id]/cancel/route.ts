@@ -1,7 +1,7 @@
 import { getServerSession } from "next-auth";
 import { NextResponse } from "next/server";
 import { authOptions } from "@/lib/auth";
-import { CancelDecisionError, decideCancellation } from "@/lib/refunds";
+import { adminCancelBooking, CancelDecisionError, decideCancellation } from "@/lib/refunds";
 
 type Ctx = { params: Promise<{ id: string }> };
 
@@ -16,12 +16,15 @@ export async function POST(req: Request, { params }: Ctx) {
     }
     const { id } = await params;
     const body = await req.json().catch(() => ({}));
-    const dto = await decideCancellation({
-      id,
-      approve: Boolean(body.approve),
-      by: "admin",
-      refundPercent: body.refundPercent,
-    });
+    // force: the admin ends a live booking the guest never asked to cancel.
+    const dto = body.force
+      ? await adminCancelBooking({ id, reason: String(body.reason ?? ""), refundPercent: body.refundPercent })
+      : await decideCancellation({
+          id,
+          approve: Boolean(body.approve),
+          by: "admin",
+          refundPercent: body.refundPercent,
+        });
     return NextResponse.json(dto);
   } catch (err) {
     if (err instanceof CancelDecisionError) return NextResponse.json({ error: err.message }, { status: err.status });

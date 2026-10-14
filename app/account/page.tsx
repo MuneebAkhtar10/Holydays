@@ -339,7 +339,7 @@ export default function AccountPage() {
   const phoneLocked = me.phoneVerified && !editingPhone;
 
   return (
-    <div className="mx-auto max-w-3xl px-5 py-10 pb-28">
+    <div className="mx-auto max-w-3xl px-4 sm:px-5 py-10 pb-28">
       <LoaderOverlay show={Boolean(overlay)} label={overlay ?? "Updating"} />
 
       <div className="flex flex-wrap items-center gap-5">

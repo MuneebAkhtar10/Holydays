@@ -90,7 +90,7 @@ export function HomeDashboard() {
   }
 
   return (
-    <div className="mx-auto max-w-7xl px-5 py-8 md:py-10">
+    <div className="mx-auto max-w-7xl px-4 sm:px-5 py-8 md:py-10">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <p className="text-[11px] uppercase tracking-[0.28em] text-brass">Dashboard</p>

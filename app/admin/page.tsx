@@ -12,6 +12,7 @@ import { formatDay } from "@/lib/format";
 import type { BookingDTO } from "@/lib/booking-dto";
 import { RefundDecision } from "@/components/RefundDecision";
 import { bookingPackageGrandTotal } from "@/lib/booking-invoice";
+import { AdminBookings } from "@/components/AdminBookings";
 
 type QueueItem = {
   id: string;
@@ -46,7 +47,8 @@ type UserRow = {
 };
 
 type Totals = { owners: number; travellers: number; admins: number; pendingListings: number; cancellations: number };
-type Section = "owners" | "listings" | "cancellations";
+type BookingTotals = { all: number; unread: number };
+type Section = "owners" | "listings" | "bookings" | "cancellations";
 
 const KIND_FILTERS: { id: ListingKind; label: string }[] = [
   { id: "STAY", label: "Hotels" },
@@ -201,6 +203,7 @@ export default function AdminPage() {
   const [booted, setBooted] = useState(false);
   const [loadError, setLoadError] = useState("");
   const [totals, setTotals] = useState<Totals>({ owners: 0, travellers: 0, admins: 0, pendingListings: 0, cancellations: 0 });
+  const [bookingTotals, setBookingTotals] = useState<BookingTotals>({ all: 0, unread: 0 });
 
   // Owners / users directory
   const [role, setRole] = useState<"OWNER" | "TRAVELER" | "all">("OWNER");
@@ -271,6 +274,17 @@ export default function AdminPage() {
     setQueueLoading(false);
   }, [tab]);
 
+  const loadBookingTotals = useCallback(async () => {
+    try {
+      const d = await readJson<{ totals?: { all: number; unread: number }; error?: string }>(
+        await fetch("/api/admin/bookings?bucket=all", { cache: "no-store" }),
+      );
+      if (d?.totals) setBookingTotals({ all: d.totals.all, unread: d.totals.unread });
+    } catch {
+      /* the badge simply stays at zero */
+    }
+  }, []);
+
   const loadCancellations = useCallback(async () => {
     setCancelLoading(true);
     try {
@@ -302,7 +316,8 @@ export default function AdminPage() {
 
   useEffect(() => {
     if (isAdmin && section === "cancellations") void loadCancellations();
-  }, [isAdmin, section, loadCancellations]);
+    if (isAdmin) void loadBookingTotals();
+  }, [isAdmin, section, loadCancellations, loadBookingTotals]);
 
   useEffect(() => {
     if (isAdmin && selectedId) void loadDetail(selectedId);
@@ -369,7 +384,7 @@ export default function AdminPage() {
 
   if (!isAdmin) {
     return (
-      <div className="mx-auto max-w-lg px-5 py-20">
+      <div className="mx-auto max-w-lg px-4 sm:px-5 py-20">
         <h1 className="font-display text-4xl">Admin only</h1>
         <p className="mt-3 text-mist">Sign in with the admin account to manage owners and approve listings.</p>
         <Link href="/login?callbackUrl=/admin" className="btn-primary mt-6 inline-flex">
@@ -393,15 +408,17 @@ export default function AdminPage() {
   const selected = users.find((u) => u.id === selectedId);
 
   return (
-    <div className="mx-auto max-w-6xl px-5 py-8">
+    <div className={`mx-auto px-5 py-8 ${section === "bookings" ? "max-w-[88rem]" : "max-w-6xl"}`}>
       <LoaderOverlay show={Boolean(overlay)} label={overlay ?? "Updating"} />
       <p className="text-[11px] uppercase tracking-[0.3em] text-brass">Admin</p>
       <h1 className="font-display mt-1 text-3xl">Dashboard</h1>
 
-      <div className="mt-4 grid grid-cols-2 gap-3 lg:grid-cols-4">
+      <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-6">
         {stat("Partners", totals.owners, () => { setSection("owners"); setRole("OWNER"); })}
         {stat("Travellers", totals.travellers, () => { setSection("owners"); setRole("TRAVELER"); })}
         {stat("Pending listings", totals.pendingListings, () => { setSection("listings"); setTab("pending"); }, true)}
+        {stat("Bookings", bookingTotals.all, () => setSection("bookings"))}
+        {stat("Unread messages", bookingTotals.unread, () => setSection("bookings"), true)}
         {stat("Cancellation requests", totals.cancellations, () => setSection("cancellations"), true)}
       </div>
 
@@ -410,6 +427,7 @@ export default function AdminPage() {
           [
             ["owners", "Owners & users"],
             ["listings", "Listing approvals"],
+            ["bookings", "Bookings & messages"],
             ["cancellations", "Cancellations"],
           ] as const
         ).map(([id, label]) => (
@@ -417,6 +435,9 @@ export default function AdminPage() {
             {label}
             {id === "listings" && totals.pendingListings > 0 && (
               <span className="ml-1.5 rounded-full bg-amber-500 px-1.5 py-0.5 text-[10px] font-semibold text-ink">{totals.pendingListings}</span>
+            )}
+            {id === "bookings" && bookingTotals.unread > 0 && (
+              <span className="ml-1.5 rounded-full bg-flame px-1.5 py-0.5 text-[10px] font-semibold text-ink">{bookingTotals.unread}</span>
             )}
             {id === "cancellations" && totals.cancellations > 0 && (
               <span className="ml-1.5 rounded-full bg-rose px-1.5 py-0.5 text-[10px] font-semibold text-bone">{totals.cancellations}</span>
@@ -637,6 +658,17 @@ export default function AdminPage() {
                 ))}
               </div>
             </LoadingVeil>
+          </div>
+        </div>
+      )}
+
+      {section === "bookings" && (
+        <div className="mt-5">
+          <p className="text-xs text-mist">
+            Every booking on HolyDays — what was paid, what was emailed, and the full conversation. Reply as HolyDays support, or cancel a booking at any time.
+          </p>
+          <div className="mt-3">
+            <AdminBookings onBusy={setOverlay} />
           </div>
         </div>
       )}

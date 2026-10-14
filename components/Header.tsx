@@ -74,10 +74,13 @@ function HeaderBar() {
     { href: "/food", label: t.dining, icon: TableIcon },
   ];
 
+  const mobileNav = isAdmin ? [] : isOwner ? ownerNav : guestNav;
+
   return (
+    <>
     <header className="sticky top-0 z-50 border-b border-brass/20 bg-ink/95 backdrop-blur-md">
-      <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-2 md:px-5">
-        <Link href={isAdmin ? "/admin" : isOwner ? "/owner" : "/"} className="flex min-w-0 shrink items-center gap-2">
+      <div className="mx-auto flex max-w-7xl items-center justify-between gap-1 px-3 py-2 sm:gap-3 sm:px-4 md:px-5">
+        <Link href={isAdmin ? "/admin" : isOwner ? "/owner" : "/"} className="flex shrink-0 items-center gap-2">
           <BrandLogo size="sm" />
           {isAdmin ? (
             <span className="hidden text-[11px] uppercase tracking-[0.2em] text-brass sm:inline">Admin</span>
@@ -96,7 +99,7 @@ function HeaderBar() {
             </Link>
           </nav>
         ) : isOwner ? (
-          <nav className="flex flex-1 items-center justify-center gap-0.5">
+          <nav className="hidden min-w-0 flex-1 items-center justify-center gap-0.5 sm:flex">
             {ownerNav.map((n) => {
               const Icon = n.icon;
               const unread = n.href.includes("tab=messages") ? inbox.unread : 0;
@@ -112,7 +115,7 @@ function HeaderBar() {
             })}
           </nav>
         ) : (
-          <nav className="flex flex-1 items-center justify-center gap-0.5">
+          <nav className="hidden min-w-0 flex-1 items-center justify-center gap-0.5 sm:flex">
             {guestNav.map((n) => {
               const Icon = n.icon;
               const active = n.href === "/search" ? path.startsWith("/search") || path.startsWith("/stay") : path.startsWith(n.href);
@@ -126,11 +129,11 @@ function HeaderBar() {
           </nav>
         )}
 
-        <div className="flex items-center gap-1 sm:gap-2">
+        <div className="flex shrink-0 items-center gap-0.5 sm:gap-2">
           <button
             type="button"
             onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-            className="rounded-xl p-2 text-mist hover:bg-brass/10 hover:text-sand"
+            className="rounded-xl p-1.5 text-mist hover:bg-brass/10 hover:text-sand sm:p-2"
             aria-label={theme === "dark" ? "Switch to light theme" : "Switch to dark theme"}
             title={theme === "dark" ? "Light" : "Dark"}
           >
@@ -139,7 +142,7 @@ function HeaderBar() {
           <select
             value={currency}
             onChange={(e) => setCurrency(e.target.value as typeof currency)}
-            className="rounded-xl border-0 bg-transparent px-1.5 py-2 text-xs tracking-[0.12em] text-sand/90 hover:bg-brass/10"
+            className="rounded-xl border-0 bg-transparent px-0.5 py-2 text-[11px] tracking-normal text-sand/90 hover:bg-brass/10 sm:px-1.5 sm:text-xs sm:tracking-[0.12em]"
             aria-label="Currency"
             title="Display currency"
           >
@@ -152,7 +155,7 @@ function HeaderBar() {
           {!isOwner && !isAdmin && status === "authenticated" && (
             <Link
               href={inbox.unread && inbox.href ? inbox.href : "/trips"}
-              className="relative rounded-xl p-2 text-mist hover:bg-brass/10 hover:text-sand"
+              className="relative rounded-xl p-1.5 text-mist hover:bg-brass/10 hover:text-sand sm:p-2"
               aria-label="Messages"
             >
               <ChatIcon className="h-5 w-5" />
@@ -160,7 +163,7 @@ function HeaderBar() {
             </Link>
           )}
           {!isOwner && !isAdmin && (
-            <Link href="/trips" className="relative rounded-xl p-2 text-mist hover:bg-brass/10 hover:text-sand" aria-label={t.trips}>
+            <Link href="/trips" className="relative rounded-xl p-1.5 text-mist hover:bg-brass/10 hover:text-sand sm:p-2" aria-label={t.trips}>
               <HeartIcon className="h-5 w-5" />
               {wishlist.length > 0 && (
                 <span className="absolute right-0.5 top-0.5 h-4 min-w-4 rounded-full bg-rose px-1 text-center text-[10px] leading-4 text-bone">
@@ -180,6 +183,44 @@ function HeaderBar() {
         </div>
       </div>
     </header>
+
+    {/* Phones: the four marketplaces live in a thumb-reachable bar so the header keeps the logo and account. */}
+    {mobileNav.length > 0 && (
+      <nav className="fixed inset-x-0 bottom-0 z-50 border-t border-brass/25 bg-ink/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-md sm:hidden">
+        <ul className="mx-auto flex max-w-lg items-stretch">
+          {mobileNav.map((n) => {
+            const Icon = n.icon;
+            const active =
+              "active" in n
+                ? Boolean(n.active)
+                : n.href === "/search"
+                  ? path.startsWith("/search") || path.startsWith("/stay")
+                  : path.startsWith(n.href);
+            const unread = n.href.includes("tab=messages") ? inbox.unread : 0;
+            return (
+              <li key={n.href} className="flex-1">
+                <Link
+                  href={n.href}
+                  scroll={isOwner ? n.href.startsWith("/owner") : true}
+                  onClick={isOwner ? go(n.href) : undefined}
+                  aria-current={active ? "page" : undefined}
+                  className={`flex flex-col items-center gap-0.5 px-1 py-2 text-[10px] leading-tight ${
+                    active ? "text-brass" : "text-mist"
+                  }`}
+                >
+                  <span className="relative">
+                    <Icon className="h-5 w-5" />
+                    {unread > 0 ? <UnreadBadge count={unread} /> : null}
+                  </span>
+                  <span className="w-full truncate text-center">{n.label}</span>
+                </Link>
+              </li>
+            );
+          })}
+        </ul>
+      </nav>
+    )}
+    </>
   );
 }
 

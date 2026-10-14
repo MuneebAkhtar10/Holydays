@@ -3,11 +3,11 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useMemo, useState, type ReactNode } from "react";
-import { datesInclusive, formatDay } from "@/lib/format";
+import { datesInclusive, formatDay, formatTime } from "@/lib/format";
 import { useSerai } from "@/lib/store";
 import { airportLabelOf, airportPickupTitle, taxisFor, tripTitle, type PackageTaxi, type PilgrimCountry, type TaxiPick } from "@/lib/package-plan";
 import { airportForCity, pilgrimAirports } from "@/lib/pilgrim";
-import { ChevronIcon } from "@/components/icons";
+import { CheckIcon, ChevronIcon, PlusIcon } from "@/components/icons";
 import { ZoomableImage } from "@/components/ZoomableImage";
 import { TaxiPhotos, taxiCarPhotos } from "@/components/TaxiPhotos";
 
@@ -18,6 +18,9 @@ function routeKey(t: PackageTaxi) {
 function newSlotId() {
   return `trip-${Math.random().toString(36).slice(2, 10)}`;
 }
+
+/** Half-hour times for airport pick-ups and drop-offs, the whole day. */
+const TIME_SLOTS = Array.from({ length: 48 }, (_, i) => `${String(Math.floor(i / 2)).padStart(2, "0")}:${i % 2 ? "30" : "00"}`);
 
 type RouteGroup = {
   key: string;
@@ -89,17 +92,18 @@ function groupRoutes(items: PackageTaxi[]): RouteGroup[] {
   return [...map.values()];
 }
 
-function Stage({ n, label, active, done }: { n: number; label: string; active: boolean; done: boolean }) {
+function Stage({ n, label, active, done, last }: { n: number; label: string; active: boolean; done: boolean; last?: boolean }) {
   return (
-    <li className={`flex items-center gap-2 text-[11px] uppercase tracking-[0.14em] ${active ? "text-sand" : "text-mist"}`}>
+    <li className={`flex flex-1 items-center gap-2 text-[11px] uppercase tracking-[0.12em] ${active ? "text-sand" : "text-mist"}`}>
       <span
-        className={`grid h-6 w-6 place-items-center rounded-full text-[11px] ${
-          active ? "bg-flame text-ink" : done ? "bg-flame/20 text-sand" : "bg-sand/5 text-mist"
+        className={`grid h-6 w-6 shrink-0 place-items-center rounded-full text-[11px] font-bold ${
+          active ? "bg-flame text-ink" : done ? "bg-flame/25 text-sand" : "bg-sand/[0.06] text-mist"
         }`}
       >
-        {done && !active ? "✓" : n}
+        {done && !active ? <CheckIcon className="h-3 w-3" /> : n}
       </span>
-      {label}
+      <span className="whitespace-nowrap">{label}</span>
+      {!last ? <span className={`hidden h-px flex-1 sm:block ${done ? "bg-flame/30" : "bg-sand/10"}`} /> : null}
     </li>
   );
 }
@@ -167,6 +171,7 @@ function TripComposer({
   const [infoRoute, setInfoRoute] = useState<string | null>(null);
   const [infoCar, setInfoCar] = useState<string | null>(null);
   const [pendingDate, setPendingDate] = useState<string | null>(null);
+  const [time, setTime] = useState("");
 
   const firstDay = days[0] || start;
   const lastDay = days[days.length - 1] || end;
@@ -179,6 +184,7 @@ function TripComposer({
     setRouteId(null);
     setDate(suggestedDay(airportLeg));
     setPendingDate(null);
+    setTime("");
     setInfoRoute(null);
     setInfoCar(null);
     setDraft("route");
@@ -199,6 +205,7 @@ function TripComposer({
       seats: t.seats,
       mode: "private",
       date: date || start,
+      time: airport && time ? time : undefined,
       leg: route?.leg ?? airportLeg,
       hotelName: stayName,
     };
@@ -225,12 +232,15 @@ function TripComposer({
       <p className="mt-1 max-w-xl text-sm text-mist">{blurb}</p>
 
       {mine.length > 0 && (
-        <ul className="mt-4 space-y-2">
+        <ul className="mt-4 space-y-2.5">
           {mine.map((p) => {
             const t = items.find((x) => x.id === p.id);
             if (!t) return null;
             return (
-              <li key={p.slotId} className={`${card} flex items-center gap-3 p-3`}>
+              <li key={p.slotId} className={`${card} flex flex-wrap items-center gap-x-3 gap-y-2 p-3 sm:flex-nowrap`}>
+                <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-emerald-500/15 text-emerald-400">
+                  <CheckIcon className="h-3.5 w-3.5" />
+                </span>
                 <TaxiPhotos
                   driver={t.driver}
                   driverPhoto={t.driverPhoto}
@@ -240,17 +250,32 @@ function TripComposer({
                   cover={t.cover}
                   size="sm"
                 />
-                <div className="min-w-0 flex-1">
+                <div className="min-w-0 flex-1 basis-full sm:basis-auto">
                   <p className="font-display truncate text-lg leading-tight">
                     {airport && stayName ? airportPickupTitle(t, stayName, p.leg === "out" ? "out" : "in") : tripTitle(t)}
                   </p>
-                  <p className="text-sm text-mist">
-                    {formatDay(p.date)} · {t.driver} · {t.vehicle}
+                  <p className="mt-0.5 flex flex-wrap items-center gap-x-1.5 text-sm text-mist">
+                    <span className="font-semibold text-sand">
+                      {formatDay(p.date)}
+                      {p.time ? ` · ${formatTime(p.time)}` : ""}
+                    </span>
+                    <span className="text-brass/50">·</span>
+                    <span className="truncate">
+                      {t.driver} · {t.vehicle}
+                    </span>
                   </p>
                 </div>
-                <p className="text-sm text-sand">{money(t.privateRate)}</p>
-                <button type="button" className="text-xs text-mist underline" onClick={() => setMine(mine.filter((x) => x.slotId !== p.slotId))}>
-                  Remove
+                <p className="ml-auto shrink-0 font-display text-lg leading-none text-sand sm:ml-0">{money(t.privateRate)}</p>
+                <button
+                  type="button"
+                  aria-label="Remove this trip"
+                  title="Remove this trip"
+                  className="grid h-7 w-7 shrink-0 place-items-center rounded-full text-mist ring-1 ring-sand/15 transition-colors hover:bg-rose/15 hover:text-rose hover:ring-rose/40"
+                  onClick={() => setMine(mine.filter((x) => x.slotId !== p.slotId))}
+                >
+                  <svg viewBox="0 0 12 12" className="h-3 w-3" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden>
+                    <path d="M2.5 2.5l7 7M9.5 2.5l-7 7" />
+                  </svg>
                 </button>
               </li>
             );
@@ -260,10 +285,10 @@ function TripComposer({
 
       {draft && (
         <div className={`${card} mt-5 p-4 md:p-5`}>
-          <ol className="flex flex-wrap gap-5">
-            <Stage n={1} label="Trip" active={draft === "route"} done={Boolean(route)} />
-            <Stage n={2} label="Date" active={draft === "date"} done={draft === "vehicle"} />
-            <Stage n={3} label="Vehicle" active={draft === "vehicle"} done={false} />
+          <ol className="flex flex-wrap items-center gap-x-3 gap-y-2">
+            <Stage n={1} label={airport ? "Route" : "Trip"} active={draft === "route"} done={Boolean(route)} />
+            <Stage n={2} label={airport ? "Day & time" : "Date"} active={draft === "date"} done={draft === "vehicle"} />
+            <Stage n={3} label="Vehicle" active={draft === "vehicle"} done={false} last />
           </ol>
 
           {draft === "route" && (
@@ -271,7 +296,7 @@ function TripComposer({
               <p className="text-sm text-mist">Choose one trip. You will pick a date and vehicle next.</p>
               {routes.map((r) => (
                 <article key={r.key} className={nest}>
-                  <div className="flex flex-wrap gap-3">
+                  <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
                     {r.drivers[0] ? (
                       <TaxiPhotos
                         driver={r.drivers[0].driver}
@@ -287,7 +312,7 @@ function TripComposer({
                         <Image src={r.cover} alt="" fill className="object-cover" />
                       </div>
                     )}
-                    <div className="min-w-0 flex-1">
+                    <div className="min-w-0 flex-1 sm:min-w-[10rem]">
                       <p className="font-display text-lg leading-tight">{r.title}</p>
                       <p className="mt-1 text-sm text-mist">
                         {r.drivers.length} vehicle{r.drivers.length === 1 ? "" : "s"} · from {money(r.from)}
@@ -311,7 +336,7 @@ function TripComposer({
                     </div>
                     <button
                       type="button"
-                      className="btn-primary self-start rounded-full px-4 py-2 text-[11px] uppercase tracking-[0.12em]"
+                      className="btn-primary w-full rounded-full px-4 py-2 text-[11px] uppercase tracking-[0.12em] sm:w-auto sm:self-start"
                       onClick={() => {
                         setRouteId(r.key);
                         setDate(suggestedDay(r.leg ?? airportLeg));
@@ -377,8 +402,33 @@ function TripComposer({
                   </div>
                 </div>
               ) : null}
-              <button type="button" className="btn-primary mt-4 rounded-full" disabled={!date || Boolean(pendingDate)} onClick={() => setDraft("vehicle")}>
-                Continue to vehicles
+              {airport && (
+                <div className="mt-5 max-w-xs">
+                  <label className="auth-label">
+                    {(route.leg ?? airportLeg) === "out" ? "Pick-up time at your hotel" : "Pick-up time at the airport"}
+                    <select className="auth-field" value={time} onChange={(e) => setTime(e.target.value)}>
+                      <option value="">Select a time</option>
+                      {TIME_SLOTS.map((t) => (
+                        <option key={t} value={t}>
+                          {formatTime(t)}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <p className="mt-1 text-xs text-mist">
+                    {(route.leg ?? airportLeg) === "out"
+                      ? "When the car should collect you, leaving enough time before your flight."
+                      : "Use your flight's landing time. The driver waits for you at arrivals."}
+                  </p>
+                </div>
+              )}
+              <button
+                type="button"
+                className="btn-primary mt-4 rounded-full"
+                disabled={!date || Boolean(pendingDate) || (airport && !time)}
+                onClick={() => setDraft("vehicle")}
+              >
+                {airport && !time ? "Choose a time to continue" : "Continue to vehicles"}
               </button>
             </div>
           )}
@@ -389,11 +439,14 @@ function TripComposer({
                 ← Change date
               </button>
               <p className="font-display mt-2 text-2xl">{route.title}</p>
-              <p className="text-sm text-mist">{formatDay(date)} · choose one private car</p>
+              <p className="text-sm text-mist">
+                {formatDay(date)}
+                {airport && time ? ` at ${formatTime(time)}` : ""} · choose one private car
+              </p>
               <div className="mt-3 space-y-3">
                 {route.drivers.map((t) => (
                   <article key={t.id} className={nest}>
-                    <div className="flex flex-wrap gap-3">
+                    <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
                       <TaxiPhotos
                         driver={t.driver}
                         driverPhoto={t.driverPhoto}
@@ -403,7 +456,7 @@ function TripComposer({
                         cover={t.cover}
                         size="lg"
                       />
-                      <div className="min-w-0 flex-1">
+                      <div className="min-w-0 flex-1 sm:min-w-[10rem]">
                         <p className="font-medium">{t.driver}</p>
                         <p className="text-sm text-mist">
                           {t.vehicle}
@@ -438,7 +491,7 @@ function TripComposer({
                       </div>
                       <button
                         type="button"
-                        className="btn-primary self-start rounded-full px-4 py-2 text-[11px] uppercase tracking-[0.12em]"
+                        className="btn-primary w-full rounded-full px-4 py-2 text-[11px] uppercase tracking-[0.12em] sm:w-auto sm:self-start"
                         onClick={() => confirmVehicle(t)}
                       >
                         Use this car
@@ -457,7 +510,14 @@ function TripComposer({
       )}
 
       {!draft && (
-        <button type="button" className="btn-ghost mt-4 w-full rounded-2xl py-3.5 text-sm" onClick={begin}>
+        <button
+          type="button"
+          className="mt-4 flex w-full items-center justify-center gap-2 rounded-2xl border border-dashed border-brass/35 bg-sand/[0.02] py-4 text-sm font-semibold text-sand transition-colors hover:border-brass/60 hover:bg-flame/[0.06]"
+          onClick={begin}
+        >
+          <span className="grid h-5 w-5 place-items-center rounded-full bg-flame/20 text-brass">
+            <PlusIcon className="h-3 w-3" />
+          </span>
           {mine.length ? addLabel : "Choose a trip"}
         </button>
       )}

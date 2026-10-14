@@ -60,3 +60,49 @@ export async function fetchOwnerBookings(ownerId: string): Promise<OwnerBookingR
     ORDER BY b.startDate DESC, b.createdAt DESC
   `;
 }
+
+
+export type AdminBookingRow = OwnerBookingRow & {
+  ownerId: string;
+  ownerName: string;
+  ownerEmail: string;
+};
+
+/** Every booking on the marketplace, newest first — the admin desk sees all partners at once. */
+export async function fetchAllBookings(): Promise<AdminBookingRow[]> {
+  return prisma.$queryRaw<AdminBookingRow[]>`
+    SELECT
+      b.id AS id,
+      b.startDate AS "startDate",
+      b.endDate AS "endDate",
+      b.guests AS guests,
+      b.phone AS phone,
+      b.total AS total,
+      b.status AS status,
+      b.payment AS payment,
+      b.createdAt AS "createdAt",
+      l.id AS "listingId",
+      l.name AS "listingName",
+      l.slug AS slug,
+      l.kind AS kind,
+      l.city AS city,
+      l.cover AS cover,
+      l.region AS region,
+      l.meta AS "listingMeta",
+      b.userId AS "userId",
+      u.name AS "guestName",
+      u.email AS "guestEmail",
+      o.id AS "ownerId",
+      o.name AS "ownerName",
+      o.email AS "ownerEmail",
+      b.extras AS extras,
+      r.rating AS "reviewRating",
+      r.body AS "reviewBody"
+    FROM Booking b
+    INNER JOIN Listing l ON l.id = b.listingId
+    INNER JOIN "user" u ON u.id = b.userId
+    INNER JOIN "user" o ON o.id = l.ownerId
+    LEFT JOIN Review r ON r.listingId = l.id AND r.userId = b.userId
+    ORDER BY b.createdAt DESC
+  `;
+}

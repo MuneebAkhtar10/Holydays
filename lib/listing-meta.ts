@@ -496,3 +496,10 @@ export function encodeStayMeta(body: Record<string, unknown>, fallback?: Partial
   });
   return JSON.stringify(meta);
 }
+
+/** The "from" price of a hotel is its cheapest room, so the listing card, search and the booking page always agree. */
+export function lowestRoomPrice(meta: unknown): number | null {
+  const rooms = parseListingMeta(meta as never).rooms;
+  const prices = rooms.map((r) => Number(r.price)).filter((n) => Number.isFinite(n) && n > 0);
+  return prices.length ? Math.min(...prices) : null;
+}

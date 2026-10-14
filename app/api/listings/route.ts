@@ -4,7 +4,7 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { withReviewStats } from "@/lib/moderation";
 import { fetchListingsForOwner, fetchPublicListings, fetchReviewStatsMap } from "@/lib/listing-query";
-import { encodeStayMeta, parseListingMeta } from "@/lib/listing-meta";
+import { lowestRoomPrice, encodeStayMeta, parseListingMeta } from "@/lib/listing-meta";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -119,7 +119,7 @@ export async function POST(req: Request) {
         region: String(body.region ?? ""),
         cover: String(body.cover || "/images/hero-hunza-dusk.png"),
         description: String(body.description ?? ""),
-        price: Number(body.price) || 0,
+        price: kind === "STAY" ? lowestRoomPrice(meta) ?? (Number(body.price) || 0) : Number(body.price) || 0,
         priceUnit: String(body.priceUnit || "night"),
         published: false,
         meta,

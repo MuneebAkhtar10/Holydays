@@ -18,7 +18,7 @@ const keys = [
 
 export default function CirclePage() {
   return (
-    <div className="mx-auto max-w-5xl px-5 py-20">
+    <div className="mx-auto max-w-5xl px-4 sm:px-5 py-12 sm:py-20">
       <p className="text-[11px] uppercase tracking-[0.3em] text-brass">Serai Circle</p>
       <h1 className="font-display mt-3 text-6xl">Three keys.</h1>
       <p className="mt-4 max-w-xl text-mist">

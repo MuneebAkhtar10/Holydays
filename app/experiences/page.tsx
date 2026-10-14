@@ -4,7 +4,7 @@ import { Money } from "@/components/Money";
 
 export default function ExperiencesPage() {
   return (
-    <div className="mx-auto max-w-6xl px-5 py-16">
+    <div className="mx-auto max-w-6xl px-4 sm:px-5 py-10 sm:py-16">
       <p className="text-[11px] uppercase tracking-[0.3em] text-brass">Beyond the bed</p>
       <h1 className="font-display mt-2 text-5xl">Experiences</h1>
       <p className="mt-3 max-w-xl text-mist">Fold these into a stay at checkout, or collect them like stamps.</p>

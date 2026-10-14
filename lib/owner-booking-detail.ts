@@ -51,7 +51,7 @@ export type OwnerDetail = {
     hotels: { name: string; city: string; checkin: string; checkout: string }[];
     meals: { breakfast: number; lunch: number; dinner: number };
     ziyarat: string[];
-    transfers: { label: string; date: string; mode: string }[];
+    transfers: { label: string; date: string; time: string; mode: string }[];
     insurance: boolean;
     esim: number;
   };
@@ -225,6 +225,7 @@ export function buildOwnerDetail(row: OwnerBookingRow): OwnerDetail {
             return {
               label: `${leg}: ${info ? `${info.origin} to ${info.destination}` : t.id}`,
               date: t.date,
+              time: t.time ?? "",
               mode: t.mode === "private" ? "Private vehicle" : `${t.seats} seat${t.seats === 1 ? "" : "s"} shared`,
             };
           }),

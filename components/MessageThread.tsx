@@ -31,6 +31,9 @@ export function MessageThread({
                 mine ? "rounded-br-sm bg-flame/25 text-sand" : "rounded-bl-sm bg-sand/10 text-sand"
               }`}
             >
+              {m.by === "admin" ? (
+                <p className="mb-1 text-[10px] font-semibold uppercase tracking-[0.1em] text-brass">HolyDays support</p>
+              ) : null}
               <p className="whitespace-pre-wrap leading-relaxed">{m.message}</p>
               <p className={`mt-1 text-[10px] tracking-[0.04em] ${mine ? "text-brass" : "text-mist"}`}>
                 {m.at
