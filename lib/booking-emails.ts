@@ -1,7 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { toBookingDTO, type BookingDTO } from "@/lib/booking-dto";
 import { bookingInvoiceBreakdown, bookingIsPaid, bookingPackageGrandTotal, bookingPackageHotelNames } from "@/lib/booking-invoice";
-import { formatPKR, formatTime, nightsBetween } from "@/lib/format";
+import { formatTime, nightsBetween } from "@/lib/format";
 import { bookingCurrency, formatMoney } from "@/lib/currency";
 import { guideAmount } from "@/lib/trip-total";
 
@@ -47,7 +47,7 @@ function shortDay(iso: string) {
 }
 
 type Visit = { days: number; guests: number; rate: number; unit: string; guideFee?: number; guideUnit?: string; free: boolean };
-/** A multi-day Ziyarat plan: number of days, and whether it costs nothing. */
+/** A multi-day Ziyarah plan: number of days, and whether it costs nothing. */
 const visitOf = (b: BookingDTO) => (b.extra.visit && typeof b.extra.visit === "object" ? (b.extra.visit as Visit) : null);
 
 function paymentLabel(b: BookingDTO) {
@@ -442,7 +442,7 @@ export function cancellationDecisionEmail(b: BookingDTO, origin: string, approve
 
 export type ProviderItem = { label: string; type: string; when: string; detail?: string; amount?: number };
 
-/** Sent to a hotel / Ziyarat / taxi / food partner when a guest's booking against their listing is made. */
+/** Sent to a hotel / Ziyarah / taxi / food partner when a guest's booking against their listing is made. */
 export function ownerBookingEmail(input: {
   ownerName: string;
   origin: string;
@@ -469,7 +469,7 @@ export function ownerBookingEmail(input: {
         ["Listing", it.label],
         ["When", it.when],
         ["Details", it.detail ?? ""],
-        ["Your amount", it.amount && it.amount > 0 ? formatPKR(it.amount) : ""],
+        ["Your amount", it.amount && it.amount > 0 ? formatMoney(it.amount, "USD") : ""],
       ])}`,
     )
     .join("");

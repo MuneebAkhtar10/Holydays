@@ -621,7 +621,7 @@ export function DayTripsStep({
       title={title || "Day trips"}
       blurb={
         blurb ||
-        "Add one Ziyarat at a time. Choose the trip, the day it should run, then the driver and vehicle. If the trip ends in another city, we will ask whether you need a hotel there."
+        "Add one Ziyarah at a time. Choose the trip, the day it should run, then the driver and vehicle. If the trip ends in another city, we will ask whether you need a hotel there."
       }
       addLabel="Add another day trip"
       items={items}

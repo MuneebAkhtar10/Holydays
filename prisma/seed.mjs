@@ -26,7 +26,7 @@ const taxis = [
     region: "Iraq",
     cover: "/images/stay-truck-art.png",
     price: 3500,
-    description: "Shared HiAce from your Najaf hotel to Kufa. Stops are timed around Ziyarat, not a sightseeing loop.",
+    description: "Shared HiAce from your Najaf hotel to Kufa. Stops are timed around Ziyarah, not a sightseeing loop.",
     extra: {
       country: "IQ",
       driver: "Hajj Kazim al-Najafi",
@@ -41,7 +41,7 @@ const taxis = [
       routeCities: ["Najaf", "Kufa"],
       itinerary: [
         { time: "07:30", place: "Hotel pickup, Najaf", note: "Driver waits at reception" },
-        { time: "08:15", place: "Masjid al-Kufa", note: "Main courtyard and Ziyarat" },
+        { time: "08:15", place: "Masjid al-Kufa", note: "Main courtyard and Ziyarah" },
         { time: "09:45", place: "Muslim ibn Aqeel", note: "Adjacent shrine" },
         { time: "10:30", place: "Hannana / Bayt Ali", note: "Short stop" },
         { time: "12:00", place: "Return to Najaf hotel", note: "Drop at the same hotel" },
@@ -71,7 +71,7 @@ const taxis = [
       routeCities: ["Karbala", "Kufa"],
       itinerary: [
         { time: "07:00", place: "Hotel pickup, Karbala", note: "Between the two harams or your hotel" },
-        { time: "08:40", place: "Masjid al-Kufa", note: "Ziyarat window" },
+        { time: "08:40", place: "Masjid al-Kufa", note: "Ziyarah window" },
         { time: "10:15", place: "Muslim ibn Aqeel", note: "Included in the same visit" },
         { time: "11:30", place: "Lunch stop, Kufa", note: "Optional, own expense" },
         { time: "14:00", place: "Return to Karbala hotel", note: "Same drop point" },
@@ -157,7 +157,7 @@ const taxis = [
       routeCities: ["Baghdad", "Kadhimiya", "Samarra"],
       itinerary: [
         { time: "07:00", place: "Hotel pickup, Baghdad", note: "" },
-        { time: "07:45", place: "Kadhimiya (Kazimayn)", note: "Morning Ziyarat" },
+        { time: "07:45", place: "Kadhimiya (Kazimayn)", note: "Morning Ziyarah" },
         { time: "11:00", place: "Road to Samarra", note: "If the route is open that day" },
         { time: "12:30", place: "Askari shrine, Samarra", note: "Time on site" },
         { time: "17:00", place: "Return to Baghdad hotel", note: "" },
@@ -187,7 +187,7 @@ const taxis = [
       routeCities: ["Mashhad", "Qom"],
       itinerary: [
         { time: "06:30", place: "Hotel pickup, Mashhad", note: "" },
-        { time: "14:00", place: "Hazrat Masumeh, Qom", note: "Haram Ziyarat" },
+        { time: "14:00", place: "Hazrat Masumeh, Qom", note: "Haram Ziyarah" },
         { time: "18:00", place: "Return toward Mashhad", note: "Or overnight drop in Qom if you book a hotel there" },
       ],
     },

@@ -74,10 +74,10 @@ async function createBooking(req: Request) {
   if (listing.kind === "TAXI" || listing.kind === "RESTAURANT") {
     endDate = startDate;
   }
-  // A Ziyarat plan can run for several days in a row (last day included).
+  // A Ziyarah plan can run for several days in a row (last day included).
   const visitDays = listing.kind === "ATTRACTION" ? inclusiveDays(startDate, endDate || startDate) : 1;
   if (listing.kind === "ATTRACTION" && visitDays > MAX_VISIT_DAYS) {
-    return NextResponse.json({ error: `A Ziyarat plan can cover up to ${MAX_VISIT_DAYS} days in one booking.` }, { status: 400 });
+    return NextResponse.json({ error: `A Ziyarah plan can cover up to ${MAX_VISIT_DAYS} days in one booking.` }, { status: 400 });
   }
   if (endDate && endDate < startDate) {
     return NextResponse.json({ error: "End date must be on or after the start date." }, { status: 400 });
@@ -250,7 +250,7 @@ async function createBooking(req: Request) {
     });
   }
   if (listing.kind === "ATTRACTION" && total <= 0) {
-    return NextResponse.json({ error: "This Ziyarat has no price set yet, so it cannot be booked." }, { status: 400 });
+    return NextResponse.json({ error: "This Ziyarah has no price set yet, so it cannot be booked." }, { status: 400 });
   }
   const method = String(body.payment ?? "property");
   const wantsCard = isCardPayment(method) && !customTaxi && total > 0;

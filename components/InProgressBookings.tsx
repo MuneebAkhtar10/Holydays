@@ -8,7 +8,7 @@ import { formatDay } from "@/lib/format";
 
 const KIND_LABEL: Record<DraftSummary["kind"], string> = {
   hotel: "Hotel booking",
-  ziyarat: "Ziyarat package",
+  ziyarat: "Ziyarah package",
   package: "Custom package",
 };
 

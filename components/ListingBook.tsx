@@ -105,7 +105,7 @@ function TaxiItinerary({ listing }: { listing: Listing }) {
         ))}
       </ol>
       <p className="mt-5 text-sm text-mist">
-        Shared {money(taxi.ratePerPerson)} / person · Private vehicle {money(taxi.privateRate)}. This is a one-day Ziyarat — pick the day on the right.
+        Shared {money(taxi.ratePerPerson)} / person · Private vehicle {money(taxi.privateRate)}. This is a one-day Ziyarah — pick the day on the right.
       </p>
     </div>
   );
@@ -816,7 +816,7 @@ export function ListingBook({ fallbackSlug }: { fallbackSlug?: string }) {
                   {lastDay !== start ? ` — ${formatDay(lastDay)}` : ""} · {visitDays} {visitDays === 1 ? "day" : "days"} · {guests} {guests === 1 ? "guest" : "guests"}
                 </p>
                 {unpriced ? (
-                  <p className="mt-1 text-mist">No price set yet, so this Ziyarat cannot be booked.</p>
+                  <p className="mt-1 text-mist">No price set yet, so this Ziyarah cannot be booked.</p>
                 ) : (
                   <>
                     <ul className="mt-2 space-y-1 text-xs text-mist">
@@ -851,7 +851,7 @@ export function ListingBook({ fallbackSlug }: { fallbackSlug?: string }) {
             {clash && (
               <p className="text-sm text-rose">
                 {ziyarat
-                  ? `You already have this Ziyarat on ${formatDay(clash.startDate)}${clash.endDate !== clash.startDate ? ` — ${formatDay(clash.endDate)}` : ""}. Pick other days or cancel that booking first.`
+                  ? `You already have this Ziyarah on ${formatDay(clash.startDate)}${clash.endDate !== clash.startDate ? ` — ${formatDay(clash.endDate)}` : ""}. Pick other days or cancel that booking first.`
                   : oneDay
                   ? `You already have this trip on ${formatDay(clash.startDate)}. Pick another day or cancel that booking first.`
                   : `Those dates overlap ${formatDay(clash.startDate)} — ${formatDay(clash.endDate)}. Change dates or cancel that booking first.`}

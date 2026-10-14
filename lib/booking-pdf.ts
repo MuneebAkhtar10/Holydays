@@ -63,8 +63,8 @@ class Sheet {
     const h = compact ? 46 : 74;
     this.page.drawRectangle({ x: 0, y: H - h, width: W, height: h, color: NAVY });
     this.page.drawText("HOLYDAYS", { x: M, y: H - h / 2 - 8, size: 22, font: this.serif, color: GOLD });
-    this.page.drawText("Hotels, Ziyarat and taxis for Saudi Arabia, Iraq and Iran", {
-      x: W - M - this.sans.widthOfTextAtSize("Hotels, Ziyarat and taxis for Saudi Arabia, Iraq and Iran", 7.5),
+    this.page.drawText("Hotels, Ziyarah and taxis for Saudi Arabia, Iraq and Iran", {
+      x: W - M - this.sans.widthOfTextAtSize("Hotels, Ziyarah and taxis for Saudi Arabia, Iraq and Iran", 7.5),
       y: H - h / 2 - 3,
       size: 7.5,
       font: this.sans,

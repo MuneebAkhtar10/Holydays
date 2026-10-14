@@ -37,7 +37,7 @@ export type OwnerDetail = {
   requests: string;
   reservation?: { time: string };
   taxiMode?: string;
-  /** Multi-day Ziyarat plan: days booked and the per-day rate. */
+  /** Multi-day Ziyarah plan: days booked and the per-day rate. */
   visit?: { days: number; guests: number; rate: number; unit: string; guideFee: number; guideUnit: string; free: boolean };
   paid: boolean;
   refundOutlook: RefundOutlook;
@@ -57,7 +57,7 @@ export type OwnerDetail = {
   };
 };
 
-const FLOW_LABEL: Record<string, string> = { ziyarat: "Ziyarat package", package: "Custom multi-city package" };
+const FLOW_LABEL: Record<string, string> = { ziyarat: "Ziyarah package", package: "Custom multi-city package" };
 
 /** Everything a partner needs to see about one booking: the exact rooms, the package type, and an itemised invoice for their own part. */
 export function buildOwnerDetail(row: OwnerBookingRow): OwnerDetail {

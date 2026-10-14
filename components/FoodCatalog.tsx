@@ -78,7 +78,7 @@ export function FoodCatalog() {
       <p className="font-urdu text-brass">کھانا</p>
       <h1 className="font-display mt-1 text-3xl">Food</h1>
       <p className="mt-1.5 max-w-xl text-sm text-mist">
-        Meals near the haram. Book food for your Ziyarat days, charged per meal or per person.
+        Meals near the haram. Book food for your Ziyarah days, charged per meal or per person.
       </p>
 
       <div className="mt-5 rounded-2xl border border-brass/30 bg-ink-2/70 p-3">

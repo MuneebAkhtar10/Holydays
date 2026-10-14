@@ -125,7 +125,7 @@ ${input.preheader ? `<div style="display:none;max-height:0;overflow:hidden;opaci
         You are receiving this email because of activity on your HolyDays account.
         Need help? Reply to this email or open your booking${origin ? ` at <a href="${esc(origin)}" style="color:${GOLD_DARK}">${esc(origin.replace(/^https?:\/\//, ""))}</a>` : ""}.
       </p>
-      <p style="margin:8px 0 0;font-family:${SANS};font-size:11px;color:#9aa6b5">Hotels, Ziyarat, and taxis for Saudi Arabia, Iraq, and Iran.</p>
+      <p style="margin:8px 0 0;font-family:${SANS};font-size:11px;color:#9aa6b5">Hotels, Ziyarah, and taxis for Saudi Arabia, Iraq, and Iran.</p>
     </td></tr>
   </tbody></table>
 </td></tr></tbody></table>

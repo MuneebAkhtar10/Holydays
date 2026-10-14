@@ -89,7 +89,7 @@ export function BookingPrint({ kind }: { kind: "invoice" | "receipt" | "voucher"
             <p>{booking.phone}</p>
           </div>
           <div>
-            <p className="uppercase tracking-widest text-[11px] text-ink/40">{isPackage ? "Ziyarat package" : "Property"}</p>
+            <p className="uppercase tracking-widest text-[11px] text-ink/40">{isPackage ? "Ziyarah package" : "Property"}</p>
             {isPackage ? (
               hotelNames.map((name) => <p key={name}>{name}</p>)
             ) : (
@@ -134,7 +134,7 @@ export function BookingPrint({ kind }: { kind: "invoice" | "receipt" | "voucher"
                 ))}
                 {breakdown.extras.length > 0 && (
                   <div>
-                    <p className="text-[11px] uppercase tracking-widest text-ink/40">Transfers & Ziyarat</p>
+                    <p className="text-[11px] uppercase tracking-widest text-ink/40">Transfers & Ziyarah</p>
                     <table className="mt-2 w-full text-sm">
                       <tbody>
                         {breakdown.extras.map((line) => (

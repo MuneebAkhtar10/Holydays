@@ -872,9 +872,9 @@ function CheckoutInner() {
         </div>
       ) : null}
       <div>
-        <p className="text-[11px] uppercase tracking-[0.3em] text-brass">{buildPackage ? "Package" : packageStay ? "Ziyarat package" : "Hotel"}</p>
+        <p className="text-[11px] uppercase tracking-[0.3em] text-brass">{buildPackage ? "Package" : packageStay ? "Ziyarah package" : "Hotel"}</p>
         <h1 className="font-display mt-1 text-3xl md:text-4xl">
-          {buildPackage && country ? `Preparing ${pilgrimCountryName(country)} Ziyarat package` : packageStay ? `${stay.name}` : "Confirm your hotel"}
+          {buildPackage && country ? `Preparing ${pilgrimCountryName(country)} Ziyarah package` : packageStay ? `${stay.name}` : "Confirm your hotel"}
         </h1>
         <p className="mt-1 text-sm text-mist">
           {packageStay && country

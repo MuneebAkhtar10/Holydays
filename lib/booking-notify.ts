@@ -218,8 +218,8 @@ const longDay = (iso: string) =>
 const payName = (m: string) => (m === "property" ? "Pay at the property" : m === "card" || m === "stripe" ? "Card" : m);
 
 /**
- * Tells every partner whose listing is part of a booking — the main hotel, extra hotels, Ziyarat and taxi
- * owners inside a package, or the restaurant / taxi / Ziyarat booked on its own. One email per partner.
+ * Tells every partner whose listing is part of a booking — the main hotel, extra hotels, Ziyarah and taxi
+ * owners inside a package, or the restaurant / taxi / Ziyarah booked on its own. One email per partner.
  * Never throws: email trouble must not undo a booking.
  */
 export async function notifyProvidersOfBooking(bookingId: string, opts: { pending?: boolean } = {}) {
@@ -291,7 +291,7 @@ export async function notifyProvidersOfBooking(bookingId: string, opts: { pendin
         const z = (pack.ziyarat ?? []).find((x) => x.id === zid);
         add(l?.owner, {
           label: l?.name ?? z?.name ?? zid,
-          type: "Ziyarat visit",
+          type: "Ziyarah visit",
           when: z?.hours ? `${z.hours} · during the stay in ${l?.city ?? z.city}` : `During the stay in ${l?.city ?? ""}`,
           detail: `${row.guests} guest${row.guests === 1 ? "" : "s"}`,
           amount: z ? z.price * Math.max(1, row.guests) : undefined,
@@ -333,7 +333,7 @@ export async function notifyProvidersOfBooking(bookingId: string, opts: { pendin
 }
 
 function kindLabelFor(kind: string) {
-  return kind === "STAY" ? "Hotel stay" : kind === "TAXI" ? "Taxi trip" : kind === "ATTRACTION" ? "Ziyarat visit" : kind === "RESTAURANT" ? "Table reservation" : "Booking";
+  return kind === "STAY" ? "Hotel stay" : kind === "TAXI" ? "Taxi trip" : kind === "ATTRACTION" ? "Ziyarah visit" : kind === "RESTAURANT" ? "Table reservation" : "Booking";
 }
 
 const CHAT_EMAIL_GAP_MS = 5 * 60 * 1000;

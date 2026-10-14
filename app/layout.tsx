@@ -19,7 +19,7 @@ const nastaliq = Noto_Nastaliq_Urdu({
 });
 
 export const metadata: Metadata = {
-  title: `${APP_NAME} — hotels for Ziyarat`,
+  title: `${APP_NAME} — hotels for Ziyarah`,
   description: APP_TAGLINE,
 };
 
@@ -31,10 +31,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeBoot }} />
       </head>
-      <body className="min-h-screen bg-ink text-sand antialiased">
+      <body className="flex min-h-screen flex-col bg-ink text-sand antialiased">
         <AppProviders>
           <Header />
-          <main className="relative z-0">{children}</main>
+          <main className="relative z-0 flex-1">{children}</main>
           <Footer />
         </AppProviders>
       </body>

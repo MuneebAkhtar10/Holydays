@@ -166,7 +166,7 @@ export default function TripsPage() {
                   ["all", "All types"],
                   ["STAY", "Hotels"],
                   ["TAXI", "Taxis"],
-                  ["ATTRACTION", "Ziyarat"],
+                  ["ATTRACTION", "Ziyarah"],
                   ["RESTAURANT", "Food"],
                 ] as const
               ).map(([id, label]) => (
@@ -238,7 +238,7 @@ export default function TripsPage() {
                                     {i < group.length - 1 && <span className="mx-1.5 text-brass/60">→</span>}
                                   </span>
                                 ))
-                              : `${primary.listing.name} · Ziyarat package`}
+                              : `${primary.listing.name} · Ziyarah package`}
                           </h3>
                           <p className="mt-0.5 text-sm text-mist">
                             {formatDay(tripStart)} — {formatDay(tripEnd)} · <span className="font-medium text-sand">{money(groupTotal)}</span>

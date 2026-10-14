@@ -23,7 +23,7 @@ type Booking = {
 
 const tiles = [
   { href: "/search", title: "Hotels", ur: "ہوٹل", icon: BedIcon, img: "/uploads/voco-makkah/480212714.jpg" },
-  { href: "/attractions", title: "Ziyarat", ur: "زیارت", icon: LandmarkIcon, img: "/images/home/mosque-night.jpg" },
+  { href: "/attractions", title: "Ziyarah", ur: "زیارت", icon: LandmarkIcon, img: "/images/home/mosque-night.jpg" },
   {
     href: "/taxis",
     title: "Taxis",
@@ -98,7 +98,7 @@ export function HomeDashboard() {
             {status === "authenticated" ? `Welcome back${first ? `, ${first}` : ""}` : "Find a hotel"}
           </h1>
           <p className="mt-2 max-w-xl text-mist">
-            Browse hotels, Ziyarat, and taxis in Saudi Arabia, Iraq, and Iran.
+            Browse hotels, Ziyarah, and taxis in Saudi Arabia, Iraq, and Iran.
           </p>
         </div>
         {status !== "authenticated" && (

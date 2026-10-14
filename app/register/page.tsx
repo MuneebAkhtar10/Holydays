@@ -11,7 +11,7 @@ import { readJson } from "@/lib/readJson";
 
 const kinds = [
   { id: "STAY", label: "Hotels (Saudi / Iraq / Iran)" },
-  { id: "ATTRACTION", label: "Ziyarat" },
+  { id: "ATTRACTION", label: "Ziyarah" },
   { id: "TAXI", label: "Taxi (routes & seats)" },
   { id: "RESTAURANT", label: "Food" },
 ];
@@ -77,7 +77,7 @@ function RegisterForm() {
       <LoaderOverlay show={Boolean(overlay)} label={overlay ?? "Updating"} />
       <BrandLogo size="md" className="mb-4" />
       <h1 className="font-display mt-2 text-4xl tracking-tight md:text-5xl">Register</h1>
-      <p className="mt-3 text-sm leading-relaxed text-mist">Travellers book. Partners list hotels, Ziyarat, taxis, or food.</p>
+      <p className="mt-3 text-sm leading-relaxed text-mist">Travellers book. Partners list hotels, Ziyarah, taxis, or food.</p>
       <div className="mt-7">
         <GoogleAuthButton
           google={google}

@@ -209,7 +209,7 @@ function parseStops(raw: unknown, fallbackCities: string[]): TripStop[] {
   return fallbackCities.map((place, i) => ({
     time: "",
     place,
-    note: i === 0 ? "Hotel pickup" : i === fallbackCities.length - 1 ? "Return / drop" : "Ziyarat stop",
+    note: i === 0 ? "Hotel pickup" : i === fallbackCities.length - 1 ? "Return / drop" : "Ziyarah stop",
   }));
 }
 
@@ -346,7 +346,7 @@ function transferAndZiyaratLines(input: {
     ...input.ziyaratIds
       .map((id) => input.ziyarat.find((z) => z.id === id))
       .filter((z): z is ZiyaratStop => Boolean(z))
-      .map((z) => ({ id: z.id, label: `Ziyarat · ${z.name}`, amount: z.price * Math.max(1, input.guests) })),
+      .map((z) => ({ id: z.id, label: `Ziyarah · ${z.name}`, amount: z.price * Math.max(1, input.guests) })),
   );
   for (const p of input.taxis) {
     const t = input.taxiList.find((x) => x.id === p.id);

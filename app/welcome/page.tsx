@@ -9,7 +9,7 @@ import { readJson } from "@/lib/readJson";
 
 const kinds = [
   { id: "STAY", label: "Hotels (Saudi / Iraq / Iran)" },
-  { id: "ATTRACTION", label: "Ziyarat" },
+  { id: "ATTRACTION", label: "Ziyarah" },
   { id: "TAXI", label: "Taxi (routes & seats)" },
   { id: "RESTAURANT", label: "Food" },
 ];
@@ -65,7 +65,7 @@ function WelcomeInner() {
           onClick={() => setAsOwner(false)}
         >
           <span className="block font-medium text-sand">Traveller</span>
-          <span className="block text-mist">Book hotels, taxis, Ziyarat, and food.</span>
+          <span className="block text-mist">Book hotels, taxis, Ziyarah, and food.</span>
         </button>
         <button
           type="button"
@@ -73,7 +73,7 @@ function WelcomeInner() {
           onClick={() => setAsOwner(true)}
         >
           <span className="block font-medium text-sand">Partner</span>
-          <span className="block text-mist">List hotels, Ziyarat, taxis, or food.</span>
+          <span className="block text-mist">List hotels, Ziyarah, taxis, or food.</span>
         </button>
       </div>
 

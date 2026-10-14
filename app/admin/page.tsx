@@ -50,7 +50,7 @@ type Section = "owners" | "listings" | "cancellations";
 
 const KIND_FILTERS: { id: ListingKind; label: string }[] = [
   { id: "STAY", label: "Hotels" },
-  { id: "ATTRACTION", label: "Ziyarat" },
+  { id: "ATTRACTION", label: "Ziyarah" },
   { id: "TAXI", label: "Taxis" },
   { id: "RESTAURANT", label: "Food" },
 ];

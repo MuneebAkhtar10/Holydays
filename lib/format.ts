@@ -24,7 +24,7 @@ export const inclusiveDays = (a: string, b: string) => {
   return Math.max(1, Math.round(ms / 86400000) + 1);
 };
 
-/** Longest multi-day Ziyarat plan we take as one booking. */
+/** Longest multi-day Ziyarah plan we take as one booking. */
 export const MAX_VISIT_DAYS = 14;
 
 export const datesInclusive = (start: string, end: string) => {

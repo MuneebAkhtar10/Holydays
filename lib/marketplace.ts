@@ -236,7 +236,7 @@ export const pilgrimStays: MarketItem[] = [
     city: "Qom",
     region: "Iran",
     cover: "/images/stay-orchard.png",
-    description: "Close to Hazrat Masumeh shrine. Quiet rooms for Ziyarat nights.",
+    description: "Close to Hazrat Masumeh shrine. Quiet rooms for Ziyarah nights.",
     price: 19800,
     priceUnit: "night",
     ownerEmail: "stay.owner@serai.pk",
@@ -297,7 +297,7 @@ export const unitLabel: Record<string, string> = {
 
 export const kindLabel: Record<ListingKind, string> = {
   STAY: "Hotel",
-  ATTRACTION: "Ziyarat",
+  ATTRACTION: "Ziyarah",
   TAXI: "Taxi",
   RESTAURANT: "Food",
 };

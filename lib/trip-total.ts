@@ -1,4 +1,4 @@
-/** One formula for taxi / Ziyarat / food bookings, used by the booking screen and the API so the card charge always matches what was shown. */
+/** One formula for taxi / Ziyarah / food bookings, used by the booking screen and the API so the card charge always matches what was shown. */
 export function independentTripTotal(input: {
   kind: string;
   price: number;
@@ -6,9 +6,9 @@ export function independentTripTotal(input: {
   guests: number;
   taxi?: { ratePerPerson: number; privateRate: number } | null;
   taxiMode?: string;
-  /** Ziyarat plans can run for several days; the price is per day. */
+  /** Ziyarah plans can run for several days; the price is per day. */
   days?: number;
-  /** Ziyarat guide fee per guest per day (PKR), on top of the visit price. */
+  /** Ziyarah guide fee per guest per day (PKR), on top of the visit price. */
   guideFee?: number;
   /** "group" charges the guide fee once per day for the whole party instead of per guest. */
   guideFeeUnit?: string;
@@ -25,7 +25,7 @@ export function independentTripTotal(input: {
   return (input.priceUnit === "person" ? price * guests : price) * days + guide;
 }
 
-/** The Ziyarat guide fee (PKR per guest per day) stored in a listing's meta, which may arrive as JSON text or an object. */
+/** The Ziyarah guide fee (PKR per guest per day) stored in a listing's meta, which may arrive as JSON text or an object. */
 export function guideFeeOf(meta: unknown) {
   let bag: unknown = meta;
   if (typeof meta === "string") {

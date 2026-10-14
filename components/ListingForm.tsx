@@ -509,14 +509,14 @@ export function ListingForm({
         }}
       >
         <div className="shrink-0">
-        <p className="text-[10px] uppercase tracking-[0.2em] text-ink/40">{stay ? "Hotel" : taxi ? "Taxi" : ziyarat ? "Ziyarat" : food ? "Food" : "Listing"}</p>
-        <h2 className={`font-display text-ink ${stay || food ? "mt-0.5 text-xl" : "mt-1 text-3xl"}`}>{initial?.id ? (food ? "Edit food listing" : "Edit listing") : stay ? "New hotel" : taxi ? "New taxi" : ziyarat ? "New Ziyarat" : food ? "New food listing" : "New listing"}</h2>
+        <p className="text-[10px] uppercase tracking-[0.2em] text-ink/40">{stay ? "Hotel" : taxi ? "Taxi" : ziyarat ? "Ziyarah" : food ? "Food" : "Listing"}</p>
+        <h2 className={`font-display text-ink ${stay || food ? "mt-0.5 text-xl" : "mt-1 text-3xl"}`}>{initial?.id ? (food ? "Edit food listing" : "Edit listing") : stay ? "New hotel" : taxi ? "New taxi" : ziyarat ? "New Ziyarah" : food ? "New food listing" : "New listing"}</h2>
         {!stay && (
           <p className={`text-ink/60 ${food ? "mt-1 text-[13px]" : "mt-2 text-sm"}`}>
             {taxi
               ? "Saudi, Iraq, or Iran only. Airport transfer is one taxi per airport: checkout fills the guest’s hotel. Day trips still pick from → to cities. Admin must approve before guests see it."
               : ziyarat
-                ? "Saudi, Iraq, or Iran only. This Ziyarat shows on hotel checkout for that country."
+                ? "Saudi, Iraq, or Iran only. This Ziyarah shows on hotel checkout for that country."
                 : food
                   ? "Meals near the haram in Saudi Arabia, Iraq, or Iran. Admin must approve before guests see it."
                   : "Saudi Arabia, Iraq, and Iran only."}
@@ -533,7 +533,7 @@ export function ListingForm({
         <>
         <div className={`grid gap-3 md:grid-cols-2 ${food ? "mt-3 lg:grid-cols-4" : "mt-4 lg:grid-cols-3"}`}>
         <label className="paper-label mt-0">
-          {taxi ? "Trip name" : ziyarat ? "Ziyarat name" : food ? "Food name" : "Property name"} <span className="text-red-500">*</span>
+          {taxi ? "Trip name" : ziyarat ? "Ziyarah name" : food ? "Food name" : "Property name"} <span className="text-red-500">*</span>
           <input className="paper-field" placeholder={taxi ? "Karbala → Kufa" : food ? "Chicken biryani & raita" : "Canal Breeze Studio"} value={form.name} onChange={(e) => set("name", e.target.value)} required />
         </label>
         <label className="paper-label mt-0">

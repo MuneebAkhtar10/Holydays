@@ -53,7 +53,7 @@ export function refundOutlook(input: {
   const paid = input.extra.paymentStatus === "paid" || Boolean(input.extra.paidAt);
   const days = daysUntil(input.startDate);
   if (input.kind !== "STAY") {
-    // Taxis, Ziyarat visits and tables: full refund with notice, half the day before, none on the day.
+    // Taxis, Ziyarah visits and tables: full refund with notice, half the day before, none on the day.
     const policy: CancelPolicy = days >= 2 ? "free" : days >= 1 ? "partial" : "strict";
     const percent = days >= 2 ? 100 : days >= 1 ? 50 : 0;
     const note =

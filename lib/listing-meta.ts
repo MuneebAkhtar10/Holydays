@@ -64,7 +64,7 @@ export type StayListingMeta = {
   vacant: number;
   routeCities: string[];
   hours: string;
-  /** Ziyarat: guide fee, in PKR, charged per guest for each day. The visit itself is the listing price. */
+  /** Ziyarah: guide fee, in PKR, charged per guest for each day. The visit itself is the listing price. */
   guideFee: number;
   /** "person": guideFee × guests × days. "group": guideFee × days for the whole party. */
   guideFeeUnit: "person" | "group";

@@ -13,7 +13,7 @@ import { DISPLAY_CURRENCIES } from "@/lib/currency";
 const ownerHome: Record<string, { desk: string; add: string; market: string; marketHref: string }> = {
   TAXI: { desk: "My taxis", add: "Add a taxi", market: "Taxi marketplace", marketHref: "/taxis" },
   STAY: { desk: "My hotels", add: "Add a hotel", market: "Hotel marketplace", marketHref: "/search" },
-  ATTRACTION: { desk: "My Ziyarat", add: "Add a Ziyarat", market: "Ziyarat marketplace", marketHref: "/attractions" },
+  ATTRACTION: { desk: "My Ziyarah", add: "Add a Ziyarah", market: "Ziyarah marketplace", marketHref: "/attractions" },
   RESTAURANT: { desk: "My food listings", add: "Add food", market: "Food marketplace", marketHref: "/food" },
 };
 

@@ -69,9 +69,9 @@ const labels: Record<string, { title: string; add: string; empty: string }> = {
     empty: "No hotels yet. Add a property — it goes live after admin approval.",
   },
   ATTRACTION: {
-    title: "Your Ziyarat",
-    add: "Add a Ziyarat",
-    empty: "No Ziyarat yet. Add a shrine plan for Saudi, Iraq, or Iran — admin must approve it.",
+    title: "Your Ziyarah",
+    add: "Add a Ziyarah",
+    empty: "No Ziyarah yet. Add a shrine plan for Saudi, Iraq, or Iran — admin must approve it.",
   },
   RESTAURANT: {
     title: "Your food listings",
@@ -211,7 +211,7 @@ function OwnerDesk() {
     return (
       <div className="mx-auto max-w-lg px-5 py-20">
         <h1 className="font-display text-4xl">Become a partner</h1>
-        <p className="mt-3 text-mist">This login is a traveller account. Choose taxi, hotel, Ziyarat, or food to open an owner desk.</p>
+        <p className="mt-3 text-mist">This login is a traveller account. Choose taxi, hotel, Ziyarah, or food to open an owner desk.</p>
         <BecomeOwner />
       </div>
     );
@@ -1092,7 +1092,7 @@ function BookingDetail({
                   )}
                   {d.package.ziyarat.length > 0 && (
                     <li className="flex gap-3">
-                      <span className="w-20 shrink-0 text-mist">Ziyarat</span>
+                      <span className="w-20 shrink-0 text-mist">Ziyarah</span>
                       <span className="text-sand">{d.package.ziyarat.join(" · ")}</span>
                     </li>
                   )}
@@ -1258,7 +1258,7 @@ function BecomeOwner() {
       <select className="w-full bg-ink-2 px-3 py-3" value={kind} onChange={(e) => setKind(e.target.value)}>
         <option value="TAXI">Taxi (Saudi / Iraq / Iran)</option>
         <option value="STAY">Hotels (Saudi / Iraq / Iran)</option>
-        <option value="ATTRACTION">Ziyarat</option>
+        <option value="ATTRACTION">Ziyarah</option>
         <option value="RESTAURANT">Food</option>
       </select>
       <button className="btn-primary" type="submit">
