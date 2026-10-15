@@ -6,7 +6,6 @@ import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState, type ReactNode } from "react";
 import { stayById } from "@/lib/stays";
 import { experienceById } from "@/lib/experiences";
-import { formatDay, nightsBetween } from "@/lib/format";
 import { useSerai } from "@/lib/store";
 import { GoogleStayMap } from "@/components/GoogleStayMap";
 import { ListingBook } from "@/components/ListingBook";
@@ -176,7 +175,6 @@ function StayInner() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [stay?.city]);
-  const nights = nightsBetween(checkin, checkout);
   const roomsList = stay ? stayRooms(stay) : [];
   const activePicks = picks.filter((p) => p.rooms > 0);
   const roomCount = roomPicksTotal(activePicks);
@@ -607,12 +605,7 @@ function StayInner() {
                   ? `✓ Available — ${roomsLeft} room${roomsLeft === 1 ? "" : "s"} left for these dates`
                   : "✗ Not available for these dates"}
             </p>
-            <p className="mt-2 text-xs leading-relaxed text-ink/55">
-              {formatDay(checkin)} — {formatDay(checkout)} · {nights} night{nights > 1 ? "s" : ""} · {guests} guests · {roomCount || 0} room
-              {roomCount === 1 ? "" : "s"}
-              {quote?.roomLabel ? ` · ${quote.roomLabel}` : ""}
-            </p>
-            <p className="mt-1 text-xs text-ink/45">
+            <p className="mt-2 text-xs text-ink/45">
               In {facts.checkIn} · out {facts.checkOut}
             </p>
             <div className="mt-4 border-t border-ink/10 pt-3">{quote && <PriceBreakdown quote={quote} compact />}</div>

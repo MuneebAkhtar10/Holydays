@@ -961,8 +961,9 @@ html[data-theme="dark"] .btn-outline {
 [class*="text-[12px]"] {
   font-size: 13px;
 }
-/* Small caps-style labels read better a little heavier. */
-.uppercase {
+/* Small caps-style labels read better a little heavier — but only when the element has not asked
+   for a weight itself, otherwise this would quietly override every `font-bold uppercase` label. */
+.uppercase:not(.font-thin):not(.font-extralight):not(.font-light):not(.font-normal):not(.font-medium):not(.font-semibold):not(.font-bold):not(.font-extrabold):not(.font-black):not(.font-display) {
   font-weight: 600;
 }
 /* Faint helper text on cream/white cards (text-ink/40 ... /65) was too pale. */

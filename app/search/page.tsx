@@ -1,5 +1,7 @@
 "use client";
 
+import { formatDMY } from "@/lib/format";
+
 import { Suspense, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { GoogleStayMap } from "@/components/GoogleStayMap";
@@ -122,7 +124,7 @@ function SearchInner() {
               </p>
               <p className="mt-1 text-xs text-mist">
                 {search.rooms} room{search.rooms === 1 ? "" : "s"} · {search.adults} adult{search.adults === 1 ? "" : "s"}
-                {search.children ? ` · ${search.children} children` : ""} · {search.checkin} → {search.checkout}
+                {search.children ? ` · ${search.children} children` : ""} · {formatDMY(search.checkin)} → {formatDMY(search.checkout)}
               </p>
             </div>
             <div className="flex h-11 shrink-0 items-center gap-2">

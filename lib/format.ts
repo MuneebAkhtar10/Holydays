@@ -11,6 +11,13 @@ export const formatDay = (iso: string) => {
   });
 };
 
+/** Numeric date for the guest, e.g. "02-11-2026". Use where a full, unambiguous date is wanted. */
+export const formatDMY = (iso: string) => {
+  if (!iso) return "—";
+  const [y, m, d] = iso.slice(0, 10).split("-");
+  return y && m && d ? `${d}-${m}-${y}` : iso;
+};
+
 export const nightsBetween = (a: string, b: string) => {
   if (!a || !b) return 1;
   const ms = new Date(`${b}T12:00:00`).getTime() - new Date(`${a}T12:00:00`).getTime();
