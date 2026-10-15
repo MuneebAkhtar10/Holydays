@@ -137,6 +137,7 @@ function TripComposer({
   airport,
   airportLeg,
   onAdded,
+  beforeList,
 }: {
   title: string;
   blurb: string;
@@ -151,6 +152,8 @@ function TripComposer({
   airport?: boolean;
   airportLeg?: "in" | "out";
   onAdded?: (taxi: PackageTaxi, pick: TaxiPick) => void;
+  /** Rendered under the blurb, above the list — used for the airport picker. */
+  beforeList?: ReactNode;
 }) {
   const { money } = useSerai();
   const routes = useMemo(() => {
@@ -230,6 +233,8 @@ function TripComposer({
       <p className="text-[11px] uppercase tracking-[0.28em] text-brass">Private car</p>
       <h2 className="font-display mt-1 text-3xl">{title}</h2>
       <p className="mt-1 max-w-xl text-sm text-mist">{blurb}</p>
+
+      {beforeList}
 
       {mine.length > 0 && (
         <ul className="mt-4 space-y-2.5">
@@ -584,33 +589,64 @@ export function AirportTransferStep({
   const farAway = active !== "near" && !nearItems.some((t) => airportLabelOf(t) === active);
   const verb = airportLeg === "out" ? "Flying out from" : "Landing at";
 
-  return (
-    <>
-      <div className="mt-4">
-        <p className="text-[11px] uppercase tracking-[0.18em] text-brass">{verb}</p>
-        <div className="mt-2 flex flex-wrap gap-2">
-          <button type="button" className="filter-chip" data-on={active === "near"} disabled={!nearItems.length} onClick={() => setChosen("near")}>
-            Near {city}
-            <span className="ml-1.5 opacity-60">{nearItems.length}</span>
-          </button>
-          {airports.map((a) => (
-            <button key={a.label} type="button" className="filter-chip" data-on={active === a.label} disabled={!a.cars.length} onClick={() => setChosen(a.label)}>
-              {a.label}
-              <span className="ml-1.5 opacity-60">{a.cars.length}</span>
+  const options = [
+    { id: "near", label: `Near ${city}`, count: nearItems.length },
+    ...airports.map((a) => ({ id: a.label, label: a.label, count: a.cars.length })),
+  ].filter((o) => o.id !== "near" || nearItems.length > 0);
+
+  const picker = (
+    <div className="mt-4 rounded-2xl border border-brass/30 bg-flame/[0.06] p-4">
+      <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-brass">{verb}</p>
+      <p className="mt-0.5 text-sm text-mist">
+        {airportLeg === "out"
+          ? "Choose the airport you fly out from. Cars are listed for each one."
+          : "Choose the airport your flight arrives at. Cars are listed for each one."}
+      </p>
+      <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+        {options.map((o) => {
+          const on = active === o.id;
+          const empty = o.count === 0;
+          return (
+            <button
+              key={o.id}
+              type="button"
+              disabled={empty}
+              aria-pressed={on}
+              className={`flex items-center justify-between gap-2 rounded-xl border px-3.5 py-2.5 text-left transition-colors ${
+                on
+                  ? "border-flame bg-flame/20 text-sand shadow-[0_0_0_3px_rgba(197,164,106,0.14)]"
+                  : empty
+                    ? "cursor-not-allowed border-sand/10 bg-ink/10 text-mist/55"
+                    : "border-brass/25 bg-ink/20 text-sand hover:border-brass/60 hover:bg-flame/10"
+              }`}
+              onClick={() => setChosen(o.id)}
+            >
+              <span className="min-w-0">
+                <span className="block truncate text-sm font-semibold">{o.label}</span>
+                <span className={`block text-xs ${on ? "text-brass" : "text-mist"}`}>
+                  {empty ? "No cars listed" : `${o.count} car${o.count === 1 ? "" : "s"}`}
+                </span>
+              </span>
+              {on ? <CheckIcon className="h-4 w-4 shrink-0 text-brass" /> : null}
             </button>
-          ))}
-        </div>
-        {farAway && (
-          <p className="mt-2 rounded-xl border border-brass/25 bg-brass/10 px-3 py-2 text-sm text-sand">
-            {airportLeg === "out"
-              ? `You will leave from ${stayName}${city ? ` in ${city}` : ""} for ${active}.`
-              : `You will land at ${active} and be driven to ${stayName}${city ? ` in ${city}` : ""}.`}{" "}
-            This is a transfer between cities, so the driver confirms the pick-up time with you after booking.
-          </p>
-        )}
+          );
+        })}
       </div>
+      {farAway && (
+        <p className="mt-3 rounded-xl border border-brass/25 bg-ink/25 px-3.5 py-2.5 text-sm text-sand">
+          {airportLeg === "out"
+            ? `You leave ${stayName} for ${active}.`
+            : `You land at ${active} and are driven to ${stayName}.`}{" "}
+          <span className="text-mist">A transfer between cities — the driver confirms the pick-up time after booking.</span>
+        </p>
+      )}
+    </div>
+  );
+
+  return (
     <TripComposer
       key={active}
+      beforeList={picker}
       title={title || (airportLeg === "in" ? "Airport pick up" : airportLeg === "out" ? "Airport drop off" : "Airport transfer")}
       blurb={
         blurb ||
@@ -631,7 +667,6 @@ export function AirportTransferStep({
       airport
       airportLeg={airportLeg}
     />
-    </>
   );
 }
 

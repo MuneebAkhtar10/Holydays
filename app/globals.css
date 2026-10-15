@@ -1076,3 +1076,12 @@ textarea {
   min-width: 0;
   max-width: 100%;
 }
+
+
+/* Keyboard focus in the brand colour. The browser default is a blue ring that clashes with the
+   gold palette and showed up on the airport chips. `:where` keeps specificity at zero so any
+   component can still set its own focus style. */
+:where(button, a, select, summary, [role="button"], [tabindex]):focus-visible {
+  outline: 2px solid var(--serai-brass);
+  outline-offset: 2px;
+}
