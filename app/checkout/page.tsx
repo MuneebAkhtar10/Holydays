@@ -966,7 +966,7 @@ function CheckoutInner() {
 
           {/* Every stage at a glance: a connected rail on desktop, compact dots on phones. */}
           <ol
-            className="mt-4 hidden sm:grid"
+            className="mt-4 hidden pb-0.5 sm:grid"
             style={{ gridTemplateColumns: `repeat(${steps.length}, minmax(0, 1fr))` }}
           >
             {steps.map((label, i) => {
@@ -979,7 +979,7 @@ function CheckoutInner() {
                   {i > 0 ? (
                     <span
                       aria-hidden
-                      className={`absolute right-1/2 top-[0.9rem] h-0.5 w-full ${done || here ? "bg-flame/70" : "bg-sand/12"}`}
+                      className={`absolute right-1/2 top-[1.06rem] h-0.5 w-full ${done || here ? "bg-flame/70" : "bg-sand/12"}`}
                     />
                   ) : null}
                   <button
@@ -993,9 +993,9 @@ function CheckoutInner() {
                     }}
                   >
                     <span
-                      className={`grid h-[1.8rem] w-[1.8rem] shrink-0 place-items-center rounded-full border-2 transition-colors ${
+                      className={`grid h-[2.15rem] w-[2.15rem] shrink-0 place-items-center rounded-full border-2 text-xs font-bold transition-colors ${
                         here
-                          ? "border-flame bg-flame text-ink shadow-[0_0_0_4px_rgba(197,164,106,0.18)]"
+                          ? "border-flame bg-flame text-ink shadow-[0_0_0_5px_rgba(197,164,106,0.18)]"
                           : done
                             ? "border-flame/70 bg-flame/20 text-brass"
                             : reachable
@@ -1003,11 +1003,11 @@ function CheckoutInner() {
                               : "border-sand/12 bg-ink-2 text-mist/50"
                       }`}
                     >
-                      {done ? <CheckIcon className="h-3.5 w-3.5" /> : Icon ? <Icon className="h-3.5 w-3.5" /> : i + 1}
+                      {done ? <CheckIcon className="h-[1.1rem] w-[1.1rem]" /> : Icon ? <Icon className="h-[1.15rem] w-[1.15rem]" /> : i + 1}
                     </span>
                     <span
-                      className={`w-full truncate px-1 text-center text-[11px] leading-tight ${
-                        here ? "font-bold text-sand" : done ? "font-semibold text-brass/90" : "text-mist"
+                      className={`w-full truncate px-0.5 text-center text-[13px] leading-tight ${
+                        here ? "font-bold text-sand" : done ? "font-semibold text-brass" : "font-medium text-mist"
                       }`}
                     >
                       {STEP_SHORT[label] ?? label}
@@ -1668,10 +1668,7 @@ function CheckoutInner() {
                   setStep((s) => s + 1);
                 }}
               >
-                <span>
-                  Continue
-                  <span className="hidden text-ink/60 sm:inline"> · {steps[step + 1]}</span>
-                </span>
+                <span>Continue</span>
                 <ChevronIcon className="h-4 w-4 -rotate-90" />
               </button>
             </div>

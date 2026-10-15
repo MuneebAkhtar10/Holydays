@@ -56,22 +56,22 @@ export function MealPlanStep({
     <div className="mt-4">
       <p className="text-sm text-mist">Tap a day to add that meal, or use All / None.</p>
       <div className="mt-3 overflow-x-auto rounded-2xl border border-sand/[0.08] bg-ink-2">
-        <table className="w-full min-w-[420px] border-collapse text-sm">
+        <table className="w-full min-w-[460px] border-collapse text-[15px]">
           <thead>
             <tr className="border-b border-sand/[0.08]">
-              <th className="px-3 py-2.5 text-left text-xs font-normal uppercase tracking-wide text-mist">Day</th>
+              <th className="px-3.5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-mist">Day</th>
               {MEAL_ROWS.map(({ key, label }) => {
                 const rate = price[key];
                 return (
-                  <th key={key} className="px-3 py-2.5 text-center align-top">
-                    <p className="text-xs font-medium normal-case text-sand">{label}</p>
-                    <p className="mt-0.5 text-[10px] font-normal text-mist">{rate ? `${money(rate)}/day` : "Not offered"}</p>
+                  <th key={key} className="px-3.5 py-3 text-center align-top">
+                    <p className="text-[15px] font-semibold normal-case text-sand">{label}</p>
+                    <p className="mt-0.5 text-xs font-medium text-mist">{rate ? `${money(rate)}/day` : "Not offered"}</p>
                     {rate ? (
                       <div className="mt-1.5 flex justify-center gap-1">
-                        <button type="button" className="rounded-full border border-sand/10 px-2 py-0.5 text-[10px] text-mist hover:border-brass/40 hover:text-sand" onClick={() => setMeal(key, dates)}>
+                        <button type="button" className="rounded-full border border-sand/15 px-2.5 py-1 text-xs font-medium text-mist transition-colors hover:border-brass/50 hover:text-sand" onClick={() => setMeal(key, dates)}>
                           All
                         </button>
-                        <button type="button" className="rounded-full border border-sand/10 px-2 py-0.5 text-[10px] text-mist hover:border-brass/40 hover:text-sand" onClick={() => setMeal(key, [])}>
+                        <button type="button" className="rounded-full border border-sand/15 px-2.5 py-1 text-xs font-medium text-mist transition-colors hover:border-brass/50 hover:text-sand" onClick={() => setMeal(key, [])}>
                           None
                         </button>
                       </div>
@@ -84,18 +84,18 @@ export function MealPlanStep({
           <tbody>
             {dates.map((day) => (
               <tr key={day} className="border-b border-sand/[0.05] last:border-0">
-                <td className="whitespace-nowrap px-3 py-2 text-sand">{formatDay(day)}</td>
+                <td className="whitespace-nowrap px-3.5 py-2.5 font-medium text-sand">{formatDay(day)}</td>
                 {MEAL_ROWS.map(({ key }) => {
                   const rate = price[key];
                   const on = picked[key].includes(day);
                   return (
-                    <td key={key} className="px-3 py-2 text-center">
+                    <td key={key} className="px-3.5 py-2.5 text-center">
                       <button
                         type="button"
                         disabled={!rate}
                         aria-label={`${key} on ${formatDay(day)}`}
                         onClick={() => toggle(key, day)}
-                        className={`inline-flex h-6 w-6 items-center justify-center rounded-full transition ${
+                        className={`inline-flex h-7 w-7 items-center justify-center rounded-full text-sm font-bold transition ${
                           !rate ? "cursor-not-allowed opacity-20" : on ? "bg-flame text-ink" : "border border-sand/20 hover:border-brass/40"
                         }`}
                       >
@@ -115,12 +115,12 @@ export function MealPlanStep({
           const count = picked[key].length;
           const amount = rate * count * heads;
           return (
-            <div key={key} className="rounded-xl bg-sand/[0.03] px-3 py-2 text-xs ring-1 ring-sand/[0.06]">
-              <p className="text-mist">{label}</p>
+            <div key={key} className="rounded-xl bg-sand/[0.03] px-3.5 py-2.5 text-sm ring-1 ring-sand/[0.06]">
+              <p className="font-medium text-mist">{label}</p>
               <p className="mt-0.5 text-sand">
                 {count} of {dates.length} day{dates.length === 1 ? "" : "s"}
               </p>
-              {amount ? <p className="mt-0.5 font-medium text-sand">{money(amount)}</p> : null}
+              {amount ? <p className="mt-0.5 text-[15px] font-semibold text-sand">{money(amount)}</p> : null}
             </div>
           );
         })}
