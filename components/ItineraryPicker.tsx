@@ -232,7 +232,7 @@ function TripComposer({
     <div className="mt-4">
       <p className="text-[11px] uppercase tracking-[0.28em] text-brass">Private car</p>
       <h2 className="font-display mt-1 text-3xl">{title}</h2>
-      <p className="mt-1 max-w-xl text-sm text-mist">{blurb}</p>
+      {blurb ? <p className="mt-1 max-w-xl text-sm text-mist">{blurb}</p> : null}
 
       {beforeList}
 
@@ -299,61 +299,68 @@ function TripComposer({
           {draft === "route" && (
             <div className="mt-5 space-y-3">
               <p className="text-sm text-mist">Pick a route, then a day and a car.</p>
-              {routes.map((r) => (
-                <article key={r.key} className={nest}>
-                  <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
-                    {r.drivers[0] ? (
-                      <TaxiPhotos
-                        driver={r.drivers[0].driver}
-                        driverPhoto={r.drivers[0].driverPhoto}
-                        vehicle={r.drivers[0].vehicle}
-                        vehiclePhoto={r.drivers[0].vehiclePhoto}
-                        vehiclePhotos={r.drivers[0].vehiclePhotos}
-                        cover={r.cover}
-                        size="lg"
-                      />
-                    ) : (
-                      <div className="relative h-[72px] w-[88px] shrink-0 overflow-hidden rounded-xl">
-                        <Image src={r.cover} alt="" fill className="object-cover" />
+              {routes.map((r) => {
+                const shot = r.drivers[0] ? taxiCarPhotos(r.drivers[0])[0] : r.cover;
+                const choose = () => {
+                  setRouteId(r.key);
+                  setDate(suggestedDay(r.leg ?? airportLeg));
+                  setPendingDate(null);
+                  setDraft("date");
+                };
+                return (
+                  <article
+                    key={r.key}
+                    className={`${nest} group transition-colors hover:border-brass/55 focus-within:border-brass/55`}
+                  >
+                    <div className="flex items-start gap-3.5">
+                      {/* The vehicle, not the driver — the driver is chosen two steps later. */}
+                      <div className="relative h-16 w-[5.5rem] shrink-0 overflow-hidden rounded-xl bg-ink/30 ring-1 ring-brass/20">
+                        <Image src={shot || "/images/hero-hunza-dusk.png"} alt="" fill sizes="88px" className="object-cover" />
                       </div>
-                    )}
-                    <div className="min-w-0 flex-1 sm:min-w-[10rem]">
-                      <p className="font-display text-lg leading-tight">{r.title}</p>
-                      <p className="mt-1 text-sm text-mist">
-                        {r.drivers.length} vehicle{r.drivers.length === 1 ? "" : "s"} · from {money(r.from)}
-                      </p>
-                      <div className="mt-2 flex flex-wrap items-center gap-3">
-                        <MoreInfo open={infoRoute === r.key} onToggle={() => setInfoRoute(infoRoute === r.key ? null : r.key)}>
-                          {r.hours ? <p>{r.hours}</p> : null}
-                          <p className="mt-1">{r.plan || "Stops confirmed with the driver."}</p>
-                        </MoreInfo>
-                        {r.drivers[0] ? (
-                          <Link
-                            href={`/taxis/${r.drivers[0].id}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-xs text-mist underline hover:text-sand"
-                          >
-                            View details
-                          </Link>
+
+                      <div className="min-w-0 flex-1">
+                        <h3 className="font-display text-lg leading-snug">{r.title}</h3>
+                        <p className="mt-1.5 flex flex-wrap items-baseline gap-x-2 text-sm">
+                          <span className="text-mist">from</span>
+                          <span className="font-display text-xl leading-none text-sand">{money(r.from)}</span>
+                          <span className="text-mist">
+                            · {r.drivers.length} vehicle{r.drivers.length === 1 ? "" : "s"}
+                          </span>
+                        </p>
+                        {r.hours ? (
+                          <span className="mt-2 inline-flex rounded-full bg-sand/[0.07] px-2.5 py-1 text-[11px] font-semibold text-mist ring-1 ring-sand/10">
+                            {r.hours}
+                          </span>
                         ) : null}
                       </div>
+
                     </div>
-                    <button
-                      type="button"
-                      className="btn-primary w-full rounded-full px-4 py-2 text-[11px] uppercase tracking-[0.12em] sm:w-auto sm:self-start"
-                      onClick={() => {
-                        setRouteId(r.key);
-                        setDate(suggestedDay(r.leg ?? airportLeg));
-                        setPendingDate(null);
-                        setDraft("date");
-                      }}
-                    >
-                      Select
-                    </button>
-                  </div>
-                </article>
-              ))}
+
+                    <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 border-t border-sand/[0.07] pt-2.5">
+                      <MoreInfo open={infoRoute === r.key} onToggle={() => setInfoRoute(infoRoute === r.key ? null : r.key)}>
+                        <p>{r.plan || "Stops confirmed with the driver."}</p>
+                      </MoreInfo>
+                      {r.drivers[0] ? (
+                        <Link
+                          href={`/taxis/${r.drivers[0].id}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-xs font-medium text-mist underline decoration-brass/40 underline-offset-4 hover:text-sand"
+                        >
+                          View details
+                        </Link>
+                      ) : null}
+                      <button
+                        type="button"
+                        className="btn-primary ml-auto w-full justify-center rounded-full px-6 py-2 text-[11px] uppercase tracking-[0.12em] sm:w-auto"
+                        onClick={choose}
+                      >
+                        Select
+                      </button>
+                    </div>
+                  </article>
+                );
+              })}
             </div>
           )}
 
@@ -648,14 +655,7 @@ export function AirportTransferStep({
       key={active}
       beforeList={picker}
       title={title || (airportLeg === "in" ? "Airport pick up" : airportLeg === "out" ? "Airport drop off" : "Airport transfer")}
-      blurb={
-        blurb ||
-        (airportLeg === "in"
-          ? `Private car from the airport to ${stayName}.`
-          : airportLeg === "out"
-            ? `Private car from ${stayName} back to the airport.`
-            : `Private car between the airport and ${stayName}.`)
-      }
+      blurb={blurb ?? ""}
       addLabel={airportLeg === "out" ? "Add another drop off" : airportLeg === "in" ? "Add another pick up" : "Add another transfer"}
       items={items}
       picks={picks}

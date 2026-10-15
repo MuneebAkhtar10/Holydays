@@ -309,7 +309,8 @@ html[data-theme="dark"] .inset-card {
 
 .auth-label {
   display: block;
-  font-size: 0.72rem;
+  font-size: 0.74rem;
+  font-weight: 700;
   letter-spacing: 0.16em;
   text-transform: uppercase;
   color: var(--serai-brass);
@@ -613,7 +614,7 @@ html[data-theme="dark"] .form-stepper-item[data-active="true"] .form-stepper-lab
 }
 
 .btn-primary {
-  display: inline-flex;
+  /* display is set at zero specificity below so `hidden` can win. */
   align-items: center;
   justify-content: center;
   gap: 0.4rem;
@@ -636,7 +637,7 @@ html[data-theme="dark"] .form-stepper-item[data-active="true"] .form-stepper-lab
 }
 
 .btn-ghost {
-  display: inline-flex;
+  /* display is set at zero specificity below so `hidden` can win. */
   align-items: center;
   justify-content: center;
   border: 1px solid color-mix(in srgb, var(--serai-brass) 40%, transparent);
@@ -656,7 +657,7 @@ html[data-theme="dark"] .form-stepper-item[data-active="true"] .form-stepper-lab
 }
 
 .btn-subtle {
-  display: inline-flex;
+  /* display is set at zero specificity below so `hidden` can win. */
   align-items: center;
   justify-content: center;
   border: 1px solid transparent;
@@ -674,7 +675,7 @@ html[data-theme="dark"] .form-stepper-item[data-active="true"] .form-stepper-lab
 }
 
 .btn-outline {
-  display: inline-flex;
+  /* display is set at zero specificity below so `hidden` can win. */
   align-items: center;
   justify-content: center;
   border: 1.5px solid var(--serai-sage);
@@ -697,8 +698,7 @@ html[data-theme="dark"] .btn-outline {
 }
 
 .btn-danger {
-  display: inline-flex;
-  align-items: center;
+    align-items: center;
   justify-content: center;
   gap: 0.4rem;
   border: 1px solid #9a3a3a;
@@ -1242,4 +1242,11 @@ html[data-theme="light"] .ticket {
 .ticket-amount {
   color: var(--tk-amount);
   text-shadow: var(--tk-amount-glow);
+}
+
+
+/* These set `display` after Tailwind's utilities, so a plain `hidden` on a button used to lose.
+   `:where()` has no specificity, so any display utility now wins without needing !important. */
+:where(.btn-primary, .btn-ghost, .btn-subtle, .btn-outline, .btn-danger) {
+  display: inline-flex;
 }

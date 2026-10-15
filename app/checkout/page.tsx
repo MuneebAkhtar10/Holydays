@@ -14,7 +14,7 @@ import { readJson } from "@/lib/readJson";
 import { listingToStay } from "@/lib/listing-meta";
 import { quoteStay, stayRooms, roomPicksTotal, type QuoteInput, type RoomPick } from "@/lib/pricing";
 import { decodeRoomPicks, fallbackPicks } from "@/lib/room-picks";
-import { CANCEL_LABEL, MEAL_PLAN_LABEL, PAY_LABEL } from "@/lib/rooms";
+import { CANCEL_LABEL, PAY_LABEL } from "@/lib/rooms";
 import { experienceById } from "@/lib/experiences";
 import type { Stay } from "@/lib/types";
 import { cityNamedIn, pilgrimCountryName } from "@/lib/pilgrim";
@@ -427,7 +427,7 @@ function CheckoutInner() {
   const quote = stay ? quoteStay(stay, input) : null;
   const methods = [
     { id: "card", label: "Card · Visa, Mastercard, Amex" },
-    ...(quote?.payPolicy === "now" ? [] : [{ id: "property", label: "Pay at the door" }]),
+    ...(quote?.payPolicy === "now" ? [] : [{ id: "property", label: "Pay at Reception" }]),
   ];
   const [method, setMethod] = useState("card");
 
@@ -1125,7 +1125,6 @@ function CheckoutInner() {
 
         {packageStay && !buildPackage && step === 1 && (
           <div>
-            <p className="mt-5 text-sm text-mist">Your rate includes {MEAL_PLAN_LABEL[quote.rate.meal].toLowerCase()}. Add extra meals below.</p>
             <MealPlanStep
               meals={meals}
               onChange={setMeals}
@@ -1174,9 +1173,6 @@ function CheckoutInner() {
                   {orderedLegs.length} hotel{orderedLegs.length === 1 ? "" : "s"} · {formatDay(input.checkin)} — {formatDay(tripEnd)}
                 </p>
               </div>
-              <p className="mt-1 text-sm text-mist">
-                {orderedLegs.length > 1 ? "Drag the order with the arrows. Availability is checked per hotel." : "Set your dates and rooms."}
-              </p>
               <div className="mt-4">
                 <TripOrderEditor
                   legs={orderedLegs}
@@ -1292,7 +1288,6 @@ function CheckoutInner() {
 
         {buildPackage && step === 2 && (
           <div className="space-y-8">
-            <p className="mt-5 text-sm text-mist">Your rate includes {MEAL_PLAN_LABEL[quote.rate.meal].toLowerCase()}. Add extra meals below.</p>
             {orderedLegs.map((h) => {
               const hotelDates = stayNightDates(h.checkin, h.checkout);
               return (
@@ -1323,7 +1318,6 @@ function CheckoutInner() {
             onChange={setTaxiPicks}
             airportLeg="in"
             title="Airport pick up"
-            blurb={`Private car from the airport to ${stay.name}.`}
           />
         )}
 
@@ -1341,7 +1335,6 @@ function CheckoutInner() {
               onChange={setTaxiPicks}
               airportLeg="out"
               title="Airport drop off"
-              blurb={`Private car from ${lastHotel.name} back to the airport.`}
             />
           </div>
         )}
