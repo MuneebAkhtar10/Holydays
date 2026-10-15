@@ -159,8 +159,8 @@ function BillRow({
   tone?: "discount";
 }) {
   const { money } = useSerai();
-  const num = tone === "discount" ? "text-sage" : compact ? "text-ink" : "text-sand";
-  const mist = compact ? "text-ink/50" : "text-mist";
+  const num = tone === "discount" ? "ticket-good" : compact ? "ticket-strong" : "text-sand";
+  const mist = compact ? "ticket-muted" : "text-mist";
   return (
     <li className="flex items-start justify-between gap-3">
       <span className="min-w-0 leading-snug">
@@ -175,13 +175,12 @@ function BillRow({
 function BillGroup({ title, compact, children }: { title: string; compact?: boolean; children: ReactNode }) {
   return (
     <div>
-      <p
-        className={`border-b pb-1.5 text-[11px] font-bold uppercase tracking-[0.16em] ${
-          compact ? "border-ink/10 text-ink/70" : "border-brass/20 text-brass"
-        }`}
-      >
-        {title}
-      </p>
+      <p className={`text-[11px] font-bold uppercase tracking-[0.18em] ${compact ? "ticket-label" : "text-brass"}`}>{title}</p>
+      {/* A rule that fades out reads lighter than a hard border. */}
+      <span
+        aria-hidden
+        className={`mt-1.5 block h-px ${compact ? "ticket-rule" : "bg-gradient-to-r from-brass/35 to-transparent"}`}
+      />
       <ul className="mt-2.5 space-y-2.5">{children}</ul>
     </div>
   );
@@ -249,7 +248,7 @@ export function PackageBill({
     .filter((r): r is NonNullable<typeof r> => Boolean(r))
     .sort((a, b) => a.date.localeCompare(b.date) || a.order - b.order);
 
-  const text = compact ? "text-sm text-ink/75" : "text-sm text-mist";
+  const text = compact ? "text-sm" : "text-sm text-mist";
 
   return (
     <div className={`space-y-4 ${text}`}>

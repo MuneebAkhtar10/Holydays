@@ -566,28 +566,30 @@ function StayInner() {
           </div>
         </div>
 
-        <aside className="paper h-fit lg:sticky lg:top-24">
-          <div className="bg-flame px-5 py-2.5 text-center text-[11px] font-semibold uppercase tracking-[0.22em] text-ink">
-            {pilgrimStay ? "Ziyarah stay" : "Your stay"}
+        <aside className="ticket h-fit lg:sticky lg:top-24">
+          <div className="ticket-card relative overflow-hidden rounded-3xl">
+          <div className="relative bg-gradient-to-b from-[#e8d3a3] via-[#c5a46a] to-[#b08d4f] px-5 py-2.5 text-center text-[11px] font-bold uppercase tracking-[0.22em] text-[#2a1f08]">
+            <span aria-hidden className="pointer-events-none absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-white/40 to-transparent" />
+            <span className="relative">{pilgrimStay ? "Ziyarah stay" : "Your stay"}</span>
           </div>
           <div className="p-5">
-            <p className="font-display text-3xl leading-none text-ink">
+            <p className="ticket-strong font-display text-3xl leading-none">
               {money(quote?.start ?? roomsList[0].price)}
-              <span className="ml-1 text-sm font-sans font-normal text-ink/50">/ night</span>
+              <span className="ticket-muted ml-1 text-sm font-sans font-normal">/ night</span>
             </p>
             {offer && (
-              <p className="mt-2 text-sm text-ink/55">
+              <p className="ticket-muted mt-2 text-sm">
                 {offer.stars}★{offer.reviewCount ? ` · ${offer.reviewAvg} guest score` : " · New listing"}
               </p>
             )}
             <div className="mt-4 grid grid-cols-2 gap-2">
-              <div className="text-[10px] uppercase tracking-[0.14em] text-mist">
+              <div className="ticket-label text-[10px] font-bold uppercase tracking-[0.14em]">
                 Arrive
                 <div className="date-chip mt-1 w-full select-none rounded-xl px-2 py-2 text-sm normal-case tracking-normal">
                   {readOnlyDate(checkin)}
                 </div>
               </div>
-              <div className="text-[10px] uppercase tracking-[0.14em] text-mist">
+              <div className="ticket-label text-[10px] font-bold uppercase tracking-[0.14em]">
                 Depart
                 <div className="date-chip mt-1 w-full select-none rounded-xl px-2 py-2 text-sm normal-case tracking-normal">
                   {readOnlyDate(checkout)}
@@ -596,7 +598,7 @@ function StayInner() {
             </div>
             <p
               className={`mt-3 text-xs font-medium ${
-                roomsLeft === null ? "text-ink/45" : roomsLeft > 0 ? "text-emerald-600" : "text-red-600"
+                roomsLeft === null ? "ticket-muted" : roomsLeft > 0 ? "ticket-good" : "text-rose"
               }`}
             >
               {roomsLeft === null
@@ -605,12 +607,39 @@ function StayInner() {
                   ? `✓ Available — ${roomsLeft} room${roomsLeft === 1 ? "" : "s"} left for these dates`
                   : "✗ Not available for these dates"}
             </p>
-            <p className="mt-2 text-xs text-ink/45">
+            <p className="ticket-muted mt-2 text-xs">
               In {facts.checkIn} · out {facts.checkOut}
             </p>
-            <div className="mt-4 border-t border-ink/10 pt-3">{quote && <PriceBreakdown quote={quote} compact />}</div>
+            {quote && (
+              <>
+                <span aria-hidden className="ticket-rule mt-4 block h-px" />
+                <div className="mt-3">
+                  <PriceBreakdown quote={quote} compact onTicket hideTotal />
+                </div>
+
+                <div className="relative my-4 h-px" aria-hidden>
+                  <span className="absolute -left-8 top-1/2 h-5 w-5 -translate-y-1/2 rounded-full bg-ink" />
+                  <span className="absolute -right-8 top-1/2 h-5 w-5 -translate-y-1/2 rounded-full bg-ink" />
+                  <span className="ticket-perf block h-px w-full" />
+                </div>
+
+                <div className="ticket-plate relative overflow-hidden rounded-2xl">
+                  <span aria-hidden className="ticket-hair pointer-events-none absolute inset-x-5 top-0 h-px" />
+                  <span aria-hidden className="ticket-hi pointer-events-none absolute inset-x-0 top-0 h-1/2" />
+                  <div className="relative flex items-center justify-between gap-3 px-4 py-3.5">
+                    <div className="min-w-0">
+                      <p className="ticket-label text-[11px] font-bold uppercase tracking-[0.22em]">Total</p>
+                      {quote.payLater > 0 ? (
+                        <p className="ticket-muted mt-1 text-xs">{money(quote.payLater)} due at the property</p>
+                      ) : null}
+                    </div>
+                    <p className="ticket-amount font-display shrink-0 text-2xl leading-none">{money(quote.grand)}</p>
+                  </div>
+                </div>
+              </>
+            )}
             {pilgrimStay ? (
-              <p className="mt-3 text-xs text-ink/55">Build Ziyarah keeps today&apos;s flow. Build a package adds airport pick up, extra hotels, and drop off.</p>
+              <p className="ticket-muted mt-3 text-xs">Build Ziyarah keeps today&apos;s flow. Build a package adds airport pick up, extra hotels, and drop off.</p>
             ) : null}
             {(() => {
               const first = activePicks[0];
@@ -641,14 +670,14 @@ function StayInner() {
               const blockedLabel = roomCount < 1 ? "Select a room" : "Not available for these dates";
               if (asAdmin) {
                 return (
-                  <p className="mt-4 rounded-xl bg-ink/5 px-4 py-3 text-sm text-ink/55">
+                  <p className="ticket-muted mt-4 rounded-xl border border-[color:var(--tk-rim)] px-4 py-3 text-sm">
                     Admin preview — booking is turned off for admin accounts.
                   </p>
                 );
               }
               if (pendingPreview) {
                 return (
-                  <p className="mt-4 rounded-xl bg-ink/5 px-4 py-3 text-sm text-ink/55">
+                  <p className="ticket-muted mt-4 rounded-xl border border-[color:var(--tk-rim)] px-4 py-3 text-sm">
                     Booking opens once this listing is approved and live.
                   </p>
                 );
@@ -671,9 +700,10 @@ function StayInner() {
                 </div>
               );
             })()}
-            <a href="#map" className="mt-3 block text-center text-sm text-ink/45 hover:text-ink">
+            <a href="#map" className="ticket-muted mt-3 block text-center text-sm underline decoration-transparent underline-offset-4 transition hover:decoration-current">
               See map & nearby
             </a>
+          </div>
           </div>
         </aside>
       </div>

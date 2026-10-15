@@ -27,7 +27,7 @@ html[data-theme="dark"] {
   --serai-brass: #c5a46a;
   --serai-flame: #c5a46a;
   --serai-rose: #d92027;
-  --serai-mist: #b9c1d0;
+  --serai-mist: #dde4ef;
   --serai-sage: #4fd17a;
   --serai-line: rgba(197, 164, 106, 0.22);
   --serai-card: linear-gradient(180deg, #163456, #102948);
@@ -178,12 +178,12 @@ html[data-theme="dark"] .paper {
   --serai-ink: #f4f6fa;
   --serai-ink-2: #163456;
   --serai-sand: #f4f6fa;
-  --serai-mist: #b9c1d0;
+  --serai-mist: #dde4ef;
   --serai-sage: #4fd17a;
   --color-ink: #f4f6fa;
   --color-ink-2: #163456;
   --color-sand: #f4f6fa;
-  --color-mist: #b9c1d0;
+  --color-mist: #dde4ef;
   --color-sage: #4fd17a;
   border: 1px solid rgba(197, 164, 106, 0.32);
   box-shadow:
@@ -200,12 +200,12 @@ html[data-theme="dark"] .paper {
     --serai-ink: #f4f6fa;
     --serai-ink-2: #163456;
     --serai-sand: #f4f6fa;
-    --serai-mist: #b9c1d0;
+    --serai-mist: #dde4ef;
     --serai-sage: #4fd17a;
     --color-ink: #f4f6fa;
     --color-ink-2: #163456;
     --color-sand: #f4f6fa;
-    --color-mist: #b9c1d0;
+    --color-mist: #dde4ef;
     --color-sage: #4fd17a;
     border: 1px solid rgba(197, 164, 106, 0.32);
   }
@@ -262,7 +262,7 @@ html[data-theme="dark"] .inset-card {
   padding: 0.95rem 1.1rem;
   border: 1px solid color-mix(in srgb, var(--serai-brass) 28%, transparent);
   border-radius: 0.9rem;
-  background: var(--serai-ink);
+  background-color: var(--serai-ink);
   color: var(--serai-sand);
   outline: none;
   line-height: 1.4;
@@ -283,7 +283,7 @@ html[data-theme="dark"] .inset-card {
   /* Native date inputs carry a wide intrinsic minimum that breaks narrow grid cells. */
   min-width: 0;
   max-width: 100%;
-  background: #ffffff;
+  background-color: #ffffff;
   color: #0b1c34;
   font-weight: 600;
   border-radius: 0.6rem;
@@ -397,7 +397,7 @@ html[data-theme="dark"] .inset-card {
   padding: 0.55rem 0.75rem;
   border: 1px solid rgba(11, 18, 32, 0.16);
   border-radius: 0.65rem;
-  background: #fff;
+  background-color: #fff;
   color: #0b1220;
   font-size: 0.9rem;
   font-weight: 400;
@@ -408,15 +408,6 @@ html[data-theme="dark"] .inset-card {
 
 textarea.paper-field {
   min-height: 3.5rem !important;
-}
-
-select.paper-field {
-  padding-right: 2rem;
-  appearance: none;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%230b1220' fill-opacity='0.45' d='M1 1l5 5 5-5'/%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: right 0.75rem center;
-  background-size: 11px 7px;
 }
 
 .paper-field {
@@ -776,7 +767,7 @@ html[data-theme="dark"] .btn-outline {
   gap: 0.35rem;
   border: 1px solid color-mix(in srgb, var(--serai-brass) 35%, transparent);
   border-radius: 999px;
-  background: transparent;
+  background-color: transparent;
   color: var(--serai-mist);
   padding: 0.45rem 0.85rem;
   font-size: 0.8rem;
@@ -1084,4 +1075,168 @@ textarea {
 :where(button, a, select, summary, [role="button"], [tabindex]):focus-visible {
   outline: 2px solid var(--serai-brass);
   outline-offset: 2px;
+}
+
+
+/* ---- Select menus -------------------------------------------------------------------------------
+   Browsers draw their own arrow hard against the right edge, which looked cramped on every dropdown.
+   We draw the chevron ourselves so it keeps the field's own breathing room, in both themes. */
+select {
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8' fill='none' stroke='%23b9c1d0' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M1 1.75 6 6.25 11 1.75'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.95rem center;
+  background-size: 0.7rem 0.47rem;
+  padding-right: 2.5rem;
+}
+
+html[data-theme="light"] select,
+.paper select,
+.paper-light select,
+select.paper-field,
+select.date-chip {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8' fill='none' stroke='%232d3544' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M1 1.75 6 6.25 11 1.75'/%3E%3C/svg%3E");
+}
+
+html[data-theme="dark"] .paper select {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8' fill='none' stroke='%23b9c1d0' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M1 1.75 6 6.25 11 1.75'/%3E%3C/svg%3E");
+}
+
+/* These field classes set `padding` as a shorthand, which beats the generic rule above —
+   restate the right-hand gap so the value never runs under the chevron. */
+select.auth-field,
+select.paper-field,
+select.date-chip {
+  padding-right: 2.5rem;
+}
+
+/* Narrow controls (the header currency, compact pickers) need the chevron tucked in closer. */
+select.header-compact,
+select[data-compact="true"] {
+  background-position: right 0.4rem center;
+  padding-right: 1.45rem;
+}
+
+select:disabled {
+  background-image: none;
+  padding-right: 1.1rem;
+}
+
+
+/* ---- Summary ticket ------------------------------------------------------------------------------
+   The checkout summary is a boarding pass: photo header, itemised body, perforation, then the total.
+   Its colours live here so the whole thing follows the theme instead of being pinned to one palette. */
+.ticket {
+  --tk-from: #1b3d64;
+  --tk-to: #0d2541;
+  --tk-text: #e8eef6;
+  --tk-strong: #ffffff;
+  --tk-muted: #93a6bd;
+  --tk-gold: #c5a46a;
+  --tk-rim: rgba(255, 255, 255, 0.1);
+  --tk-hi: rgba(255, 255, 255, 0.12);
+  --tk-perf: rgba(255, 255, 255, 0.28);
+  --tk-plate-from: #21497a;
+  --tk-plate-to: #12304f;
+  --tk-plate-hair: #e8d3a3;
+  --tk-amount: #f7f3ea;
+  --tk-amount-glow: 0 0 18px rgba(197, 164, 106, 0.45);
+  --tk-good: #4ade80;
+  --tk-scrim: #0d2541;
+  --tk-shadow: 0 34px 64px -28px rgba(3, 12, 26, 0.9), 0 10px 22px -14px rgba(3, 12, 26, 0.7),
+    inset 0 1px 0 rgba(255, 255, 255, 0.12);
+  --tk-plate-shadow: 0 16px 32px -14px rgba(4, 16, 31, 0.8), inset 0 1px 0 rgba(255, 255, 255, 0.14);
+}
+
+html[data-theme="light"] .ticket {
+  --tk-from: #fffdf8;
+  --tk-to: #f4ead8;
+  --tk-text: #22314a;
+  --tk-strong: #0b1c34;
+  --tk-muted: #62718a;
+  --tk-gold: #8a6a22;
+  --tk-rim: rgba(11, 28, 52, 0.1);
+  --tk-hi: rgba(255, 255, 255, 0.75);
+  --tk-perf: rgba(11, 28, 52, 0.22);
+  --tk-plate-from: #f6e7c8;
+  --tk-plate-to: #e3cd9f;
+  --tk-plate-hair: #ffffff;
+  --tk-amount: #15243d;
+  --tk-amount-glow: 0 1px 0 rgba(255, 255, 255, 0.6);
+  --tk-good: #15733f;
+  --tk-scrim: #1a2740;
+  --tk-shadow: 0 30px 56px -26px rgba(11, 28, 52, 0.38), 0 8px 18px -12px rgba(11, 28, 52, 0.25),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9);
+  --tk-plate-shadow: 0 14px 28px -14px rgba(120, 92, 32, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.85);
+}
+
+.ticket-card {
+  background: linear-gradient(180deg, var(--tk-from), var(--tk-to));
+  box-shadow: var(--tk-shadow);
+  color: var(--tk-text);
+}
+
+.ticket-card::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  border: 1px solid var(--tk-rim);
+  pointer-events: none;
+}
+
+.ticket-scrim {
+  background: linear-gradient(to top, var(--tk-scrim), color-mix(in srgb, var(--tk-scrim) 60%, transparent) 55%, transparent);
+}
+
+.ticket-label {
+  color: var(--tk-gold);
+}
+
+.ticket-strong {
+  color: var(--tk-strong);
+}
+
+.ticket-muted {
+  color: var(--tk-muted);
+}
+
+.ticket-good {
+  color: var(--tk-good);
+}
+
+.ticket-rule {
+  background: linear-gradient(to right, color-mix(in srgb, var(--tk-gold) 55%, transparent), transparent);
+}
+
+.ticket-perf {
+  background-image: repeating-linear-gradient(to right, var(--tk-perf) 0 6px, transparent 6px 12px);
+}
+
+.ticket-plate {
+  background: linear-gradient(180deg, var(--tk-plate-from), var(--tk-plate-to));
+  box-shadow: var(--tk-plate-shadow);
+}
+
+.ticket-plate::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  border: 1px solid var(--tk-rim);
+  pointer-events: none;
+}
+
+.ticket-hair {
+  background: linear-gradient(to right, transparent, var(--tk-plate-hair), transparent);
+}
+
+.ticket-hi {
+  background: linear-gradient(to bottom, var(--tk-hi), transparent);
+}
+
+.ticket-amount {
+  color: var(--tk-amount);
+  text-shadow: var(--tk-amount-glow);
 }

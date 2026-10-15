@@ -1675,20 +1675,27 @@ function CheckoutInner() {
           </div>
         )}
       </div>
-      <aside className="paper h-fit min-w-0 lg:sticky lg:top-20">
-        <Image src={stay.cover} alt="" width={640} height={360} className="h-28 w-full object-cover" />
-        <div className="p-5">
-          <p className="text-[11px] uppercase tracking-[0.16em] text-ink/45">{packageStay ? "Package" : "Hotel"}</p>
-          <h2 className="font-display mt-1 text-xl leading-tight text-ink">
-            {packageStay ? orderedLegs.map((l) => l.name).join(" · ") : stay.name}
-          </h2>
-          <p className="mt-1 text-sm text-ink/60">
-            {packageStay
-              ? `${formatDay(input.checkin)} — ${formatDay(tripEnd)} · ${party} guests`
-              : `${quote.roomLabel} · ${formatDay(input.checkin)} — ${formatDay(input.checkout)} · ${quote.nights} nights${stay.city ? ` · ${stay.city}` : ""}`}
-          </p>
-          {packageStay ? (
-            <div className="mt-4">
+      <aside className="ticket h-fit min-w-0 lg:sticky lg:top-20">
+        {/* A boarding pass: photo header, itemised body, perforation, then the total. */}
+        <div className="ticket-card relative overflow-hidden rounded-3xl">
+          <div className="relative h-40">
+            <Image src={stay.cover} alt="" fill sizes="(min-width: 1024px) 26rem, 100vw" className="object-cover" />
+            <span aria-hidden className="ticket-scrim absolute inset-0" />
+            <div className="absolute inset-x-0 bottom-0 p-5">
+              <p className="text-[10px] font-bold uppercase tracking-[0.24em] text-[#e2c488]">{packageStay ? "Package" : "Hotel"}</p>
+              <h2 className="font-display mt-1 text-xl leading-tight text-white [text-shadow:0_1px_12px_rgba(3,12,26,0.75)]">
+                {packageStay ? orderedLegs.map((l) => l.name).join(" · ") : stay.name}
+              </h2>
+              <p className="mt-1 text-sm text-white/80">
+                {packageStay
+                  ? `${formatDay(input.checkin)} — ${formatDay(tripEnd)} · ${party} guest${party === 1 ? "" : "s"}`
+                  : `${quote.roomLabel} · ${formatDay(input.checkin)} — ${formatDay(input.checkout)} · ${quote.nights} night${quote.nights === 1 ? "" : "s"}`}
+              </p>
+            </div>
+          </div>
+
+          <div className="px-5 pb-5 pt-5">
+            {packageStay ? (
               <PackageBill
                 hotels={reviewHotels}
                 meals={meals}
@@ -1706,21 +1713,31 @@ function CheckoutInner() {
                 compact
                 showTotal={false}
               />
-              <div className="mt-4 flex items-end justify-between gap-3 rounded-xl bg-[#c5a46a]/18 px-4 py-3.5">
-                <div>
-                  <p className="text-[11px] uppercase tracking-[0.16em] text-ink/55">You pay</p>
-                  <p className="mt-0.5 text-xs text-ink/55">
+            ) : (
+              <PriceBreakdown quote={quote} compact onTicket />
+            )}
+
+            {/* Perforation — the notches are cut with circles in the page colour. */}
+            <div className="relative my-5 h-px" aria-hidden>
+              <span className="absolute -left-8 top-1/2 h-5 w-5 -translate-y-1/2 rounded-full bg-ink" />
+              <span className="absolute -right-8 top-1/2 h-5 w-5 -translate-y-1/2 rounded-full bg-ink" />
+              <span className="ticket-perf block h-px w-full" />
+            </div>
+
+            <div className="ticket-plate relative overflow-hidden rounded-2xl">
+              <span aria-hidden className="ticket-hair pointer-events-none absolute inset-x-5 top-0 h-px" />
+              <span aria-hidden className="ticket-hi pointer-events-none absolute inset-x-0 top-0 h-1/2" />
+              <div className="relative flex items-center justify-between gap-3 px-5 py-4">
+                <div className="min-w-0">
+                  <p className="ticket-label text-[11px] font-bold uppercase tracking-[0.22em]">You pay</p>
+                  <p className="ticket-muted mt-1 text-xs">
                     {party} guest{party === 1 ? "" : "s"} · {orderedLegs.length} hotel{orderedLegs.length === 1 ? "" : "s"}
                   </p>
                 </div>
-                <p className="font-display text-2xl leading-none text-ink">{money(grand)}</p>
+                <p className="ticket-amount font-display shrink-0 text-3xl leading-none">{money(grand)}</p>
               </div>
             </div>
-          ) : (
-            <div className="mt-4">
-              <PriceBreakdown quote={quote} compact />
-            </div>
-          )}
+          </div>
         </div>
       </aside>
     </div>

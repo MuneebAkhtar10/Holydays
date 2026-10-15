@@ -139,7 +139,7 @@ function SearchInner() {
               <label className="relative inline-flex h-11 min-w-[13rem] items-center">
                 <span className="sr-only">Sort</span>
                 <select
-                  className="h-11 w-full appearance-none rounded-full border border-brass/35 bg-ink-2 pl-4 pr-10 text-sm text-sand outline-none focus:border-brass"
+                  className="h-11 w-full rounded-full border border-brass/35 bg-ink-2 pl-4 text-sm text-sand outline-none focus:border-brass"
                   value={sort}
                   onChange={(e) => setSort(e.target.value as SortKey)}
                 >
@@ -149,9 +149,7 @@ function SearchInner() {
                     </option>
                   ))}
                 </select>
-                <span className="pointer-events-none absolute right-3 text-mist" aria-hidden>
-                  ▾
-                </span>
+
               </label>
             </div>
           </div>

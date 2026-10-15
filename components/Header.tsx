@@ -142,7 +142,8 @@ function HeaderBar() {
           <select
             value={currency}
             onChange={(e) => setCurrency(e.target.value as typeof currency)}
-            className="h-[1.9rem] cursor-pointer rounded-full border-0 bg-transparent px-1 text-[11px] font-semibold tracking-normal text-sand/90 transition-colors hover:bg-brass/15 sm:px-2 sm:text-xs sm:tracking-[0.1em]"
+            data-compact="true"
+            className="h-[1.9rem] cursor-pointer rounded-full border-0 bg-transparent pl-1.5 text-[11px] font-semibold tracking-normal text-sand/90 transition-colors hover:bg-brass/15 sm:pl-2 sm:text-xs sm:tracking-[0.1em]"
             aria-label="Currency"
             title="Display currency"
           >
