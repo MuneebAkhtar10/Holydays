@@ -85,8 +85,8 @@ function TaxiItinerary({ listing }: { listing: Listing }) {
           showVehicle={false}
         />
         <div className="min-w-0">
-          <p className="text-[10px] uppercase tracking-[0.16em] text-brass">Driver</p>
-          <p className="truncate text-sm font-medium text-sand">{taxi.driver}</p>
+          <p className="ticket-label text-[10px] font-bold uppercase tracking-[0.16em]">Driver</p>
+          <p className="ticket-strong truncate text-sm font-semibold">{taxi.driver}</p>
           <p className="truncate text-xs text-mist">
             {taxi.vehicle}
             {taxi.model ? ` · ${taxi.model}` : ""}
@@ -287,28 +287,28 @@ export function ListingBook({ fallbackSlug }: { fallbackSlug?: string }) {
 
   const paymentBlock = canPayNow ? (
 <div>
-                <p className="auth-label">Payment</p>
+                <p className="ticket-label text-[11px] font-bold uppercase tracking-[0.18em]">Payment</p>
                 <div className="mt-2 grid grid-cols-2 gap-2">
                   <button
                     type="button"
                     aria-pressed={payMethod === "card"}
-                    className={`rounded-xl border px-3 py-3 text-left text-sm ${payMethod === "card" ? "border-flame bg-flame/10" : "border-brass/30"}`}
+                    className={`rounded-xl border px-3 py-3 text-left text-sm transition-colors ${payMethod === "card" ? "border-[color:var(--tk-gold)] bg-[color:color-mix(in_srgb,var(--tk-gold)_18%,transparent)] shadow-[inset_0_1px_0_rgba(255,255,255,0.18)]" : "border-[color:var(--tk-rim)] hover:border-[color:color-mix(in_srgb,var(--tk-gold)_55%,transparent)]"}`}
                     onClick={() => setPayMethod("card")}
                   >
-                    <span className="block text-[11px] uppercase tracking-[0.14em] text-brass">Pay now</span>
-                    <span className="mt-1 block text-sand">Card · {money(tripTotal)}</span>
+                    <span className="ticket-label block text-[11px] font-bold uppercase tracking-[0.14em]">Pay now</span>
+                    <span className="ticket-strong mt-1 block font-semibold">Card · {money(tripTotal)}</span>
                   </button>
                   <button
                     type="button"
                     aria-pressed={payMethod === "property"}
-                    className={`rounded-xl border px-3 py-3 text-left text-sm ${payMethod === "property" ? "border-flame bg-flame/10" : "border-brass/30"}`}
+                    className={`rounded-xl border px-3 py-3 text-left text-sm transition-colors ${payMethod === "property" ? "border-[color:var(--tk-gold)] bg-[color:color-mix(in_srgb,var(--tk-gold)_18%,transparent)] shadow-[inset_0_1px_0_rgba(255,255,255,0.18)]" : "border-[color:var(--tk-rim)] hover:border-[color:color-mix(in_srgb,var(--tk-gold)_55%,transparent)]"}`}
                     onClick={() => setPayMethod("property")}
                   >
-                    <span className="block text-[11px] uppercase tracking-[0.14em] text-brass">Pay later</span>
-                    <span className="mt-1 block text-sand">{taxi ? "Pay the driver" : listing.kind === "RESTAURANT" ? "Pay at the restaurant" : "Pay on the day"}</span>
+                    <span className="ticket-label block text-[11px] font-bold uppercase tracking-[0.14em]">Pay later</span>
+                    <span className="ticket-strong mt-1 block font-semibold">{taxi ? "Pay the driver" : listing.kind === "RESTAURANT" ? "Pay at the restaurant" : "Pay on the day"}</span>
                   </button>
                 </div>
-                <p className="mt-2 text-xs text-mist">
+                <p className="ticket-muted mt-2 text-xs">
                   {payingNow
                     ? "You will pay securely on Stripe. The booking is confirmed after the charge succeeds."
                     : ziyarat
@@ -568,38 +568,39 @@ export function ListingBook({ fallbackSlug }: { fallbackSlug?: string }) {
           )}
         </div>
 
-        <aside className="h-fit rounded-2xl border border-brass/30 bg-ink-2 p-4 shadow-[0_20px_60px_rgba(0,0,0,0.28)] sm:p-6">
-          {reservation && <p className="mb-1 text-[11px] uppercase tracking-[0.18em] text-brass">Reserve a table</p>}
+        <aside className="ticket h-fit">
+          <div className="ticket-card relative overflow-hidden rounded-3xl p-5 sm:p-6">
+          {reservation && <p className="ticket-label mb-1 text-[11px] font-bold uppercase tracking-[0.18em]">Reserve a table</p>}
           {taxi && taxiMode === "custom" ? (
-            <p className="font-display text-2xl">Customize this trip</p>
+            <p className="ticket-strong font-display text-2xl">Customize this trip</p>
           ) : ziyarat && Number(listing.price) <= 0 ? (
             guideFee > 0 ? (
               <div>
-                <p className="font-display text-3xl">
-                  {money(guideFee)} <span className="text-base text-mist">{guideGroup ? "/ day · whole group" : "/ guest · per day"}</span>
+                <p className="ticket-strong font-display text-3xl">
+                  {money(guideFee)} <span className="ticket-muted text-base font-medium">{guideGroup ? "/ day · whole group" : "/ guest · per day"}</span>
                 </p>
-                <p className="mt-1 text-sm text-mist">
+                <p className="ticket-muted mt-1 text-sm">
                   Entry is free. The fee is for your guide,{" "}
                   {guideGroup ? "one flat amount for each day, however many guests you bring." : "charged for each guest on every day you book."}
                 </p>
               </div>
             ) : (
               <div>
-                <p className="font-display text-2xl">Price coming soon</p>
-                <p className="mt-1 text-sm text-mist">The host has not set the guide fee yet. Booking opens as soon as they do.</p>
+                <p className="ticket-strong font-display text-2xl">Price coming soon</p>
+                <p className="ticket-muted mt-1 text-sm">The host has not set the guide fee yet. Booking opens as soon as they do.</p>
               </div>
             )
           ) : (
-            <p className="font-display text-3xl">
+            <p className="ticket-strong font-display text-3xl">
               {money(taxi ? (taxiMode === "private" ? taxi.privateRate : taxi.ratePerPerson) : listing.price)}{" "}
-              <span className="text-base text-mist">
+              <span className="ticket-muted text-base font-medium">
                 / {taxi ? (taxiMode === "private" ? "vehicle" : "person") : unitLabel[listing.priceUnit] ?? listing.priceUnit}
                 {ziyarat ? " · per day" : ""}
               </span>
             </p>
           )}
           {taxi ? (
-            <div className="mt-4 flex items-center gap-3 rounded-xl border border-brass/20 bg-ink/25 px-3 py-2.5">
+            <div className="mt-4 flex items-center gap-3 rounded-xl border border-[color:var(--tk-rim)] bg-black/10 px-3 py-2.5">
               <TaxiPhotos
                 driver={taxi.driver}
                 driverPhoto={taxi.driverPhoto}
@@ -611,9 +612,9 @@ export function ListingBook({ fallbackSlug }: { fallbackSlug?: string }) {
                 showVehicle={false}
               />
               <div className="min-w-0">
-                <p className="text-[10px] uppercase tracking-[0.16em] text-brass">Driver</p>
-                <p className="truncate text-sm font-medium text-sand">{taxi.driver}</p>
-                <p className="truncate text-xs text-mist">
+                <p className="ticket-label text-[10px] font-bold uppercase tracking-[0.16em]">Driver</p>
+                <p className="ticket-strong truncate text-sm font-semibold">{taxi.driver}</p>
+                <p className="ticket-muted truncate text-xs">
                   {taxi.vehicle}
                   {taxi.model ? ` · ${taxi.model}` : ""}
                 </p>
@@ -621,11 +622,11 @@ export function ListingBook({ fallbackSlug }: { fallbackSlug?: string }) {
             </div>
           ) : null}
           {asAdmin ? (
-            <p className="mt-4 rounded-xl bg-ink/30 px-4 py-3 text-sm text-mist">
+            <p className="ticket-muted mt-4 rounded-xl border border-[color:var(--tk-rim)] px-4 py-3 text-sm">
               Admin preview — this is how guests see the listing. Booking is turned off for admin accounts.
             </p>
           ) : listing.status && listing.status !== "approved" ? (
-            <p className="mt-4 rounded-xl bg-ink/30 px-4 py-3 text-sm text-mist">
+            <p className="ticket-muted mt-4 rounded-xl border border-[color:var(--tk-rim)] px-4 py-3 text-sm">
               Booking opens once this listing is approved and live.
             </p>
           ) : (
@@ -633,7 +634,7 @@ export function ListingBook({ fallbackSlug }: { fallbackSlug?: string }) {
             reservationForm
           ) : (
           <>
-          <p className="mt-2 text-sm text-mist">
+          <p className="ticket-muted mt-3 text-sm">
             {ziyarat
               ? "Choose the day you will go. Staying longer? Pick a last day and every day in between is booked."
               : oneDay
@@ -651,49 +652,49 @@ export function ListingBook({ fallbackSlug }: { fallbackSlug?: string }) {
               <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
                 <button
                   type="button"
-                  className={`rounded-xl border px-3 py-3 text-left text-sm ${taxiMode === "shared" ? "border-flame bg-flame/10" : "border-brass/30"}`}
+                  className={`rounded-xl border px-3 py-3 text-left text-sm transition-colors ${taxiMode === "shared" ? "border-[color:var(--tk-gold)] bg-[color:color-mix(in_srgb,var(--tk-gold)_18%,transparent)] shadow-[inset_0_1px_0_rgba(255,255,255,0.18)]" : "border-[color:var(--tk-rim)] hover:border-[color:color-mix(in_srgb,var(--tk-gold)_55%,transparent)]"}`}
                   onClick={() => setTaxiMode("shared")}
                 >
-                  <span className="block text-[11px] uppercase tracking-[0.14em] text-brass">Shared</span>
-                  <span className="mt-1 block text-sand">{money(taxi.ratePerPerson)} / person</span>
+                  <span className="ticket-label block text-[11px] font-bold uppercase tracking-[0.14em]">Shared</span>
+                  <span className="ticket-strong mt-1 block font-semibold">{money(taxi.ratePerPerson)} / person</span>
                 </button>
                 <button
                   type="button"
-                  className={`rounded-xl border px-3 py-3 text-left text-sm ${taxiMode === "private" ? "border-flame bg-flame/10" : "border-brass/30"}`}
+                  className={`rounded-xl border px-3 py-3 text-left text-sm transition-colors ${taxiMode === "private" ? "border-[color:var(--tk-gold)] bg-[color:color-mix(in_srgb,var(--tk-gold)_18%,transparent)] shadow-[inset_0_1px_0_rgba(255,255,255,0.18)]" : "border-[color:var(--tk-rim)] hover:border-[color:color-mix(in_srgb,var(--tk-gold)_55%,transparent)]"}`}
                   onClick={() => setTaxiMode("private")}
                 >
-                  <span className="block text-[11px] uppercase tracking-[0.14em] text-brass">Private</span>
-                  <span className="mt-1 block text-sand">{money(taxi.privateRate)} full vehicle</span>
+                  <span className="ticket-label block text-[11px] font-bold uppercase tracking-[0.14em]">Private</span>
+                  <span className="ticket-strong mt-1 block font-semibold">{money(taxi.privateRate)} full vehicle</span>
                 </button>
                 <button
                   type="button"
-                  className={`rounded-xl border px-3 py-3 text-left text-sm ${taxiMode === "custom" ? "border-flame bg-flame/10" : "border-brass/30"}`}
+                  className={`rounded-xl border px-3 py-3 text-left text-sm transition-colors ${taxiMode === "custom" ? "border-[color:var(--tk-gold)] bg-[color:color-mix(in_srgb,var(--tk-gold)_18%,transparent)] shadow-[inset_0_1px_0_rgba(255,255,255,0.18)]" : "border-[color:var(--tk-rim)] hover:border-[color:color-mix(in_srgb,var(--tk-gold)_55%,transparent)]"}`}
                   onClick={() => setTaxiMode("custom")}
                 >
-                  <span className="block text-[11px] uppercase tracking-[0.14em] text-brass">Customize</span>
-                  <span className="mt-1 block text-sand">Any duration, any route</span>
+                  <span className="ticket-label block text-[11px] font-bold uppercase tracking-[0.14em]">Customize</span>
+                  <span className="ticket-strong mt-1 block font-semibold">Any duration, any route</span>
                 </button>
               </div>
             )}
             {taxiMode === "custom" && (
-              <div className="space-y-3 rounded-xl border border-brass/25 bg-ink/20 p-3">
-                <p className="text-xs text-mist">Hire this driver for as long as you need — no fixed route or stops. How much time do you need?</p>
+              <div className="space-y-3 rounded-xl border border-[color:var(--tk-rim)] bg-black/10 p-3">
+                <p className="ticket-muted text-xs">Hire this driver for as long as you need — no fixed route or stops. How much time do you need?</p>
                 <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-4">
                   {[6, 12, 24].map((h) => (
                     <button
                       key={h}
                       type="button"
-                      className={`rounded-lg border px-2 py-2 text-center text-xs ${customHours === h ? "border-flame bg-flame/10 text-sand" : "border-brass/25 text-mist"}`}
+                      className={`rounded-lg border px-2 py-2 text-center text-xs font-semibold transition-colors ${customHours === h ? "border-[color:var(--tk-gold)] bg-[color:color-mix(in_srgb,var(--tk-gold)_18%,transparent)] ticket-strong" : "border-[color:var(--tk-rim)] ticket-muted hover:border-[color:color-mix(in_srgb,var(--tk-gold)_55%,transparent)]"}`}
                       onClick={() => setCustomHours(h)}
                     >
                       {h === 24 ? "Full day" : `${h}h`}
                     </button>
                   ))}
-                  <label className="rounded-lg border border-brass/25 px-1.5 py-1 text-center text-xs text-mist">
+                  <label className="ticket-muted rounded-lg border border-[color:var(--tk-rim)] px-1.5 py-1 text-center text-xs">
                     <input
                       type="number"
                       min={1}
-                      className="w-full bg-transparent text-center text-sand outline-none"
+                      className="ticket-strong w-full bg-transparent text-center font-semibold outline-none"
                       value={customHours}
                       onChange={(e) => setCustomHours(Math.max(1, Number(e.target.value) || 1))}
                     />
@@ -709,7 +710,7 @@ export function ListingBook({ fallbackSlug }: { fallbackSlug?: string }) {
                     onChange={(e) => setCustomNote(e.target.value)}
                   />
                 </label>
-                <p className="rounded-lg bg-flame/10 px-3 py-2 text-xs text-sand">
+                <p className="ticket-text rounded-lg border border-[color:var(--tk-rim)] bg-[color:color-mix(in_srgb,var(--tk-gold)_10%,transparent)] px-3 py-2 text-xs">
                   There's no fixed price for a custom trip — it depends on where you go. Once this request is sent, contact {taxi?.driver || "the driver"} directly to agree on a rate.
                 </p>
               </div>
@@ -754,7 +755,7 @@ export function ListingBook({ fallbackSlug }: { fallbackSlug?: string }) {
                       {n} {n === 1 ? "day" : "days"}
                     </button>
                   ))}
-                  <span className="ml-auto text-xs text-mist">
+                  <span className="ticket-muted ml-auto text-xs font-medium">
                     {visitDays} {visitDays === 1 ? "day" : "days"} · up to {MAX_VISIT_DAYS}
                   </span>
                 </div>
@@ -776,11 +777,11 @@ export function ListingBook({ fallbackSlug }: { fallbackSlug?: string }) {
             {ziyarat && (
               <div>
                 <p className="auth-label">Guests</p>
-                <div className="mt-2 flex items-center justify-between rounded-xl border border-brass/25 bg-ink/25 px-3 py-2">
+                <div className="mt-2 flex items-center justify-between rounded-xl border border-[color:var(--tk-rim)] bg-black/10 px-3 py-2">
                   <button type="button" aria-label="Fewer guests" className="btn-ghost px-3! py-1! text-lg! leading-none" disabled={guests <= 1} onClick={() => setGuests((g) => Math.max(1, g - 1))}>
                     −
                   </button>
-                  <span className="text-sand">
+                  <span className="ticket-strong font-semibold">
                     {guests} {guests === 1 ? "guest" : "guests"}
                   </span>
                   <button type="button" aria-label="More guests" className="btn-ghost px-3! py-1! text-lg! leading-none" disabled={guests >= 50} onClick={() => setGuests((g) => Math.min(50, g + 1))}>
@@ -801,7 +802,7 @@ export function ListingBook({ fallbackSlug }: { fallbackSlug?: string }) {
                   onChange={(e) => setGuests(Number(e.target.value))}
                 />
                 {taxi && taxiMode === "shared" && (
-                  <span className="mt-1 block text-xs text-mist">Only {taxi.vacant} of {taxi.seats} seats open on this trip.</span>
+                  <span className="ticket-muted mt-1 block text-xs font-medium">Only {taxi.vacant} of {taxi.seats} seats open on this trip.</span>
                 )}
               </label>
             )}
@@ -810,23 +811,23 @@ export function ListingBook({ fallbackSlug }: { fallbackSlug?: string }) {
               <input className="auth-field" placeholder="03xx xxxxxxx" value={phone} onChange={(e) => setPhone(e.target.value)} />
             </label>
             {ziyarat && (
-              <div className="rounded-xl bg-ink/30 px-4 py-3 text-sm">
-                <p className="text-sand">
+              <div className="rounded-xl border border-[color:var(--tk-rim)] px-4 py-3 text-sm">
+                <p className="ticket-strong font-semibold">
                   {formatDay(start)}
                   {lastDay !== start ? ` — ${formatDay(lastDay)}` : ""} · {visitDays} {visitDays === 1 ? "day" : "days"} · {guests} {guests === 1 ? "guest" : "guests"}
                 </p>
                 {unpriced ? (
-                  <p className="mt-1 text-mist">No price set yet, so this Ziyarah cannot be booked.</p>
+                  <p className="ticket-muted mt-1">No price set yet, so this Ziyarah cannot be booked.</p>
                 ) : (
                   <>
-                    <ul className="mt-2 space-y-1 text-xs text-mist">
+                    <ul className="ticket-muted mt-2 space-y-1 text-xs">
                       {visitFee > 0 && (
                         <li className="flex justify-between gap-3">
                           <span>
                             Visit · {money(listing.price)}
                             {perPerson ? ` × ${guests} ${guests === 1 ? "guest" : "guests"}` : ""} × {visitDays} {visitDays === 1 ? "day" : "days"}
                           </span>
-                          <span className="tabular-nums text-sand">{money(visitFee)}</span>
+                          <span className="ticket-strong font-semibold tabular-nums">{money(visitFee)}</span>
                         </li>
                       )}
                       {guideTotal > 0 && (
@@ -835,11 +836,11 @@ export function ListingBook({ fallbackSlug }: { fallbackSlug?: string }) {
                             Guide · {money(guideFee)}
                             {guideGroup ? " flat" : ` × ${guests} ${guests === 1 ? "guest" : "guests"}`} × {visitDays} {visitDays === 1 ? "day" : "days"}
                           </span>
-                          <span className="tabular-nums text-sand">{money(guideTotal)}</span>
+                          <span className="ticket-strong font-semibold tabular-nums">{money(guideTotal)}</span>
                         </li>
                       )}
                     </ul>
-                    <p className="mt-2 flex items-baseline justify-between border-t border-brass/15 pt-2 text-sand">
+                    <p className="ticket-strong mt-2 flex items-baseline justify-between border-t border-[color:var(--tk-rim)] pt-2 font-semibold">
                       <span>Total</span>
                       <span className="font-display text-2xl">{money(tripTotal)}</span>
                     </p>
@@ -859,11 +860,34 @@ export function ListingBook({ fallbackSlug }: { fallbackSlug?: string }) {
             )}
             {error && <p className="text-sm text-rose">{error}</p>}
             {taxi && (
-              <p className="text-sm text-mist">
-                {taxiMode === "custom"
-                  ? `${customHours} hour${customHours === 1 ? "" : "s"} · rate agreed with the driver`
-                  : `Total ${money(tripTotal)} · ${taxiMode === "shared" ? `${guests} guest${guests === 1 ? "" : "s"}` : "private vehicle"}`}
-              </p>
+              <>
+                <div className="relative h-px" aria-hidden>
+                  <span className="absolute -left-9 top-1/2 h-5 w-5 -translate-y-1/2 rounded-full bg-ink" />
+                  <span className="absolute -right-9 top-1/2 h-5 w-5 -translate-y-1/2 rounded-full bg-ink" />
+                  <span className="ticket-perf block h-px w-full" />
+                </div>
+                <div className="ticket-plate relative overflow-hidden rounded-2xl">
+                  <span aria-hidden className="ticket-hair pointer-events-none absolute inset-x-5 top-0 h-px" />
+                  <span aria-hidden className="ticket-hi pointer-events-none absolute inset-x-0 top-0 h-1/2" />
+                  <div className="relative flex items-center justify-between gap-3 px-4 py-3.5">
+                    <div className="min-w-0">
+                      <p className="ticket-label text-[11px] font-bold uppercase tracking-[0.22em]">
+                        {taxiMode === "custom" ? "Rate" : "Total"}
+                      </p>
+                      <p className="ticket-muted mt-1 text-xs">
+                        {taxiMode === "custom"
+                          ? `${customHours} hour${customHours === 1 ? "" : "s"} · agreed with the driver`
+                          : taxiMode === "shared"
+                            ? `${guests} guest${guests === 1 ? "" : "s"}`
+                            : "Private vehicle"}
+                      </p>
+                    </div>
+                    <p className="ticket-amount font-display shrink-0 text-2xl leading-none">
+                      {taxiMode === "custom" ? "On request" : money(tripTotal)}
+                    </p>
+                  </div>
+                </div>
+              </>
             )}
             <button type="submit" className="btn-primary w-full" disabled={Boolean(clash) || Boolean(overlay) || unpriced}>
               {status !== "authenticated"
@@ -882,6 +906,7 @@ export function ListingBook({ fallbackSlug }: { fallbackSlug?: string }) {
           </>
           )
           )}
+          </div>
         </aside>
       </div>
 
