@@ -112,8 +112,13 @@ export function emailShell(input: {
 ${input.preheader ? `<div style="display:none;max-height:0;overflow:hidden;opacity:0;color:transparent">${esc(input.preheader)}</div>` : ""}
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#efe8d9"><tbody><tr><td align="center" style="padding:28px 12px">
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:600px"><tbody>
-    <tr><td style="background:${NAVY};border-radius:18px 18px 0 0;padding:22px 32px">
-      <span style="font-family:${SERIF};font-size:22px;letter-spacing:.32em;color:${GOLD}">HOLYDAYS</span>
+    <tr><td style="background:${NAVY};border-radius:18px 18px 0 0;padding:20px 32px">
+      ${
+        origin
+          ? `<img src="${esc(origin.replace(/\/$/, ""))}/images/holydays-logo.png" width="150" height="43" alt="HolyDays"
+               style="display:block;border:0;outline:none;text-decoration:none;height:43px;width:150px;font-family:${SERIF};font-size:20px;letter-spacing:.3em;color:${GOLD}">`
+          : `<span style="font-family:${SERIF};font-size:22px;letter-spacing:.32em;color:${GOLD}">HOLYDAYS</span>`
+      }
     </td></tr>
     <tr><td style="background:#ffffff;padding:34px 32px 30px;border-left:1px solid ${LINE};border-right:1px solid ${LINE}">
       ${input.eyebrow ? `<p style="margin:0 0 8px;font-family:${SANS};font-size:11px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:${GOLD_DARK}">${esc(input.eyebrow)}</p>` : ""}

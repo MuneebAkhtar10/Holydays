@@ -669,11 +669,11 @@ function StayInner() {
               }
               return (
                 <div className="mt-4 space-y-2">
-                  <button type="button" disabled={soldOut} className="btn-ghost w-full py-3 disabled:cursor-not-allowed disabled:opacity-50" onClick={() => go()}>
-                    {soldOut ? blockedLabel : "Book Now"}
-                  </button>
                   <button type="button" disabled={soldOut} className="btn-primary w-full py-3 disabled:cursor-not-allowed disabled:opacity-50" onClick={() => go("package")}>
-                    Build a package
+                    {soldOut ? blockedLabel : "Build a package"}
+                  </button>
+                  <button type="button" disabled={soldOut} className="btn-ghost w-full py-3 disabled:cursor-not-allowed disabled:opacity-50" onClick={() => go()}>
+                    Book Now
                   </button>
                 </div>
               );

@@ -293,7 +293,7 @@ function TripComposer({
 
           {draft === "route" && (
             <div className="mt-5 space-y-3">
-              <p className="text-sm text-mist">Choose one trip. You will pick a date and vehicle next.</p>
+              <p className="text-sm text-mist">Pick a route, then a day and a car.</p>
               {routes.map((r) => (
                 <article key={r.key} className={nest}>
                   <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
@@ -360,10 +360,8 @@ function TripComposer({
               <p className="font-display mt-2 text-2xl">{route.title}</p>
               <p className="mt-1 text-sm text-mist">
                 {airport
-                  ? (route.leg ?? airportLeg) === "out"
-                    ? `Drop-off defaults to your last day (${formatDay(lastDay)}).`
-                    : `Pick-up defaults to your first day (${formatDay(firstDay)}).`
-                  : "Pick a day during your hotel stay."}
+                  ? `Defaults to ${formatDay((route.leg ?? airportLeg) === "out" ? lastDay : firstDay)}.`
+                  : "Pick a day during your stay."}
               </p>
               <div className="mt-3 flex flex-wrap gap-2">
                 {days.map((d) => (
@@ -416,9 +414,7 @@ function TripComposer({
                     </select>
                   </label>
                   <p className="mt-1 text-xs text-mist">
-                    {(route.leg ?? airportLeg) === "out"
-                      ? "When the car should collect you, leaving enough time before your flight."
-                      : "Use your flight's landing time. The driver waits for you at arrivals."}
+                    {(route.leg ?? airportLeg) === "out" ? "Allow time before your flight." : "Use your landing time — the driver waits at arrivals."}
                   </p>
                 </div>
               )}
@@ -619,10 +615,10 @@ export function AirportTransferStep({
       blurb={
         blurb ||
         (airportLeg === "in"
-          ? `On arrival we pick you up and drop you at ${stayName}.`
+          ? `Private car from the airport to ${stayName}.`
           : airportLeg === "out"
-            ? `Back to airport from ${stayName}.`
-            : `One taxi for ${city} covers every hotel. Arrival drops you at ${stayName}; departure picks you up there.`)
+            ? `Private car from ${stayName} back to the airport.`
+            : `Private car between the airport and ${stayName}.`)
       }
       addLabel={airportLeg === "out" ? "Add another drop off" : airportLeg === "in" ? "Add another pick up" : "Add another transfer"}
       items={items}
@@ -681,7 +677,7 @@ export function DayTripsStep({
       title={title || "Day trips"}
       blurb={
         blurb ||
-        "Add one Ziyarah at a time. Choose the trip, the day it should run, then the driver and vehicle. If the trip ends in another city, we will ask whether you need a hotel there."
+        "Add one visit at a time: the route, the day, then the car."
       }
       addLabel="Add another day trip"
       items={items}

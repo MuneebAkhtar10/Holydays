@@ -78,8 +78,8 @@ function HeaderBar() {
 
   return (
     <>
-    <header className="sticky top-0 z-50 border-b border-brass/20 bg-ink/95 backdrop-blur-md">
-      <div className="mx-auto flex max-w-7xl items-center justify-between gap-1 px-3 py-2 sm:gap-3 sm:px-4 md:px-5">
+    <header className="sticky top-0 z-50 border-b border-brass/25 bg-ink/95 shadow-[0_1px_0_rgba(197,164,106,0.08),0_6px_24px_rgba(8,20,40,0.18)] backdrop-blur-md">
+      <div className="mx-auto flex max-w-7xl items-center justify-between gap-1 px-3 py-1.5 sm:gap-4 sm:px-4 sm:py-2 md:px-5">
         <Link href={isAdmin ? "/admin" : isOwner ? "/owner" : "/"} className="flex shrink-0 items-center gap-2">
           <BrandLogo size="sm" />
           {isAdmin ? (
@@ -90,7 +90,7 @@ function HeaderBar() {
         </Link>
 
         {isAdmin ? (
-          <nav className="hidden items-center gap-4 text-sm text-mist md:flex">
+          <nav className="hidden items-center gap-5 text-sm font-semibold text-mist md:flex">
             <Link href="/admin" className={path.startsWith("/admin") ? "text-sand" : "hover:text-sand"}>
               Approvals
             </Link>
@@ -106,7 +106,7 @@ function HeaderBar() {
               return (
                 <Link key={n.href} href={n.href} scroll={n.href.startsWith("/owner")} onClick={go(n.href)} data-active={n.active} className="header-link relative">
                   <span className="relative">
-                    <Icon className="h-5 w-5" />
+                    <Icon className="h-[1.15rem] w-[1.15rem]" />
                     <UnreadBadge count={unread} />
                   </span>
                   <span className="hidden sm:block">{n.label}</span>
@@ -121,7 +121,7 @@ function HeaderBar() {
               const active = n.href === "/search" ? path.startsWith("/search") || path.startsWith("/stay") : path.startsWith(n.href);
               return (
                 <Link key={n.href} href={n.href} data-active={active} className="header-link">
-                  <Icon className="h-5 w-5" />
+                  <Icon className="h-[1.15rem] w-[1.15rem]" />
                   <span className="hidden sm:block">{n.label}</span>
                 </Link>
               );
@@ -129,11 +129,11 @@ function HeaderBar() {
           </nav>
         )}
 
-        <div className="flex shrink-0 items-center gap-0.5 sm:gap-2">
+        <div className="header-tools shrink-0">
           <button
             type="button"
             onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-            className="rounded-xl p-1.5 text-mist hover:bg-brass/10 hover:text-sand sm:p-2"
+            className="header-tool"
             aria-label={theme === "dark" ? "Switch to light theme" : "Switch to dark theme"}
             title={theme === "dark" ? "Light" : "Dark"}
           >
@@ -142,7 +142,7 @@ function HeaderBar() {
           <select
             value={currency}
             onChange={(e) => setCurrency(e.target.value as typeof currency)}
-            className="rounded-xl border-0 bg-transparent px-0.5 py-2 text-[11px] tracking-normal text-sand/90 hover:bg-brass/10 sm:px-1.5 sm:text-xs sm:tracking-[0.12em]"
+            className="h-[1.9rem] cursor-pointer rounded-full border-0 bg-transparent px-1 text-[11px] font-semibold tracking-normal text-sand/90 transition-colors hover:bg-brass/15 sm:px-2 sm:text-xs sm:tracking-[0.1em]"
             aria-label="Currency"
             title="Display currency"
           >
@@ -155,7 +155,7 @@ function HeaderBar() {
           {!isOwner && !isAdmin && status === "authenticated" && (
             <Link
               href={inbox.unread && inbox.href ? inbox.href : "/trips"}
-              className="relative rounded-xl p-1.5 text-mist hover:bg-brass/10 hover:text-sand sm:p-2"
+              className="header-tool"
               aria-label="Messages"
             >
               <ChatIcon className="h-5 w-5" />
@@ -163,7 +163,7 @@ function HeaderBar() {
             </Link>
           )}
           {!isOwner && !isAdmin && (
-            <Link href="/trips" className="relative rounded-xl p-1.5 text-mist hover:bg-brass/10 hover:text-sand sm:p-2" aria-label={t.trips}>
+            <Link href="/trips" className="header-tool" aria-label={t.trips}>
               <HeartIcon className="h-5 w-5" />
               {wishlist.length > 0 && (
                 <span className="absolute right-0.5 top-0.5 h-4 min-w-4 rounded-full bg-rose px-1 text-center text-[10px] leading-4 text-bone">
@@ -204,7 +204,7 @@ function HeaderBar() {
                   scroll={isOwner ? n.href.startsWith("/owner") : true}
                   onClick={isOwner ? go(n.href) : undefined}
                   aria-current={active ? "page" : undefined}
-                  className={`flex flex-col items-center gap-0.5 px-1 py-2 text-[10px] leading-tight ${
+                  className={`flex flex-col items-center gap-0.5 px-1 py-2 text-[10px] font-semibold leading-tight ${
                     active ? "text-brass" : "text-mist"
                   }`}
                 >
@@ -254,12 +254,14 @@ function AccountMenu({
     <div className="relative" ref={box}>
       <button
         type="button"
-        className="flex items-center gap-2 rounded-full border border-brass/35 px-2 py-1.5 text-sand hover:border-brass"
+        className="flex items-center gap-1.5 rounded-full border border-brass/40 bg-brass/10 p-0.5 text-sand transition-colors hover:border-brass hover:bg-brass/20 md:pr-3"
         onClick={() => setOpen((v) => !v)}
         aria-label="Account"
       >
-        <UserIcon className="h-5 w-5" />
-        <span className="hidden max-w-[7rem] truncate text-sm md:inline">
+        <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-brass/25 text-brass">
+          <UserIcon className="h-3.5 w-3.5" />
+        </span>
+        <span className="hidden max-w-[7rem] truncate text-sm font-semibold md:inline">
           {authenticated ? name?.split(" ")[0] ?? "Account" : signInLabel}
         </span>
       </button>

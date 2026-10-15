@@ -4,6 +4,7 @@ import { bookingInvoiceBreakdown, bookingIsPaid, bookingPackageGrandTotal, booki
 import { formatTime, nightsBetween } from "@/lib/format";
 import { bookingCurrency, formatMoney } from "@/lib/currency";
 import { guideAmount } from "@/lib/trip-total";
+import { passUrl } from "@/lib/booking-pass";
 
 /** Amounts in the currency the guest chose at checkout. */
 const fmt = (b: BookingDTO, n: number) => formatMoney(n, bookingCurrency(b.extra));
@@ -146,6 +147,13 @@ export function confirmationEmail(b: BookingDTO, origin: string): BuiltEmail {
   const receiptNo = `RC-${b.number.replace(/^HD-/, "")}`;
   const invoiceNo = `INV-${b.number.replace(/^HD-/, "")}`;
   const issued = b.createdAt.slice(0, 10);
+  // A link, not an inline image: most mail clients block embedded images by default.
+  let passLink = url;
+  try {
+    passLink = passUrl(origin, b.id);
+  } catch {
+    /* without a signing secret the pass link falls back to the booking page */
+  }
 
   const contact: [string, string][] = [
     ["Property phone", b.listing.phone],
@@ -162,6 +170,7 @@ export function confirmationEmail(b: BookingDTO, origin: string): BuiltEmail {
       : paid
         ? "Your payment is complete — nothing more to pay before you arrive."
         : `Bring ${fmt(b, grand)} to pay ${isStay(b) ? "at the property on arrival" : "on the day"}.`,
+    "Have your booking pass ready to present on arrival.",
     "Open your booking any time to message the host, view your voucher, or make changes.",
   ];
 
@@ -192,6 +201,12 @@ export function confirmationEmail(b: BookingDTO, origin: string): BuiltEmail {
     ${sectionTitle("Before you travel")}
     ${checklist(next)}
 
+    ${sectionTitle("Your pass")}
+    ${paragraphs(
+      "Your booking pass is ready. Present it on arrival and reception staff will scan it to confirm your reservation — no printed copy is required. The same code appears on your invoice and voucher.",
+    )}
+    <p style="margin:14px 0 0">${button(passLink, "Open your pass")}</p>
+
     <p style="margin:28px 0 0">${button(url, "View booking")}
       &nbsp;${button(`${url}/invoice`, "Invoice", "outline")}
       &nbsp;${button(`${url}/receipt`, "Receipt", "outline")}</p>
@@ -199,7 +214,7 @@ export function confirmationEmail(b: BookingDTO, origin: string): BuiltEmail {
   `;
 
   const subject = `Booking confirmed · ${b.listing.name} · ${b.number}`;
-  const text = `Hello ${first},\n\nYour booking is confirmed.\n\n${plainSummary(b, grand)}\n\nInvoice ${invoiceNo} · Receipt ${receiptNo}\nView booking, invoice and receipt: ${url}\n`;
+  const text = `Hello ${first},\n\nYour booking is confirmed.\n\n${plainSummary(b, grand)}\n\nInvoice ${invoiceNo} · Receipt ${receiptNo}\nYour check-in pass: ${passLink}\nView booking, invoice and receipt: ${url}\n`;
   return {
     subject,
     text,

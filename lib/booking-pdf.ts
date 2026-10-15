@@ -1,4 +1,6 @@
-import { PDFDocument, StandardFonts, rgb, type PDFFont, type PDFPage } from "pdf-lib";
+import { readFileSync } from "fs";
+import path from "path";
+import { PDFDocument, StandardFonts, rgb, type PDFFont, type PDFImage, type PDFPage } from "pdf-lib";
 import type { BookingDTO } from "@/lib/booking-dto";
 import { bookingInvoiceBreakdown, bookingIsPaid, bookingPackageGrandTotal, bookingPackageHotelNames } from "@/lib/booking-invoice";
 import { formatMoney, type DisplayCurrency } from "@/lib/currency";
@@ -29,12 +31,26 @@ const longDay = (iso: string) =>
     ? new Date(`${iso}T12:00:00`).toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short", year: "numeric" })
     : "";
 
+/** The brand mark for the document header. Read once; a missing file falls back to the wordmark. */
+let logoCache: Uint8Array | null | undefined;
+function brandLogoPng() {
+  if (logoCache !== undefined) return logoCache;
+  try {
+    logoCache = new Uint8Array(readFileSync(path.join(process.cwd(), "public", "images", "holydays-logo.png")));
+  } catch (err) {
+    console.error("[pdf] brand logo not found", err);
+    logoCache = null;
+  }
+  return logoCache;
+}
+
 class Sheet {
   doc!: PDFDocument;
   page!: PDFPage;
   sans!: PDFFont;
   sansBold!: PDFFont;
   serif!: PDFFont;
+  logo?: PDFImage;
   y = 0;
 
   static async create() {
@@ -43,6 +59,14 @@ class Sheet {
     s.sans = await s.doc.embedFont(StandardFonts.Helvetica);
     s.sansBold = await s.doc.embedFont(StandardFonts.HelveticaBold);
     s.serif = await s.doc.embedFont(StandardFonts.TimesRoman);
+    const png = brandLogoPng();
+    if (png) {
+      try {
+        s.logo = await s.doc.embedPng(png);
+      } catch (err) {
+        console.error("[pdf] brand logo skipped", err);
+      }
+    }
     s.addPage();
     return s;
   }
@@ -62,7 +86,13 @@ class Sheet {
   header(compact = false) {
     const h = compact ? 46 : 74;
     this.page.drawRectangle({ x: 0, y: H - h, width: W, height: h, color: NAVY });
-    this.page.drawText("HOLYDAYS", { x: M, y: H - h / 2 - 8, size: 22, font: this.serif, color: GOLD });
+    if (this.logo) {
+      const lh = compact ? 24 : 36;
+      const lw = (this.logo.width / this.logo.height) * lh;
+      this.page.drawImage(this.logo, { x: M, y: H - h / 2 - lh / 2, width: lw, height: lh });
+    } else {
+      this.page.drawText("HOLYDAYS", { x: M, y: H - h / 2 - 8, size: 22, font: this.serif, color: GOLD });
+    }
     this.page.drawText("Hotels, Ziyarah and taxis for Saudi Arabia, Iraq and Iran", {
       x: W - M - this.sans.widthOfTextAtSize("Hotels, Ziyarah and taxis for Saudi Arabia, Iraq and Iran", 7.5),
       y: H - h / 2 - 3,
@@ -182,7 +212,13 @@ class Sheet {
   }
 }
 
-export async function buildBookingPdf(b: BookingDTO, kind: PdfKind, currency: DisplayCurrency = "PKR") {
+export async function buildBookingPdf(
+  b: BookingDTO,
+  kind: PdfKind,
+  currency: DisplayCurrency = "PKR",
+  /** PNG of the booking pass, drawn on every document so staff can scan the paper copy. */
+  qrPng?: Uint8Array,
+) {
   const money = (n: number) => formatMoney(n, currency).replace(/[^\x20-\x7E -ÿ]/g, "");
   const s = await Sheet.create();
   s.header();
@@ -235,14 +271,28 @@ export async function buildBookingPdf(b: BookingDTO, kind: PdfKind, currency: Di
   );
 
   if (kind === "voucher") {
-    s.ensure(110);
+    const qr = qrPng ? await s.doc.embedPng(qrPng) : null;
+    const h = qr ? 132 : 92;
+    s.ensure(h + 24);
     s.y -= 6;
-    const h = 92;
     s.page.drawRectangle({ x: M, y: s.y - h, width: W - M * 2, height: h, borderColor: GOLD, borderWidth: 1, borderDashArray: [4, 3] });
-    const t = safe(b.number);
-    s.page.drawText(t, { x: W / 2 - s.serif.widthOfTextAtSize(t, 40) / 2, y: s.y - 50, size: 40, font: s.serif, color: NAVY });
-    const hint = reservation ? `Show this at the restaurant  -  table for ${b.guests}` : "Show this at reception on arrival";
-    s.page.drawText(hint, { x: W / 2 - s.sans.widthOfTextAtSize(hint, 9.5) / 2, y: s.y - 72, size: 9.5, font: s.sans, color: SOFT });
+    if (qr) {
+      const size = 104;
+      const qx = M + 18;
+      const qy = s.y - h + (h - size) / 2;
+      s.page.drawImage(qr, { x: qx, y: qy, width: size, height: size });
+      const tx = qx + size + 22;
+      const t = safe(b.number);
+      s.page.drawText(t, { x: tx, y: s.y - 54, size: 32, font: s.serif, color: NAVY });
+      const hint = reservation ? `Show this at the restaurant  -  table for ${b.guests}` : "Show this at reception on arrival";
+      s.page.drawText(hint, { x: tx, y: s.y - 74, size: 9.5, font: s.sans, color: SOFT });
+      s.page.drawText("Scanning the code confirms this reservation against our records.", { x: tx, y: s.y - 90, size: 8.5, font: s.sans, color: MUTED });
+    } else {
+      const t = safe(b.number);
+      s.page.drawText(t, { x: W / 2 - s.serif.widthOfTextAtSize(t, 40) / 2, y: s.y - 50, size: 40, font: s.serif, color: NAVY });
+      const hint = reservation ? `Show this at the restaurant  -  table for ${b.guests}` : "Show this at reception on arrival";
+      s.page.drawText(hint, { x: W / 2 - s.sans.widthOfTextAtSize(hint, 9.5) / 2, y: s.y - 72, size: 9.5, font: s.sans, color: SOFT });
+    }
     s.y -= h + 16;
     s.eyebrow("Good to know");
     for (const line of [
@@ -288,6 +338,29 @@ export async function buildBookingPdf(b: BookingDTO, kind: PdfKind, currency: Di
         { size: 9, color: MUTED },
       );
     }
+  }
+
+  if (qrPng && kind !== "voucher") {
+    const qr = await s.doc.embedPng(qrPng);
+    const size = 86;
+    s.ensure(size + 26);
+    s.y -= 10;
+    s.page.drawImage(qr, { x: M, y: s.y - size, width: size, height: size });
+    s.page.drawText("Booking pass", { x: M + size + 18, y: s.y - 16, size: 9, font: s.sansBold, color: INK });
+    for (const [i, line] of [
+      "Present this code on arrival. Scanning it confirms the",
+      "reservation against our records.",
+      safe(b.number),
+    ].entries()) {
+      s.page.drawText(line, {
+        x: M + size + 18,
+        y: s.y - 32 - i * 13,
+        size: i === 2 ? 10 : 8.5,
+        font: i === 2 ? s.sansBold : s.sans,
+        color: i === 2 ? NAVY : MUTED,
+      });
+    }
+    s.y -= size + 10;
   }
 
   s.footer();

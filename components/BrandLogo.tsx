@@ -2,7 +2,7 @@ import Image from "next/image";
 import { APP_LOGO, APP_NAME } from "@/lib/brand";
 
 const sizes = {
-  sm: "h-10 w-auto sm:h-11 md:h-12",
+  sm: "h-8 w-auto sm:h-9 md:h-10",
   md: "h-12 w-auto sm:h-14",
   lg: "h-16 w-auto md:h-[4.75rem]",
 } as const;

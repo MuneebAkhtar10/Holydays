@@ -54,7 +54,7 @@ export function MealPlanStep({
 
   return (
     <div className="mt-4">
-      <p className="text-sm text-mist">Tap a day to add or remove that meal. Use All / None to fill a whole column at once.</p>
+      <p className="text-sm text-mist">Tap a day to add that meal, or use All / None.</p>
       <div className="mt-3 overflow-x-auto rounded-2xl border border-sand/[0.08] bg-ink-2">
         <table className="w-full min-w-[420px] border-collapse text-sm">
           <thead>

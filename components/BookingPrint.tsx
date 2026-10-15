@@ -16,6 +16,7 @@ export function BookingPrint({ kind }: { kind: "invoice" | "receipt" | "voucher"
   const { money, currency } = useSerai();
   const { id } = useParams<{ id: string }>();
   const [booking, setBooking] = useState<BookingDTO | null>(null);
+  const [pass, setPass] = useState<{ url: string; qr: string } | null>(null);
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
@@ -26,6 +27,10 @@ export function BookingPrint({ kind }: { kind: "invoice" | "receipt" | "voucher"
         setReady(true);
       })
       .catch(() => setReady(true));
+    fetch(`/api/bookings/${id}/pass`, { cache: "no-store" })
+      .then((r) => readJson<{ url?: string; qr?: string }>(r))
+      .then((d) => (d?.qr && d.url ? setPass({ url: d.url, qr: d.qr }) : null))
+      .catch(() => null);
   }, [id]);
 
   const breakdown = useMemo(() => (booking ? bookingInvoiceBreakdown(booking) : null), [booking]);
@@ -228,16 +233,36 @@ export function BookingPrint({ kind }: { kind: "invoice" | "receipt" | "voucher"
           </div>
         )}
         {kind === "voucher" && (
-          <div className="mt-6 border border-dashed border-ink/20 p-6 text-center">
-            <p className="font-display text-5xl tracking-[0.2em]">{booking.number}</p>
-            <p className="mt-3 text-sm text-ink/60">
-              {booking.extra.reservation && booking.extra.time
-                ? `Show this at the restaurant · Table for ${booking.guests} at ${formatTime(String(booking.extra.time))}`
-                : `Show this at reception · Check-in ${booking.listing.checkIn}`}
-            </p>
-            <p className="mt-6 text-xs uppercase tracking-widest text-ink/40">Status: {booking.status}</p>
+          <div className="mt-6 flex flex-col items-center gap-5 border border-dashed border-ink/20 p-6 text-center sm:flex-row sm:text-left print:flex-row print:text-left">
+            {pass ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={pass.qr} alt={`QR code for booking ${booking.number}`} className="h-32 w-32 shrink-0 bg-white" />
+            ) : null}
+            <div className="min-w-0">
+              <p className="font-display text-4xl tracking-[0.18em]">{booking.number}</p>
+              <p className="mt-2 text-sm text-ink/60">
+                {booking.extra.reservation && booking.extra.time
+                  ? `Show this at the restaurant · Table for ${booking.guests} at ${formatTime(String(booking.extra.time))}`
+                  : `Show this at reception · Check-in ${booking.listing.checkIn}`}
+              </p>
+              {pass ? <p className="mt-1 text-xs text-ink/50">Scanning the code confirms this reservation against our records.</p> : null}
+              <p className="mt-4 text-xs uppercase tracking-widest text-ink/40">Status: {booking.status}</p>
+            </div>
           </div>
         )}
+        {pass && kind !== "voucher" ? (
+          <div className="mt-8 flex items-center gap-4 border-t border-ink/10 pt-5">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={pass.qr} alt={`QR code for booking ${booking.number}`} className="h-24 w-24 shrink-0 bg-white" />
+            <div className="min-w-0 text-sm">
+              <p className="font-medium">Booking pass</p>
+              <p className="mt-0.5 text-ink/60">
+                Present this code on arrival. Scanning it confirms the reservation against our records.
+              </p>
+              <p className="mt-1 font-display text-lg tracking-wide">{booking.number}</p>
+            </div>
+          </div>
+        ) : null}
         <p className="mt-8 text-xs text-ink/40">
           Issued {formatDay(booking.createdAt.slice(0, 10))} · {APP_NAME}
         </p>

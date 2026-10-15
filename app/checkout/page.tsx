@@ -52,6 +52,14 @@ import { BedIcon, CarIcon, CheckIcon, ChevronIcon, GuestsIcon, LandmarkIcon, Min
 
 const ZIYARAT_STEPS = ["Guests", "Meals", "Airport Transfer", "Day trips", "Pay", "Confirm"] as const;
 const BUILD_STEPS = ["Guests", "Hotels & trips", "Meals", "Airport pick up", "Airport drop off", "Insurance", "eSIM", "Pay", "Confirm"] as const;
+const STEP_SHORT: Record<string, string> = {
+  "Hotels & trips": "Hotels",
+  "Airport Transfer": "Transfer",
+  "Airport pick up": "Pick up",
+  "Airport drop off": "Drop off",
+  "Day trips": "Day trips",
+};
+
 const STAY_STEPS = ["Guests", "Pay", "Confirm"] as const;
 const ZIYARAT_ICONS = [GuestsIcon, TableIcon, CarIcon, LandmarkIcon, WalletIcon, CheckIcon];
 const BUILD_ICONS = [GuestsIcon, BedIcon, TableIcon, CarIcon, CarIcon, ShieldIcon, SimIcon, WalletIcon, CheckIcon];
@@ -922,7 +930,7 @@ function CheckoutInner() {
         <p className="mt-1 text-sm text-mist">
           {packageStay && country
             ? `${stay.city}, ${pilgrimCountryName(country)} · ${formatDay(input.checkin)} — ${formatDay(tripEnd)}`
-            : "Room and payment only. Package extras are for Saudi, Iraq, and Iran listings."}
+            : "Room and payment only."}
         </p>
         <div className="mt-5 rounded-2xl border border-sand/[0.08] bg-ink-2/60 p-3 sm:p-4">
           <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1.5">
@@ -955,47 +963,80 @@ function CheckoutInner() {
             )}
           </div>
 
-          <div className="mt-2.5 h-1 overflow-hidden rounded-full bg-sand/10">
-            <div
-              className="h-full rounded-full bg-flame transition-[width] duration-300"
-              style={{ width: `${((step + 1) / steps.length) * 100}%` }}
-            />
-          </div>
 
-          <ol className="-mx-1 mt-3 flex gap-1.5 overflow-x-auto px-1 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          {/* Every stage at a glance: a connected rail on desktop, compact dots on phones. */}
+          <ol
+            className="mt-4 hidden sm:grid"
+            style={{ gridTemplateColumns: `repeat(${steps.length}, minmax(0, 1fr))` }}
+          >
             {steps.map((label, i) => {
               const Icon = stepIcons[i];
               const done = i < step;
               const here = i === step;
               const reachable = i <= step || Boolean(phone);
               return (
-                <li key={label} className="shrink-0">
+                <li key={label} className="relative flex min-w-0 flex-col items-center">
+                  {i > 0 ? (
+                    <span
+                      aria-hidden
+                      className={`absolute right-1/2 top-[0.9rem] h-0.5 w-full ${done || here ? "bg-flame/70" : "bg-sand/12"}`}
+                    />
+                  ) : null}
                   <button
                     type="button"
                     disabled={!reachable}
                     aria-current={here ? "step" : undefined}
-                    className={`inline-flex items-center gap-2 rounded-full py-1.5 pl-1.5 pr-3.5 text-[11px] uppercase tracking-[0.1em] transition-colors ${
-                      here
-                        ? "bg-flame text-ink shadow-[0_8px_18px_rgba(154,122,58,0.28)]"
-                        : done
-                          ? "bg-flame/15 text-sand hover:bg-flame/25"
-                          : reachable
-                            ? "text-mist ring-1 ring-brass/25 hover:text-sand"
-                            : "text-mist/60 ring-1 ring-brass/15"
-                    }`}
+                    title={label}
+                    className="group relative z-10 flex w-full min-w-0 flex-col items-center gap-1.5 disabled:cursor-not-allowed"
                     onClick={() => {
                       if (reachable) setStep(i);
                     }}
                   >
                     <span
-                      className={`grid h-5 w-5 shrink-0 place-items-center rounded-full text-[10px] font-bold ${
-                        here ? "bg-ink/15 text-ink" : done ? "bg-flame/30 text-sand" : "bg-sand/[0.06] text-mist"
+                      className={`grid h-[1.8rem] w-[1.8rem] shrink-0 place-items-center rounded-full border-2 transition-colors ${
+                        here
+                          ? "border-flame bg-flame text-ink shadow-[0_0_0_4px_rgba(197,164,106,0.18)]"
+                          : done
+                            ? "border-flame/70 bg-flame/20 text-brass"
+                            : reachable
+                              ? "border-sand/20 bg-ink-2 text-mist group-hover:border-brass/60 group-hover:text-sand"
+                              : "border-sand/12 bg-ink-2 text-mist/50"
                       }`}
                     >
-                      {done ? <CheckIcon className="h-3 w-3" /> : Icon ? <Icon className="h-3 w-3" /> : i + 1}
+                      {done ? <CheckIcon className="h-3.5 w-3.5" /> : Icon ? <Icon className="h-3.5 w-3.5" /> : i + 1}
                     </span>
-                    {label}
+                    <span
+                      className={`w-full truncate px-1 text-center text-[11px] leading-tight ${
+                        here ? "font-bold text-sand" : done ? "font-semibold text-brass/90" : "text-mist"
+                      }`}
+                    >
+                      {STEP_SHORT[label] ?? label}
+                    </span>
                   </button>
+                </li>
+              );
+            })}
+          </ol>
+
+          <ol className="mt-3 flex items-center gap-1.5 sm:hidden">
+            {steps.map((label, i) => {
+              const done = i < step;
+              const here = i === step;
+              const reachable = i <= step || Boolean(phone);
+              return (
+                <li key={label} className="flex-1">
+                  <button
+                    type="button"
+                    disabled={!reachable}
+                    aria-label={`Step ${i + 1}: ${label}`}
+                    aria-current={here ? "step" : undefined}
+                    className={`h-1.5 w-full rounded-full transition-colors ${
+                      here ? "bg-flame" : done ? "bg-flame/45" : "bg-sand/12"
+                    }`}
+                    onClick={() => {
+                      if (reachable) setStep(i);
+                    }}
+                  />
                 </li>
               );
             })}
@@ -1084,7 +1125,7 @@ function CheckoutInner() {
 
         {packageStay && !buildPackage && step === 1 && (
           <div>
-            <p className="mt-5 text-sm text-mist">Hotel rate meals: {MEAL_PLAN_LABEL[quote.rate.meal]}. Extra breakfast / lunch / dinner is the package layer.</p>
+            <p className="mt-5 text-sm text-mist">Your rate includes {MEAL_PLAN_LABEL[quote.rate.meal].toLowerCase()}. Add extra meals below.</p>
             <MealPlanStep
               meals={meals}
               onChange={setMeals}
@@ -1133,8 +1174,8 @@ function CheckoutInner() {
                   {orderedLegs.length} hotel{orderedLegs.length === 1 ? "" : "s"} · {formatDay(input.checkin)} — {formatDay(tripEnd)}
                 </p>
               </div>
-              <p className="mt-1.5 max-w-2xl text-sm text-mist">
-                Edit dates and room counts here. {orderedLegs.length > 1 ? "Use the arrows to change the order you visit them in — each hotel checks its own availability." : "Add more cities with a trip below, or add another hotel directly."}
+              <p className="mt-1 text-sm text-mist">
+                {orderedLegs.length > 1 ? "Drag the order with the arrows. Availability is checked per hotel." : "Set your dates and rooms."}
               </p>
               <div className="mt-4">
                 <TripOrderEditor
@@ -1193,7 +1234,7 @@ function CheckoutInner() {
                 end={tripEnd}
                 onChange={setTaxiPicks}
                 title="City-to-city trips"
-                blurb="Choose a trip such as Karbala → Baghdad. After you pick the car we ask if you want a hotel at the destination. Add another trip from the next city when you are ready."
+                blurb="Travel between cities by private car. We offer a hotel at each new destination."
                 onTripAdded={(taxi, pick) => {
                   const dest = tripDestinationCity(taxi);
                   const originCity = cityNamedIn(taxi.origin, country) || taxi.origin.trim();
@@ -1208,9 +1249,7 @@ function CheckoutInner() {
                 <div className="mt-5 rounded-2xl border border-brass/30 bg-flame/[0.07] p-4 sm:p-5">
                   <p className="text-[11px] uppercase tracking-[0.18em] text-brass">New city on your trip</p>
                   <p className="font-display mt-1 text-xl">Would you like to book a hotel in {hotelAsk.city}?</p>
-                  <p className="mt-1.5 max-w-xl text-sm text-mist">
-                    Your trip goes to {hotelAsk.city}. If yes, pick a hotel and dates for that stay. You can still add more cities after this.
-                  </p>
+                  <p className="mt-1.5 text-sm text-mist">Your trip ends there. You can add more cities afterwards.</p>
                   <div className="mt-4 flex flex-wrap gap-2">
                     <button type="button" className="btn-primary rounded-full" onClick={() => setAddingHotel(true)}>
                       Yes, add a hotel
@@ -1253,7 +1292,7 @@ function CheckoutInner() {
 
         {buildPackage && step === 2 && (
           <div className="space-y-8">
-            <p className="mt-5 text-sm text-mist">Hotel rate meals: {MEAL_PLAN_LABEL[quote.rate.meal]}. Extra breakfast / lunch / dinner is the package layer.</p>
+            <p className="mt-5 text-sm text-mist">Your rate includes {MEAL_PLAN_LABEL[quote.rate.meal].toLowerCase()}. Add extra meals below.</p>
             {orderedLegs.map((h) => {
               const hotelDates = stayNightDates(h.checkin, h.checkout);
               return (
@@ -1284,7 +1323,7 @@ function CheckoutInner() {
             onChange={setTaxiPicks}
             airportLeg="in"
             title="Airport pick up"
-            blurb={`We pick you up and take you to ${stay.name} in ${stay.city}.`}
+            blurb={`Private car from the airport to ${stay.name}.`}
           />
         )}
 
@@ -1302,7 +1341,7 @@ function CheckoutInner() {
               onChange={setTaxiPicks}
               airportLeg="out"
               title="Airport drop off"
-              blurb={`Back to airport from ${lastHotel.name} in ${lastHotel.city}. Reorder your hotels in "Hotels & trips" if you'd like to depart from a different stay.`}
+              blurb={`Private car from ${lastHotel.name} back to the airport.`}
             />
           </div>
         )}
@@ -1311,7 +1350,7 @@ function CheckoutInner() {
           <div className="mt-6 rounded-2xl border border-sand/[0.08] bg-ink-2 p-5 shadow-[0_12px_40px_rgba(11,28,52,0.05)]">
             <p className="text-[11px] uppercase tracking-[0.28em] text-brass">Insurance</p>
             <h2 className="font-display mt-1 text-2xl">Travel insurance</h2>
-            <p className="mt-1 text-sm text-mist">Covers the whole party for this trip. One flat price per guest.</p>
+            <p className="mt-1 text-sm text-mist">One flat price per guest, covering the whole trip.</p>
             <label
               className={`mt-4 flex cursor-pointer items-center justify-between rounded-2xl px-4 py-3.5 ring-1 transition ${
                 insurance ? "bg-flame/10 ring-brass/35" : "bg-sand/[0.03] ring-sand/[0.08] hover:ring-sand/15"
@@ -1333,7 +1372,7 @@ function CheckoutInner() {
             <p className="text-[11px] uppercase tracking-[0.28em] text-brass">eSIM</p>
             <h2 className="font-display mt-1 text-2xl">Data for your trip</h2>
             <p className="mt-1 text-sm text-mist">
-              Mix and match plans for different guests — e.g. 1 GB for one person, 5 GB for another. {party} guest{party === 1 ? "" : "s"} in this party.
+              Choose a plan per guest. {party} guest{party === 1 ? "" : "s"} in this party.
             </p>
             <div className="mt-4 space-y-2">
               {ESIM_PLANS.map((p) => {

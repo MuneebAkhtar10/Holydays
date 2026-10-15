@@ -8,7 +8,7 @@ function Svg({ className, children }: IconProps & { children: ReactNode }) {
       viewBox="0 0 24 24"
       fill="none"
       stroke="currentColor"
-      strokeWidth="1.6"
+      strokeWidth="1.75"
       strokeLinecap="round"
       strokeLinejoin="round"
       className={className ?? "h-5 w-5"}
@@ -22,10 +22,10 @@ function Svg({ className, children }: IconProps & { children: ReactNode }) {
 export function BedIcon(p: IconProps) {
   return (
     <Svg {...p}>
-      <path d="M3 18v-6a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v6" />
-      <path d="M3 18h18" />
-      <path d="M7 10V7a2 2 0 0 1 2-2h2" />
-      <path d="M3 14h18" />
+      <path d="M3 19.5V8" />
+      <path d="M3 13.8h14.5a3.5 3.5 0 0 1 3.5 3.5v2.2" />
+      <path d="M2.4 19.5h19.2" />
+      <path d="M6.6 13.8v-2.1a1.3 1.3 0 0 1 1.3-1.3h3.4a1.3 1.3 0 0 1 1.3 1.3v2.1" />
     </Svg>
   );
 }
@@ -33,9 +33,14 @@ export function BedIcon(p: IconProps) {
 export function LandmarkIcon(p: IconProps) {
   return (
     <Svg {...p}>
-      <path d="M3 21h18" />
-      <path d="M5 21V10l7-5 7 5v11" />
-      <path d="M9 21v-6h6v6" />
+      <path d="M2.6 20.6h18.8" />
+      <path d="M5 20.6v-8.1" />
+      <path d="M19 20.6v-8.1" />
+      <path d="M3.8 12.5a1.2 1.2 0 0 1 2.4 0" />
+      <path d="M17.8 12.5a1.2 1.2 0 0 1 2.4 0" />
+      <path d="M8 20.6v-6.9a4 4 0 0 1 8 0v6.9" />
+      <path d="M12 9.8V7.6" />
+      <path d="M10.3 20.6v-3.1a1.7 1.7 0 0 1 3.4 0v3.1" />
     </Svg>
   );
 }
@@ -43,11 +48,11 @@ export function LandmarkIcon(p: IconProps) {
 export function CarIcon(p: IconProps) {
   return (
     <Svg {...p}>
-      <path d="M5 16h14l1-5-3-4H7L4 11l1 5Z" />
-      <path d="M7 16v2" />
-      <path d="M17 16v2" />
-      <circle cx="7.5" cy="16" r="1.2" />
-      <circle cx="16.5" cy="16" r="1.2" />
+      <path d="M4 16.1v-2.5a2 2 0 0 1 .21-.89l1.93-3.85A2 2 0 0 1 7.93 7.8h8.14a2 2 0 0 1 1.79 1.07l1.93 3.85c.14.28.21.58.21.89v2.5" />
+      <path d="M3.2 16.1h17.6" />
+      <path d="M6.3 12.6h11.4" />
+      <circle cx="7.7" cy="17.9" r="1.5" />
+      <circle cx="16.3" cy="17.9" r="1.5" />
     </Svg>
   );
 }
@@ -55,11 +60,10 @@ export function CarIcon(p: IconProps) {
 export function TableIcon(p: IconProps) {
   return (
     <Svg {...p}>
-      <path d="M4 10h16" />
-      <path d="M6 10v8" />
-      <path d="M18 10v8" />
-      <path d="M4 14h16" />
-      <path d="M12 10v8" />
+      <path d="M6.2 3.4v4.3a2.6 2.6 0 0 0 5.2 0V3.4" />
+      <path d="M8.8 3.4v6.9" />
+      <path d="M8.8 10.3v10.3" />
+      <path d="M17.5 20.6V3.4c1.45 1.7 2.1 3.75 2.1 5.85 0 1.65-.7 2.75-2.1 3.15" />
     </Svg>
   );
 }

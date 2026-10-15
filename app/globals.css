@@ -794,29 +794,92 @@ html[data-theme="dark"] .btn-outline {
 }
 
 .header-link {
+  position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.2rem;
-  /* Icon-only on phones: 4 tabs at 4.4rem each left no room for the logo or the account menu. */
+  gap: 0.15rem;
+  /* Icon-only on phones: 4 tabs at full width left no room for the logo or the account menu. */
   min-width: 2.6rem;
-  padding: 0.4rem 0.3rem;
-  border-radius: 0.75rem;
+  padding: 0.28rem 0.3rem;
+  border-radius: 0.7rem;
+  border: 1px solid transparent;
   color: var(--serai-mist);
   font-size: 0.72rem;
+  font-weight: 600;
+  line-height: 1.15;
+  letter-spacing: 0.015em;
+  transition:
+    color 0.18s ease,
+    background-color 0.18s ease,
+    border-color 0.18s ease;
 }
 
 @media (min-width: 640px) {
   .header-link {
-    min-width: 4.4rem;
-    padding: 0.35rem 0.4rem;
+    min-width: 4.6rem;
+    padding: 0.28rem 0.65rem 0.3rem;
+    font-size: 0.74rem;
   }
 }
 
-.header-link:hover,
-.header-link[data-active="true"] {
+.header-link:hover {
   color: var(--serai-sand);
-  background: color-mix(in srgb, var(--serai-brass) 12%, transparent);
+  background: color-mix(in srgb, var(--serai-brass) 10%, transparent);
+}
+
+.header-link[data-active="true"] {
+  color: var(--serai-brass);
+  border-color: color-mix(in srgb, var(--serai-brass) 30%, transparent);
+  background: color-mix(in srgb, var(--serai-brass) 15%, transparent);
+}
+
+/* A short gold rule under the label marks the section you are in. */
+.header-link[data-active="true"]::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: 0.1rem;
+  width: 1.2rem;
+  height: 2px;
+  border-radius: 999px;
+  background: var(--serai-brass);
+  transform: translateX(-50%);
+}
+
+/* The controls on the right read as one group rather than loose icons. */
+.header-tools {
+  display: flex;
+  align-items: center;
+  gap: 0.125rem;
+}
+
+@media (min-width: 640px) {
+  .header-tools {
+    gap: 0.25rem;
+    padding: 0.15rem 0.25rem;
+    border: 1px solid color-mix(in srgb, var(--serai-brass) 20%, transparent);
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--serai-sand) 4%, transparent);
+  }
+}
+
+.header-tool {
+  display: grid;
+  place-items: center;
+  position: relative;
+  height: 1.9rem;
+  width: 1.9rem;
+  border-radius: 999px;
+  color: var(--serai-mist);
+  transition:
+    color 0.18s ease,
+    background-color 0.18s ease;
+}
+
+.header-tool:hover {
+  color: var(--serai-sand);
+  background: color-mix(in srgb, var(--serai-brass) 14%, transparent);
 }
 
 /* Printing / "Save as PDF": just the document — no site header or footer, no browser header/footer, always light. */

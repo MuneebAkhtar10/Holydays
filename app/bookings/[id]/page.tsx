@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import { LoaderOverlay, PageLoader } from "@/components/PageLoader";
 import { BookingReviewForm } from "@/components/ListingReviews";
 import { BookingActions, BookingContacts, BookingHero, BookingNotifyStrip, PaymentBlock } from "@/components/BookingBits";
+import { BookingPass } from "@/components/BookingPass";
 import { MessageComposer, MessageThread } from "@/components/MessageThread";
 import { readJson } from "@/lib/readJson";
 import type { BookingDTO } from "@/lib/booking-dto";
@@ -119,6 +120,8 @@ export default function BookingDetailsPage() {
               <p className="mt-2 text-sm text-sand/90">“{String(booking.extra.requests)}”</p>
             </section>
           )}
+
+          <BookingPass booking={booking} />
 
           <BookingContacts booking={booking} />
 

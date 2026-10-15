@@ -5,6 +5,8 @@ import { prisma } from "@/lib/prisma";
 import { loadBookingForEmail } from "@/lib/booking-emails";
 import { buildBookingPdf, type PdfKind } from "@/lib/booking-pdf";
 import { isDisplayCurrency } from "@/lib/currency";
+import { publicOrigin } from "@/lib/auth-tokens";
+import { passQrPng, passUrl } from "@/lib/booking-pass";
 
 type Ctx = { params: Promise<{ id: string }> };
 
@@ -30,7 +32,15 @@ export async function GET(req: Request, { params }: Ctx) {
     const loaded = await loadBookingForEmail(id);
     if (!loaded) return NextResponse.json({ error: "Booking not found" }, { status: 404 });
 
-    const bytes = await buildBookingPdf(loaded.dto, kind, currency);
+    // Never let a QR failure cost the guest their document.
+    let qr: Uint8Array | undefined;
+    try {
+      qr = await passQrPng(passUrl(publicOrigin(), id));
+    } catch (err) {
+      console.error("[pdf] booking pass QR skipped", err);
+    }
+
+    const bytes = await buildBookingPdf(loaded.dto, kind, currency, qr);
     const name = `HolyDays-${kind === "voucher" ? "confirmation" : kind}-${loaded.dto.number}.pdf`;
     return new NextResponse(Buffer.from(bytes), {
       headers: {
