@@ -52,8 +52,8 @@ html[data-theme="light"] {
 
 html {
   scroll-behavior: smooth;
-  /* A touch larger than the browser default so every rem-based size reads better. */
-  font-size: 103.125%;
+  /* Everything sized in rem scales from here, so one value lifts the whole product. */
+  font-size: 108.75%;
 }
 
 body {
@@ -928,17 +928,28 @@ html[data-theme="dark"] .btn-outline {
 .font-bold {
   font-weight: 800;
 }
+/* Sizes written in px are pinned and would be left behind when the root scales — restate them
+   in rem so the small labels keep pace with the rest of the product. */
+[class*="text-[8px]"] {
+  font-size: 0.64rem;
+}
 [class*="text-[9px]"] {
-  font-size: 11px;
+  font-size: 0.68rem;
 }
 [class*="text-[10px]"] {
-  font-size: 11.5px;
+  font-size: 0.72rem;
 }
 [class*="text-[11px]"] {
-  font-size: 12.5px;
+  font-size: 0.78rem;
 }
 [class*="text-[12px]"] {
-  font-size: 13px;
+  font-size: 0.82rem;
+}
+[class*="text-[13px]"] {
+  font-size: 0.86rem;
+}
+[class*="text-[15px]"] {
+  font-size: 0.95rem;
 }
 /* Small caps-style labels read better a little heavier — but only when the element has not asked
    for a weight itself, otherwise this would quietly override every `font-bold uppercase` label. */

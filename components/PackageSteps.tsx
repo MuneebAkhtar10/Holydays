@@ -56,7 +56,7 @@ export function MealPlanStep({
     <div className="mt-4">
       <p className="text-sm text-mist">Tap a day to add that meal, or use All / None.</p>
       <div className="mt-3 overflow-x-auto rounded-2xl border border-sand/[0.08] bg-ink-2">
-        <table className="w-full min-w-[460px] border-collapse text-[15px]">
+        <table className="w-full min-w-[27rem] border-collapse text-[15px]">
           <thead>
             <tr className="border-b border-sand/[0.08]">
               <th className="px-3.5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-mist">Day</th>
