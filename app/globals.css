@@ -72,6 +72,64 @@ html[data-theme="light"] .brand-logo {
   filter: brightness(0.58) saturate(1.2) contrast(1.08);
 }
 
+/* The tagline is drawn as text under the wordmark, tucked up so the lockup keeps its original height. */
+.brand-lockup {
+  line-height: 1;
+}
+
+.brand-motto {
+  margin-top: -0.2em;
+  padding-right: 0.2em;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+  line-height: 1;
+  color: color-mix(in srgb, var(--serai-brass) 85%, transparent);
+}
+
+/* Fixed px so the global rem scale and the text-[Npx] remaps cannot inflate the tagline. */
+.brand-motto-sm {
+  font-size: 7px;
+}
+
+.brand-motto-md {
+  font-size: 9px;
+}
+
+.brand-motto-lg {
+  font-size: 11px;
+}
+
+@media (min-width: 768px) {
+  .brand-motto-sm {
+    font-size: 8px;
+  }
+
+  .brand-motto-md {
+    font-size: 10px;
+  }
+
+  .brand-motto-lg {
+    font-size: 12px;
+  }
+}
+
+html[data-theme="light"] .brand-motto {
+  color: #6b6f5a;
+}
+
+/* The stock mark's tagline is dark ink — fine on cream, invisible on navy. Each theme gets its own. */
+.brand-logo-themed {
+  display: none;
+}
+
+html[data-theme="dark"] .brand-logo-light {
+  display: none;
+}
+
+html[data-theme="dark"] .brand-logo-themed {
+  display: block;
+}
+
 .font-display {
   font-family: var(--font-display), sans-serif;
   font-weight: 700;

@@ -115,8 +115,9 @@ ${input.preheader ? `<div style="display:none;max-height:0;overflow:hidden;opaci
     <tr><td style="background:${NAVY};border-radius:18px 18px 0 0;padding:20px 32px">
       ${
         origin
-          ? `<img src="${esc(origin.replace(/\/$/, ""))}/images/holydays-logo.png" width="150" height="43" alt="HolyDays"
-               style="display:block;border:0;outline:none;text-decoration:none;height:43px;width:150px;font-family:${SERIF};font-size:20px;letter-spacing:.3em;color:${GOLD}">`
+          ? `<img src="${esc(origin.replace(/\/$/, ""))}/images/holydays-mark-dark.png" width="150" height="43" alt="HolyDays"
+               style="display:block;border:0;outline:none;text-decoration:none;height:43px;width:150px;font-family:${SERIF};font-size:20px;letter-spacing:.3em;color:${GOLD}">
+             <div style="width:150px;margin-top:-4px;text-align:right;font-family:${SANS};font-size:9px;letter-spacing:.02em;color:${GOLD}">Spirituality on Board</div>`
           : `<span style="font-family:${SERIF};font-size:22px;letter-spacing:.32em;color:${GOLD}">HOLYDAYS</span>`
       }
     </td></tr>

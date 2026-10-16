@@ -73,7 +73,7 @@ export function BookingPrint({ kind }: { kind: "invoice" | "receipt" | "voucher"
       </div>
       <div className="paper mt-6 p-8">
         <div className="print-band -mx-8 -mt-8 mb-6 bg-[#102948] px-8 py-4">
-          <BrandLogo size="sm" />
+          <BrandLogo size="sm" tone="dark" />
         </div>
         <div className="flex flex-wrap items-end justify-between gap-2">
           <h1 className="font-display text-4xl">{title}</h1>

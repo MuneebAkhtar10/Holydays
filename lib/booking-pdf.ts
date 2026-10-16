@@ -1,5 +1,6 @@
 import { readFileSync } from "fs";
 import path from "path";
+import { APP_MOTTO } from "@/lib/brand";
 import { PDFDocument, StandardFonts, rgb, type PDFFont, type PDFImage, type PDFPage } from "pdf-lib";
 import type { BookingDTO } from "@/lib/booking-dto";
 import { bookingInvoiceBreakdown, bookingIsPaid, bookingPackageGrandTotal, bookingPackageHotelNames } from "@/lib/booking-invoice";
@@ -36,7 +37,8 @@ let logoCache: Uint8Array | null | undefined;
 function brandLogoPng() {
   if (logoCache !== undefined) return logoCache;
   try {
-    logoCache = new Uint8Array(readFileSync(path.join(process.cwd(), "public", "images", "holydays-logo.png")));
+    // The band is navy; the tagline is drawn as text below, so this is the mark alone.
+    logoCache = new Uint8Array(readFileSync(path.join(process.cwd(), "public", "images", "holydays-mark-dark.png")));
   } catch (err) {
     console.error("[pdf] brand logo not found", err);
     logoCache = null;
@@ -87,9 +89,21 @@ class Sheet {
     const h = compact ? 46 : 74;
     this.page.drawRectangle({ x: 0, y: H - h, width: W, height: h, color: NAVY });
     if (this.logo) {
-      const lh = compact ? 24 : 36;
+      const lh = compact ? 24 : 34;
       const lw = (this.logo.width / this.logo.height) * lh;
-      this.page.drawImage(this.logo, { x: M, y: H - h / 2 - lh / 2, width: lw, height: lh });
+      const ly = H - h / 2 - lh / 2 + (compact ? 0 : 3);
+      this.page.drawImage(this.logo, { x: M, y: ly, width: lw, height: lh });
+      if (!compact) {
+        const motto = safe(APP_MOTTO);
+        const size = 6.5;
+        this.page.drawText(motto, {
+          x: M + lw - this.sans.widthOfTextAtSize(motto, size),
+          y: ly - size - 1,
+          size,
+          font: this.sans,
+          color: GOLD,
+        });
+      }
     } else {
       this.page.drawText("HOLYDAYS", { x: M, y: H - h / 2 - 8, size: 22, font: this.serif, color: GOLD });
     }
